@@ -21,13 +21,6 @@ export class UpdateUserProfileDto {
   @SanitizeString('lower')
   readonly username?: string;
 
-  @ApiProperty({ example: 'Alice Smith' })
-  @IsOptional()
-  @MaxLength(50, { message: 'full name must be at most 50 characters' })
-  @IsString()
-  @SanitizeString('any')
-  readonly fullName?: string;
-
   @ApiProperty({
     description: 'Any information the user wants to share about themselves',
     example: 'Love creating presentations',

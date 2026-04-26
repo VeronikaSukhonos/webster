@@ -1,8 +1,13 @@
 <h1 align="center">SketCherry</h1>
 
+<div align="center"><img src="./frontend/public/logo.png" alt="SketCherry" width="200"></div>
+
 ---
 
-Editor that allows every user without design skills to create and process images
+**SketCherry** is a simple online graphic editor that empowers anyone - **_regardless of design experience_** - to effortlessly create stunning visuals.
+The project was developed as a solution to the **Webster** challenge of the **Innovation Campus educational program**.
+
+TODO screenshots
 
 ## Features
 
@@ -10,7 +15,11 @@ TODO
 
 ## Technology Stack
 
-TODO
+All you need preinstalled is [Docker](https://www.docker.com/) (and we recommend to have [Node.js](https://nodejs.org/en)).
+
+- Backend: Nest.js, PostgreSQL, TypeORM, Swagger, JWT, Google APIs, Nodemailer, Multer
+- Frontend: React, Vite, Redux Toolkit, CSS, Konva, Zod, Axios
+- Docker
 
 ## How to use
 
@@ -25,7 +34,7 @@ Create `.env` file with the variables specified in `.env.example` file.
 
 ### Build the project
 
-Launch the Docker Desktop, and, in the same directory where `docker-compose.yml` file is located, run the command:
+Launch Docker, and, in the same directory where `docker-compose.yml` file is located, run the command:
 
 ```
 docker compose build <app-dev/app-prod>
@@ -53,8 +62,6 @@ docker compose up <app-dev/app-prod>
 - [`http://localhost:5173`](http://localhost:5173) in the development build
 - [`http://localhost:8000`](http://localhost:8000) in the production build
 
-If you want to see some container's logs, in the Docker Desktop, click on the corresponding container and open the Logs tab.
-
 ### Stop the app
 
 When you are done, tear the app down by using the command:
@@ -70,7 +77,7 @@ docker compose down
 - [**Veronika Sukhonos**](https://github.com/VeronikaSukhonos)
 - [**Denys Mykhailov**](https://github.com/MSTWNTED)
 
-## Documentation // TODO
+## Documentation
 
 General project documentation can be found [here](./docs/) and contains:
 

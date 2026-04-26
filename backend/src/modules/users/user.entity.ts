@@ -12,9 +12,6 @@ export class User {
   @Column({ type: 'varchar', unique: true, length: 25 })
   username!: string;
 
-  @Column({ type: 'varchar', nullable: true, length: 50 })
-  fullName!: string | null;
-
   @Column({ type: 'varchar', nullable: true, length: 200 })
   about!: string | null;
 
@@ -24,11 +21,11 @@ export class User {
   @CreateDateColumn({ type: 'timestamp' })
   readonly registerDate!: Date;
 
-  @Column({ type: 'varchar', nullable: true, unique: true, select: false })
-  google_id!: string | null;
-
   @Column({ type: 'varchar', nullable: true, length: 60, select: false })
   password!: string | null;
+
+  @Column({ type: 'varchar', nullable: true, unique: true, select: false })
+  googleId!: string | null;
 
   @Column({ type: 'varchar', nullable: true, length: 300, select: false })
   emailToken!: string | null;

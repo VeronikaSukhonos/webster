@@ -14,5 +14,5 @@ export class AuthResponseDto {
   readonly avatar!: string;
 
   @Expose()
-  readonly google_id?: string;
+  readonly googleId?: string;
 }

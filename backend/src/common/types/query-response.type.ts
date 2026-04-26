@@ -6,7 +6,7 @@ interface PaginationResponse {
 
 interface SortResponse {
   sort: string;
-  order: 'ASC' | 'DESC';
+  order: 'asc' | 'desc';
 }
 
 interface FilterResponse {

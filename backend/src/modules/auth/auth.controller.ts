@@ -18,7 +18,7 @@ import {
   RegisterDto,
   LoginDto,
   LoginGoogleDto,
-  AuthRequestEmailDto,
+  AuthRequestLinkDto,
   ResetPasswordDto,
 } from './dtos';
 import type { ApiResponse } from '../../common/types';
@@ -44,8 +44,8 @@ export class AuthController {
           id: 7,
           username: 'user1',
           email: 'user1@gmail.com',
-          avatar: 'default-user-avatar.png',
-          google_id: null,
+          avatar: 'http://localhost:3000/files/avatars/default-avatar.png',
+          googleId: null,
         },
       },
     },
@@ -101,8 +101,8 @@ export class AuthController {
           id: 7,
           username: 'user1',
           email: 'user1@gmail.com',
-          avatar: 'default-user-avatar.png',
-          google_id: null,
+          avatar: 'http://localhost:3000/files/avatars/default-avatar.png',
+          googleId: null,
         },
         accessToken:
           'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiZW1haWwiOiJmcmllbmQxQGdtYWlsLmNvbSIsImlhdCI6MTc3MzE2NTk2MywiZXhwIjoxNzczMTY2ODYzfQ.62JEhMpI_I06hvb-Kfw8RIRXgEl1r8X79af2jZag3A4',
@@ -151,8 +151,8 @@ export class AuthController {
           id: 7,
           username: 'user1',
           email: 'user1@gmail.com',
-          avatar: 'default-user-avatar.png',
-          google_id: '12345678901234567890',
+          avatar: 'http://localhost:3000/files/avatars/default-avatar.png',
+          googleId: '12345678901234567890',
         },
         accessToken:
           'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiZW1haWwiOiJmcmllbmQxQGdtYWlsLmNvbSIsImlhdCI6MTc3MzE2NTk2MywiZXhwIjoxNzczMTY2ODYzfQ.62JEhMpI_I06hvb-Kfw8RIRXgEl1r8X79af2jZag3A4',
@@ -194,8 +194,8 @@ export class AuthController {
           id: 7,
           username: 'user1',
           email: 'user1@gmail.com',
-          avatar: 'default-user-avatar.png',
-          google_id: null,
+          avatar: 'http://localhost:3000/files/avatars/default-avatar.png',
+          googleId: null,
         },
         accessToken:
           'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiZW1haWwiOiJmcmllbmQxQGdtYWlsLmNvbSIsImlhdCI6MTc3MzE2NTk2MywiZXhwIjoxNzczMTY2ODYzfQ.62JEhMpI_I06hvb-Kfw8RIRXgEl1r8X79af2jZag3A4',
@@ -279,7 +279,7 @@ export class AuthController {
   @Public()
   @Post('email-confirmation')
   @HttpCode(HttpStatus.OK)
-  async requestEmailConfirmation(@Body() dto: AuthRequestEmailDto): Promise<ApiResponse> {
+  async requestEmailConfirmation(@Body() dto: AuthRequestLinkDto): Promise<ApiResponse> {
     await this.authService.requestEmailConfirmation(dto.email);
     return {
       message: 'Email confirmation link has been sent. Please check your email',
@@ -352,7 +352,7 @@ export class AuthController {
   @Public()
   @Post('password-reset')
   @HttpCode(HttpStatus.OK)
-  async requestPasswordReset(@Body() dto: AuthRequestEmailDto): Promise<ApiResponse> {
+  async requestPasswordReset(@Body() dto: AuthRequestLinkDto): Promise<ApiResponse> {
     await this.authService.requestPasswordReset(dto.email);
     return {
       message: 'Password reset link has been sent. Please check your email',

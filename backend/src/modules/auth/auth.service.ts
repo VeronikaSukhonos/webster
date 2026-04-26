@@ -126,11 +126,10 @@ export class AuthService {
         username,
         email: data.email,
         ...(data.picture && { avatar: data.picture }),
-        ...(data.name && { fullName: data.name }),
-        ...(data.id && { google_id: data.id }),
+        ...(data.id && { googleId: data.id }),
       });
-    } else if (!user.google_id) {
-      await this.usersService.updateOneSensitive(user.id, { google_id: data.id ?? null });
+    } else if (!user.googleId) {
+      await this.usersService.updateOneSensitive(user.id, { googleId: data.id ?? null });
     }
 
     return {

@@ -55,9 +55,8 @@ export class UsersController {
         user: {
           id: 1,
           username: 'user1',
-          fullName: 'Alice Smith',
           email: 'user1@gmail.com',
-          avatar: 'http://localhost:3000/files/avatars/users/default-user-avatar.png',
+          avatar: 'http://localhost:3000/files/avatars/default-avatar.png',
           about: 'Love creating presentations',
           registerDate: '2026-03-02T00:00:00.000Z',
         },
@@ -87,7 +86,7 @@ export class UsersController {
 
   @ApiOperation({
     summary: 'Profile update',
-    description: "Updates the user's profile - username, full name, about",
+    description: "Updates the user's profile - username, about",
   })
   @ApiBearerAuth()
   @ApiOkResponse({
@@ -99,9 +98,8 @@ export class UsersController {
         user: {
           id: 11,
           username: 'alice',
-          fullName: null,
           email: 'alice.test@gmail.com',
-          avatar: 'http://localhost:3000/files/avatars/users/c803084a39ddabefa5c41773866510378.png',
+          avatar: 'http://localhost:3000/files/avatars/c803084a39ddabefa5c41773866510378.png',
           about: 'Computer Science student',
           registerDate: '2026-03-17T11:52:45.039Z',
         },
@@ -116,11 +114,11 @@ export class UsersController {
     },
   })
   @ApiBadRequestResponse({
-    description: 'Invalid values for full name update',
+    description: 'Invalid values for username update',
     example: {
       statusCode: 400,
       message: 'Validation failed',
-      errors: [{ param: 'fullName', error: 'full name must contain only letters' }],
+      errors: [{ param: 'username', error: 'username must contain only letters and digits' }],
     },
   })
   @ApiConflictResponse({
@@ -140,7 +138,7 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   async updateProfile(
     @User('id') authId: number,
-    @Body(new AtLeastOneParamPipe(['username', 'fullName', 'about']))
+    @Body(new AtLeastOneParamPipe(['username', 'about']))
     dto: UpdateUserProfileDto,
   ): Promise<ApiResponse> {
     const updated = await this.usersService.updateOneProfile(authId, dto);
@@ -200,7 +198,7 @@ export class UsersController {
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
-    description: 'Single avatar (jpg, jpeg or png, up to 5MB)',
+    description: 'Single avatar - jpg (jpeg) or png, up to 5MB',
     type: AvatarUploadDto,
   })
   @ApiBearerAuth()
@@ -210,7 +208,7 @@ export class UsersController {
       statusCode: 200,
       message: 'Uploaded avatar successfully',
       data: {
-        avatar: 'http://localhost:3000/files/avatars/users/c803084a39ddabefa5c41773866510378.png',
+        avatar: 'http://localhost:3000/files/avatars/c803084a39ddabefa5c41773866510378.png',
       },
     },
   })
@@ -245,7 +243,7 @@ export class UsersController {
     example: {
       statusCode: 200,
       message: 'Deleted avatar successfully',
-      data: { avatar: 'http://localhost:3000/files/avatars/users/default-user-avatar.png' },
+      data: { avatar: 'http://localhost:3000/files/avatars/default-avatar.png' },
     },
   })
   @Delete('avatar')

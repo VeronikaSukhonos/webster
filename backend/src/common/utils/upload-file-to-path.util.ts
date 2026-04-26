@@ -4,7 +4,7 @@ import path from 'path';
 export async function uploadFileToPath(
   file: Express.Multer.File,
   filename: string,
-  filetype: 'avatars/users',
+  filetype: 'avatars',
 ): Promise<string> {
   const filepath = path.join(
     'files',

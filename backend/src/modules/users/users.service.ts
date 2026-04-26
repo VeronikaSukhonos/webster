@@ -50,7 +50,7 @@ export class UsersService {
           passwordToken: true,
           refreshToken: true,
           deletionToken: true,
-          google_id: true,
+          googleId: true,
         }),
       },
     });
@@ -79,7 +79,7 @@ export class UsersService {
       | { passwordToken: string | null }
       | { refreshToken: string | null }
       | { deletionToken: string | null }
-      | { google_id: string | null },
+      | { googleId: string | null },
   ): Promise<void> {
     await this.usersRepository.update(id, field);
   }
@@ -103,10 +103,6 @@ export class UsersService {
       user.username = dto.username;
       updated = true;
     }
-    if (dto.fullName !== undefined && dto.fullName !== user.fullName) {
-      user.fullName = dto.fullName;
-      updated = true;
-    }
     if (dto.about !== undefined && dto.about !== user.about) {
       user.about = dto.about;
       updated = true;
@@ -123,7 +119,7 @@ export class UsersService {
 
     if (!user) throw new NotFoundException('User is not found');
 
-    if (!user.google_id) {
+    if (!user.googleId) {
       if (!currentPassword) {
         throw new BadRequestException({
           message: 'Validation failed',
@@ -150,7 +146,7 @@ export class UsersService {
       await uploadFileToPath(
         avatar,
         `${crypto.randomBytes(10).toString('hex')}${Date.now()}`,
-        'avatars/users',
+        'avatars',
       ),
     );
   }
@@ -212,7 +208,7 @@ export class UsersService {
       if (!user || user.deletionToken !== token) {
         throw new BadRequestException('Invalid or expired deletion token');
       }
-      // TODO some logic here if needed
+
       await this.usersRepository.delete(user.id);
     } catch {
       throw new BadRequestException('Invalid or expired deletion token');

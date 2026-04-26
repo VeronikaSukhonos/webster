@@ -15,7 +15,9 @@ export class FileValidationPipe extends ParseFilePipe {
       ],
       exceptionFactory: (e) => {
         if (e.includes('file type'))
-          throw new BadRequestException('Invalid file format - only JPG, JPEG and PNG are allowed');
+          throw new BadRequestException(
+            'Invalid file format - only JPG (JPEG) and PNG are allowed',
+          );
         else if (e.includes('file size'))
           throw new BadRequestException('Invalid file size - max 5MB');
         else throw new BadRequestException(e);
