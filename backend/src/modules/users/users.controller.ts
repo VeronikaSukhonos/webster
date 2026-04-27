@@ -44,7 +44,7 @@ export class UsersController {
   @ApiOperation({
     summary: 'User profile fetch',
     description:
-      "Fetches the user's profile data (email is returned only for an authenticated user)",
+      "Fetches the user's profile data (email, hasPassword and googleId are returned only for an authenticated user)",
   })
   @ApiOkResponse({
     description: 'Successful user profile fetch',
@@ -54,11 +54,13 @@ export class UsersController {
       data: {
         user: {
           id: 1,
-          username: 'user1',
-          email: 'user1@gmail.com',
+          username: 'user',
+          email: 'user@gmail.com',
           avatar: 'http://localhost:3000/files/avatars/default-avatar.png',
           about: 'Love creating presentations',
-          registerDate: '2026-03-02T00:00:00.000Z',
+          registerDate: '2026-04-27T18:17:06.813Z',
+          hasPassword: true,
+          googleId: null,
         },
       },
     },
@@ -96,12 +98,14 @@ export class UsersController {
       message: 'Updated profile successfully',
       data: {
         user: {
-          id: 11,
-          username: 'alice',
-          email: 'alice.test@gmail.com',
-          avatar: 'http://localhost:3000/files/avatars/c803084a39ddabefa5c41773866510378.png',
-          about: 'Computer Science student',
-          registerDate: '2026-03-17T11:52:45.039Z',
+          id: 1,
+          username: 'user',
+          email: 'user@gmail.com',
+          avatar: 'http://localhost:3000/files/avatars/default-avatar.png',
+          about: 'Love creating postcards',
+          registerDate: '2026-04-27T18:17:06.813Z',
+          hasPassword: true,
+          googleId: null,
         },
       },
     },
@@ -267,22 +271,10 @@ export class UsersController {
       message: 'Account deletion link has been sent. Please check your email',
     },
   })
-  @ApiForbiddenResponse({
-    description: 'Authenticated user is not the owner of an account',
-    example: {
-      statusCode: 403,
-      message: 'Cannot delete not own account',
-    },
-  })
-  @Post(':id')
+  @Post()
   @HttpCode(HttpStatus.OK)
-  async requestDeletion(
-    @Param('id', new ParseIntWithMessagePipe('User is not found', HttpStatus.NOT_FOUND)) id: number,
-    @User('id') authId: number,
-  ): Promise<ApiResponse> {
-    if (authId !== id) throw new ForbiddenException('Cannot delete not own account');
-
-    await this.usersService.requestAccountDeletion(id);
+  async requestDeletion(@User('id') authId: number): Promise<ApiResponse> {
+    await this.usersService.requestAccountDeletion(authId);
     return {
       message: 'Account deletion link has been sent. Please check your email',
     };

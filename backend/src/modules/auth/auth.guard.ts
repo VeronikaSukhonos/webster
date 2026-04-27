@@ -35,7 +35,7 @@ export class AuthGuard implements CanActivate {
           secret: this.configService.get('ACCESS_TOKEN_SECRET'),
         });
 
-        if (!(await this.usersService.getOneBasic({ id: payload.id })))
+        if (!(await this.usersService.getOne({ id: payload.id })))
           throw new UnauthorizedException(message);
 
         req.user = payload;

@@ -7,11 +7,11 @@ import {
   Length,
   Matches,
   MaxLength,
-  IsStrongPassword,
 } from 'class-validator';
+import { ResetPasswordDto } from './reset-password.dto';
 import { SanitizeString } from '../../../common/decorators';
 
-export class RegisterDto {
+export class RegisterDto extends ResetPasswordDto {
   @ApiProperty({ example: 'user1', pattern: '^[a-z][a-z0-9]*$' })
   @Length(3, 25, { message: 'username must have 3-25 characters' })
   @Matches(/^[a-z]/, { message: 'username must start with a letter' })
@@ -27,19 +27,4 @@ export class RegisterDto {
   @IsNotEmpty({ message: 'email is required' })
   @SanitizeString('lower')
   readonly email!: string;
-
-  @ApiProperty({ example: 'SecretPass1', minLength: 8 })
-  @IsStrongPassword(
-    {
-      minLength: 8,
-      minLowercase: 1,
-      minUppercase: 1,
-      minNumbers: 1,
-      minSymbols: 0,
-    },
-    { message: 'password must be longer than 8 characters (A-Z, a-z, 0-9)' },
-  )
-  @IsString()
-  @IsNotEmpty({ message: 'password is required' })
-  readonly password!: string;
 }

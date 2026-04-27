@@ -12,11 +12,11 @@ export class User {
   @Column({ type: 'varchar', unique: true, length: 25 })
   username!: string;
 
-  @Column({ type: 'varchar', nullable: true, length: 200 })
-  about!: string | null;
-
   @Column({ type: 'varchar', default: DEFAULT_USER_AVATAR, length: 100 })
   avatar!: string;
+
+  @Column({ type: 'varchar', nullable: true, length: 150 })
+  about!: string | null;
 
   @CreateDateColumn({ type: 'timestamp' })
   readonly registerDate!: Date;

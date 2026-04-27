@@ -9,7 +9,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
 import { plainToInstance } from 'class-transformer';
 import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
 import { rm } from 'fs/promises';
 import path from 'path';
 import { User } from './user.entity';
@@ -21,6 +20,7 @@ import {
   UpdateUserProfileDto,
   UserProfileResponseDto,
 } from './dtos';
+import { AuthResponseDto } from '../auth/dtos';
 import { uploadFileToPath } from '../../common/utils';
 import { DEFAULT_USER_AVATAR, FILEPATH_PREFIX } from '../../common/constants';
 
@@ -33,7 +33,7 @@ export class UsersService {
     private emailService: EmailService,
   ) {}
 
-  async getOneBasic(
+  async getOne(
     where: { username: string } | { email: string } | { id: number },
     sensitive: boolean = false,
   ): Promise<User | null> {
@@ -44,26 +44,28 @@ export class UsersService {
         username: true,
         email: true,
         avatar: true,
+        about: true,
+        registerDate: true,
         ...(sensitive && {
           password: true,
+          googleId: true,
           emailToken: true,
           passwordToken: true,
           refreshToken: true,
           deletionToken: true,
-          googleId: true,
         }),
       },
     });
   }
 
   async getOneProfile(id: number, authId: number): Promise<UserProfileResponseDto | null> {
-    const user = await this.usersRepository.findOneBy({ id });
+    const user = await this.getOne({ id }, authId === id);
 
     if (!user) throw new NotFoundException('User is not found');
 
-    return plainToInstance(UserProfileResponseDto, {
+    return plainToInstance(authId === id ? AuthResponseDto : UserProfileResponseDto, {
       ...user,
-      ...(authId === id ? { email: user.email } : { email: undefined }),
+      hasPassword: user.password ? true : false,
     });
   }
 
@@ -75,11 +77,11 @@ export class UsersService {
     id: number,
     field:
       | { password: string | null }
+      | { googleId: string | null }
       | { emailToken: string | null }
       | { passwordToken: string | null }
       | { refreshToken: string | null }
-      | { deletionToken: string | null }
-      | { googleId: string | null },
+      | { deletionToken: string | null },
   ): Promise<void> {
     await this.usersRepository.update(id, field);
   }
@@ -88,7 +90,7 @@ export class UsersService {
     id: number,
     dto: UpdateUserProfileDto,
   ): Promise<UserProfileResponseDto | void> {
-    const user = await this.usersRepository.findOneBy({ id });
+    const user = await this.getOne({ id }, true);
     let updated = false;
 
     if (!user) throw new NotFoundException('User is not found');
@@ -110,12 +112,15 @@ export class UsersService {
     if (!updated) return;
 
     await this.usersRepository.save(user);
-    return plainToInstance(UserProfileResponseDto, user);
+    return plainToInstance(AuthResponseDto, {
+      ...user,
+      hasPassword: user.password ? true : false,
+    });
   }
 
   async updateOnePassword(id: number, dto: UpdateUserPasswordDto): Promise<void> {
     const { password, currentPassword } = dto;
-    const user = await this.getOneBasic({ id }, true);
+    const user = await this.getOne({ id }, true);
 
     if (!user) throw new NotFoundException('User is not found');
 
@@ -141,14 +146,7 @@ export class UsersService {
 
     if (!user) throw new NotFoundException('User is not found');
 
-    return await this.deleteOneAvatarAndSave(
-      user,
-      await uploadFileToPath(
-        avatar,
-        `${crypto.randomBytes(10).toString('hex')}${Date.now()}`,
-        'avatars',
-      ),
-    );
+    return await this.deleteOneAvatarAndSave(user, await uploadFileToPath(avatar, 'avatars'));
   }
 
   async deleteOneAvatar(id: number): Promise<string> {
@@ -169,12 +167,7 @@ export class UsersService {
     if (user.avatar.startsWith(FILEPATH_PREFIX)) {
       if (user.avatar !== DEFAULT_USER_AVATAR)
         await rm(
-          path.join(
-            'files',
-            'avatars',
-            'users',
-            user.avatar.substring(user.avatar.lastIndexOf('/') + 1),
-          ),
+          path.join('files', 'avatars', user.avatar.substring(user.avatar.lastIndexOf('/') + 1)),
           { force: true },
         );
     }
@@ -184,7 +177,7 @@ export class UsersService {
   }
 
   async requestAccountDeletion(id: number): Promise<void> {
-    const user = await this.getOneBasic({ id }, true);
+    const user = await this.getOne({ id });
 
     if (!user) throw new NotFoundException('User is not found');
 
@@ -203,11 +196,10 @@ export class UsersService {
   async deleteOne(token: string): Promise<void> {
     try {
       const payload = await this.tokenService.verifyToken(token, 'CONFIRM');
-      const user = await this.getOneBasic({ id: payload.id }, true);
+      const user = await this.getOne({ id: payload.id }, true);
 
-      if (!user || user.deletionToken !== token) {
+      if (!user || user.deletionToken !== token)
         throw new BadRequestException('Invalid or expired deletion token');
-      }
 
       await this.usersRepository.delete(user.id);
     } catch {

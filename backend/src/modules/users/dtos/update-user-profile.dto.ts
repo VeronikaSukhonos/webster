@@ -26,7 +26,7 @@ export class UpdateUserProfileDto {
     example: 'Love creating presentations',
   })
   @IsOptional()
-  @MaxLength(200, { message: 'about section must be at most 200 characters' })
+  @MaxLength(150, { message: 'about section must be at most 150 characters' })
   @SanitizeString('any')
   readonly about?: string;
 }

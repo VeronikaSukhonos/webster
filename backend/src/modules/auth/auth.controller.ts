@@ -41,10 +41,13 @@ export class AuthController {
       message: 'Registered successfully. Please check your email to confirm it',
       data: {
         user: {
-          id: 7,
-          username: 'user1',
-          email: 'user1@gmail.com',
+          id: 1,
+          username: 'user',
+          email: 'user@gmail.com',
           avatar: 'http://localhost:3000/files/avatars/default-avatar.png',
+          about: null,
+          registerDate: '2026-04-27T18:17:06.813Z',
+          hasPassword: true,
           googleId: null,
         },
       },
@@ -98,10 +101,13 @@ export class AuthController {
       message: 'Logged in successfully',
       data: {
         user: {
-          id: 7,
-          username: 'user1',
-          email: 'user1@gmail.com',
+          id: 1,
+          username: 'user',
+          email: 'user@gmail.com',
           avatar: 'http://localhost:3000/files/avatars/default-avatar.png',
+          about: null,
+          registerDate: '2026-04-27T18:17:06.813Z',
+          hasPassword: true,
           googleId: null,
         },
         accessToken:
@@ -148,10 +154,13 @@ export class AuthController {
       message: 'Logged in successfully',
       data: {
         user: {
-          id: 7,
-          username: 'user1',
-          email: 'user1@gmail.com',
+          id: 1,
+          username: 'user',
+          email: 'user@gmail.com',
           avatar: 'http://localhost:3000/files/avatars/default-avatar.png',
+          about: null,
+          registerDate: '2026-04-27T18:17:06.813Z',
+          hasPassword: true,
           googleId: '12345678901234567890',
         },
         accessToken:
@@ -191,10 +200,13 @@ export class AuthController {
       message: 'Refreshed tokens successfully',
       data: {
         user: {
-          id: 7,
-          username: 'user1',
-          email: 'user1@gmail.com',
+          id: 1,
+          username: 'user',
+          email: 'user@gmail.com',
           avatar: 'http://localhost:3000/files/avatars/default-avatar.png',
+          about: null,
+          registerDate: '2026-04-27T18:17:06.813Z',
+          hasPassword: true,
           googleId: null,
         },
         accessToken:

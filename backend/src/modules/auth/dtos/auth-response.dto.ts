@@ -14,5 +14,14 @@ export class AuthResponseDto {
   readonly avatar!: string;
 
   @Expose()
+  readonly about!: string;
+
+  @Expose()
+  readonly registerDate!: Date;
+
+  @Expose()
+  readonly hasPassword!: boolean;
+
+  @Expose()
   readonly googleId?: string;
 }

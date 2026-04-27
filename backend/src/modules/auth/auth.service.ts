@@ -40,12 +40,10 @@ export class AuthService {
     const { username, email, password } = dto;
     const errors = [];
 
-    if (await this.usersService.getOneBasic({ username })) {
+    if (await this.usersService.getOne({ username }))
       errors.push({ param: 'username', error: 'unavailable username' });
-    }
-    if (await this.usersService.getOneBasic({ email })) {
+    if (await this.usersService.getOne({ email }))
       errors.push({ param: 'email', error: 'unavailable email' });
-    }
     if (errors.length) throw new ConflictException({ message: 'Unavailable value(s)', errors });
 
     const user = await this.usersService.createOne({
@@ -64,7 +62,7 @@ export class AuthService {
       emailToken,
     );
 
-    return { user: plainToInstance(AuthResponseDto, user) };
+    return { user: plainToInstance(AuthResponseDto, { ...user, hasPassword: true }) };
   }
 
   async login(
@@ -73,18 +71,16 @@ export class AuthService {
   ): Promise<{ user: AuthResponseDto; accessToken: string }> {
     const { username, password } = dto;
     const user =
-      (await this.usersService.getOneBasic({ username }, true)) ??
-      (await this.usersService.getOneBasic({ email: username }, true));
+      (await this.usersService.getOne({ username }, true)) ??
+      (await this.usersService.getOne({ email: username }, true));
 
-    if (!user || !(await bcrypt.compare(password, user.password ?? ''))) {
+    if (!user || !(await bcrypt.compare(password, user.password ?? '')))
       throw new UnauthorizedException('Invalid credentials');
-    }
-    if (user.emailToken) {
+    if (user.emailToken)
       throw new ForbiddenException('Email is not confirmed. Please confirm your email first');
-    }
 
     return {
-      user: plainToInstance(AuthResponseDto, user),
+      user: plainToInstance(AuthResponseDto, { ...user, hasPassword: true }),
       accessToken: await this.authenticate(res, {
         id: user.id,
         email: user.email,
@@ -108,7 +104,7 @@ export class AuthService {
     const { data } = await oauth.userinfo.get();
 
     if (!data.email) throw new BadRequestException('Google token does not provide an email');
-    let user = await this.usersService.getOneBasic({ email: data.email }, true);
+    let user = await this.usersService.getOne({ email: data.email }, true);
 
     if (!user) {
       const base = generateFromEmail(data.email, {
@@ -118,9 +114,8 @@ export class AuthService {
       });
       let username = base;
 
-      while (await this.usersService.getOneBasic({ username })) {
+      while (await this.usersService.getOne({ username }))
         username = generateUsername('', 5, 20, base);
-      }
 
       user = await this.usersService.createOne({
         username,
@@ -133,7 +128,10 @@ export class AuthService {
     }
 
     return {
-      user: plainToInstance(AuthResponseDto, user),
+      user: plainToInstance(AuthResponseDto, {
+        ...user,
+        hasPassword: user.password ? true : false,
+      }),
       accessToken: await this.authenticate(res, {
         id: user.id,
         email: user.email,
@@ -151,7 +149,7 @@ export class AuthService {
 
     try {
       const payload = await this.tokenService.verifyToken(token, 'REFRESH');
-      const user = await this.usersService.getOneBasic({ id: payload.id }, true);
+      const user = await this.usersService.getOne({ id: payload.id }, true);
 
       if (!user || user.refreshToken !== token) {
         if (payload) await this.logout(payload.id, res);
@@ -159,7 +157,10 @@ export class AuthService {
       }
 
       return {
-        user: plainToInstance(AuthResponseDto, user),
+        user: plainToInstance(AuthResponseDto, {
+          ...user,
+          hasPassword: user.password ? true : false,
+        }),
         accessToken: await this.authenticate(res, {
           id: user.id,
           email: user.email,
@@ -176,11 +177,11 @@ export class AuthService {
   }
 
   async requestEmailConfirmation(email: string): Promise<void> {
-    const user = await this.usersService.getOneBasic({ email }, true);
+    const user = await this.usersService.getOne({ email }, true);
 
-    if (!user || !user.emailToken) {
+    if (!user || !user.emailToken)
       throw new NotFoundException('Unconfirmed user with this email is not found');
-    }
+
     const emailToken = await this.tokenService.createToken(
       { id: user.id, email: user.email },
       'CONFIRM',
@@ -196,11 +197,10 @@ export class AuthService {
   async confirmEmail(token: string): Promise<void> {
     try {
       const payload = await this.tokenService.verifyToken(token, 'CONFIRM');
-      const user = await this.usersService.getOneBasic({ id: payload.id }, true);
+      const user = await this.usersService.getOne({ id: payload.id }, true);
 
-      if (!user || user.emailToken !== token) {
+      if (!user || user.emailToken !== token)
         throw new BadRequestException('Invalid or expired email token');
-      }
 
       await this.usersService.updateOneSensitive(user.id, { emailToken: null });
     } catch {
@@ -209,11 +209,10 @@ export class AuthService {
   }
 
   async requestPasswordReset(email: string): Promise<void> {
-    const user = await this.usersService.getOneBasic({ email }, true);
+    const user = await this.usersService.getOne({ email });
 
-    if (!user) {
-      throw new NotFoundException('User with this email is not found');
-    }
+    if (!user) throw new NotFoundException('User with this email is not found');
+
     const passwordToken = await this.tokenService.createToken(
       { id: user.id, email: user.email },
       'CONFIRM',
@@ -229,11 +228,10 @@ export class AuthService {
   async resetPassword(token: string, password: string): Promise<void> {
     try {
       const payload = await this.tokenService.verifyToken(token, 'CONFIRM');
-      const user = await this.usersService.getOneBasic({ id: payload.id }, true);
+      const user = await this.usersService.getOne({ id: payload.id }, true);
 
-      if (!user || user.passwordToken !== token) {
+      if (!user || user.passwordToken !== token)
         throw new BadRequestException('Invalid or expired password token');
-      }
       await this.usersService.updateOneSensitive(user.id, {
         password: await bcrypt.hash(password, 10),
         passwordToken: null,

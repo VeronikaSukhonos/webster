@@ -24,7 +24,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.enableCors({
     credentials: true,
-    origin: [process.env.APP_URL, 'https://lh3.googleusercontent.com'],
+    origin: [process.env.APP_URL],
   });
   app.use(cookieParser());
   app.use(

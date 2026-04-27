@@ -8,9 +8,6 @@ export class UserProfileResponseDto {
   readonly username!: string;
 
   @Expose()
-  readonly email!: string;
-
-  @Expose()
   readonly avatar!: string;
 
   @Expose()
