@@ -1,5 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
 import { DEFAULT_USER_AVATAR } from '../../common/constants';
+import { Project } from '../projects/project.entity';
+import { Template } from '../templates/template.entity';
 
 @Entity({ name: 'users' })
 export class User {
@@ -38,4 +40,10 @@ export class User {
 
   @Column({ type: 'varchar', nullable: true, length: 300, select: false })
   deletionToken!: string | null;
+
+  @OneToMany(() => Project, (project) => project.author)
+  projects!: Project[];
+
+  @OneToMany(() => Template, (template) => template.author)
+  templates!: Template[];
 }
