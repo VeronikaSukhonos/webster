@@ -23,5 +23,5 @@ export class AuthResponseDto {
   readonly hasPassword!: boolean;
 
   @Expose()
-  readonly googleId?: string;
+  readonly googleId!: string | null;
 }
