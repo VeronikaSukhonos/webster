@@ -1,0 +1,116 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex-grow: 1;
+}
+
+.field-label {
+  color: var(--main-font-color);
+  display: block;
+  font-size: 0.95rem;
+  font-weight: bold;
+  padding: 0 0 3px 10px;
+  position: relative;
+}
+
+.field-label.required::after {
+  content: '*';
+  color: var(--attention-color);
+  font-size: 13px;
+  padding-left: 4px;
+  position: absolute;
+}
+
+.field-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: var(--light-gray);
+  border: var(--main-border);
+  border-radius: 17px;
+  padding: 0 4px;
+  min-height: 40px;
+  transition:
+    border ease-in-out 0.3s,
+    box-shadow ease-in-out 0.3s;
+}
+
+.field-container.area {
+  padding: 4px;
+}
+
+.field-container:focus-within {
+  border: var(--active-border);
+  box-shadow: 0 0 2px 2px var(--light-blue);
+}
+
+.field-container input,
+.field-container input:focus,
+.field-container textarea,
+.field-container textarea:focus {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  caret-color: var(--accent-font-color);
+  color: var(--main-font-color);
+  outline: none;
+  flex-grow: 1;
+  width: 100%;
+  padding: 3px 7px;
+}
+
+.field-container textarea,
+.field-container textarea:focus {
+  min-height: 78px;
+  max-height: 78px;
+  resize: none;
+}
+
+.field-container:has(input:disabled),
+.field-container:has(textarea:disabled) {
+  opacity: 0.75;
+}
+
+.field-container input::placeholder,
+.field-container textarea::placeholder {
+  color: var(--faded-blue);
+  font-size: 1rem;
+}
+
+.field-container input:-webkit-autofill,
+.field-container input:focus:-webkit-autofill,
+.field-container input:autofill,
+.field-container input:focus:autofill {
+  -webkit-text-fill-color: var(--main-font-color);
+  -webkit-box-shadow: 0 0 30px 20px var(--light-gray) inset;
+  border-radius: 17px;
+}
+
+.field-container .icon-button {
+  display: flex;
+  background: none;
+  border: none;
+  height: 100%;
+  padding: 3px 7px 3px 0;
+}
+
+.field-container .icon-button svg {
+  height: auto;
+  width: 22px;
+}
+
+.field-container .icon-button path {
+  fill: var(--accent-font-color);
+  transition: all ease-in-out 0.5s;
+}
+
+.field-container .icon-button .not-active path {
+  fill: var(--faded-blue);
+}
+
+.field-error {
+  color: var(--attention-color);
+  font-size: 0.93rem;
+  padding-left: 10px;
+}

@@ -153,10 +153,7 @@ export class ProjectsController {
   })
   @ApiNotFoundResponse({ description: 'Template is not found' })
   @Post()
-  async createOne(
-    @User('id') authId: number,
-    @Body() dto: CreateProjectDto,
-  ): Promise<ApiResponse> {
+  async createOne(@User('id') authId: number, @Body() dto: CreateProjectDto): Promise<ApiResponse> {
     return {
       message: 'Created project successfully',
       data: { project: await this.projectsService.createOne(authId, dto) },
@@ -190,7 +187,8 @@ export class ProjectsController {
     description: 'No update data or invalid project data',
     example: {
       statusCode: 400,
-      message: 'At least one parameter must be provided: title, description, file, isPublic, templateId',
+      message:
+        'At least one parameter must be provided: title, description, file, isPublic, templateId',
     },
   })
   @ApiForbiddenResponse({ description: 'Project belongs to another user' })

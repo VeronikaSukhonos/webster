@@ -4,7 +4,7 @@
 
 ---
 
-**SketCherry** is a simple online graphic editor that empowers anyone - **_regardless of design experience_** - to effortlessly create stunning visuals.
+**SketCherry** is a simple online graphic editor that empowers anyone – **_regardless of design experience_** – to effortlessly create stunning visuals.
 The project was developed as a solution to the **Webster** challenge of the **Innovation Campus educational program**.
 
 TODO screenshots

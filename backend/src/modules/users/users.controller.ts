@@ -9,7 +9,6 @@ import {
   Delete,
   Get,
   Param,
-  ForbiddenException,
   Post,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
@@ -281,7 +280,7 @@ export class UsersController {
   }
 
   @ApiOperation({
-    summary: 'Account Deletion',
+    summary: 'Account deletion',
     description: 'Deletes user account using a token sent to their email',
   })
   @ApiParam({

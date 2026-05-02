@@ -1,5 +1,3 @@
-import { createQuery } from '@utils/createQuery';
-
 import type { UpdatePasswordParams, UpdateProfileParams } from '@mytypes/formParams';
 
 import api from './api';
@@ -7,14 +5,6 @@ import api from './api';
 class UsersApi {
   async getUserProfile(id: number) {
     return await api.get(`/users/${id}`);
-  }
-
-  async getUserProjects(id: number, query?: { page?: number; limit?: number }) {
-    return await api.get(`/users/${id}/projects${createQuery(query)}`);
-  }
-
-  async getUserTemplates(id: number, query?: { page?: number; limit?: number }) {
-    return await api.get(`/users/${id}/templates${createQuery(query)}`);
   }
 
   async updateUserProfile(params: UpdateProfileParams) {

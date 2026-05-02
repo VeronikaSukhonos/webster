@@ -1,0 +1,136 @@
+.main-button {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  background-size: 200% auto;
+  background-position: center left;
+  border: var(--main-border);
+  border-radius: 17px;
+  color: var(--main-font-color);
+  font-size: 1.07rem;
+  font-weight: 800;
+  line-height: 1;
+  height: 40px;
+  width: max-content;
+  max-width: 100%;
+  padding: 6px 10px 3px 10px;
+  text-align: center;
+  transition:
+    background-position ease-in-out 0.5s,
+    transform ease-in-out 0.5s;
+  -webkit-user-select: none;
+  user-select: none;
+  position: relative;
+}
+
+.main-button:hover:not(:disabled) {
+  background-position: center right;
+  transform: scale(1.03);
+}
+
+.main-button svg {
+  height: 18px;
+  width: 18px;
+  padding-bottom: 3px;
+  transition: transform ease-in-out 0.5s;
+}
+
+.main-button svg path {
+  transition: all ease-in-out 0.5s;
+}
+
+.main-button:hover:not(:disabled) .live-icon {
+  transform: rotate(15deg);
+}
+
+.main-button.purple {
+  background-image: var(--main-button-color);
+  color: var(--white);
+}
+
+.main-button.purple svg:not(.own-color) path {
+  fill: var(--white);
+  stroke: var(--white);
+}
+
+.main-button.white {
+  background: var(--opaque-container-color);
+  color: var(--purple);
+}
+
+.main-button.transparent {
+  background: none;
+  border: none;
+  color: var(--purple);
+}
+
+.main-button.white svg:not(.own-color) path,
+.main-button.transparent svg:not(.own-color) path {
+  fill: var(--purple);
+  stroke: var(--purple);
+}
+
+.main-button.upper-text {
+  text-transform: uppercase;
+}
+
+.main-button.wide:not(.square) {
+  width: 100%;
+}
+
+.main-button.square {
+  flex-shrink: 0;
+  border-radius: 15px;
+  height: 40px;
+  width: 40px;
+  padding: 0;
+}
+
+.main-button.square svg {
+  padding-bottom: 0;
+}
+
+.main-button.mini {
+  border-radius: 12px;
+  height: 32px;
+  padding: 3px;
+}
+
+.main-button.mini:not(.square) {
+  padding: 3px 6px;
+}
+
+.main-button.mini.square {
+  width: 32px;
+}
+
+.main-button.mini.square.main-button.transparent {
+  padding: 0;
+}
+
+.main-button.mini.square.main-button.transparent svg {
+  height: 28px;
+  width: 28px;
+}
+
+@media (max-width: 500px) {
+  .main-button {
+    font-size: 1.02rem;
+  }
+
+  .main-button svg {
+    height: 16px;
+    width: 16px;
+  }
+}
+
+.main-button + .btn-tooltip {
+  border-radius: 10px;
+  font-size: 0.85rem;
+}
+
+.main-button + .btn-tooltip * {
+  padding: 3px 6px;
+}

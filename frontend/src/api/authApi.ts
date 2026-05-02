@@ -8,7 +8,7 @@ import type {
 import api from './api';
 
 class AuthApi {
-  async register(params: RegisterParams) {
+  async register(params: Omit<RegisterParams, 'passwordConfirmation'>) {
     return await api.post(`/auth/register`, params);
   }
 

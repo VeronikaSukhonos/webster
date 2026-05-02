@@ -10,4 +10,14 @@ export const useAppDispatch = useDispatch.withTypes<AppDispatch>();
 export const useAppSelector = useSelector.withTypes<RootState>();
 
 export const useAuth = () => useAppSelector(selectAuthUser.user);
-export const useFeedback = () => useState<Feedback>({ message: '', status: '' });
+
+export const useFeedback = () => {
+  const initialFeedback: Feedback = { message: '', status: '' };
+  const [feedback, setInnerFeedback] = useState<Feedback>(initialFeedback);
+
+  const setFeedback = (message?: string, status?: 'ok' | 'fail') => {
+    setInnerFeedback(message && status ? { message, status } : initialFeedback);
+  };
+
+  return [feedback, setFeedback] as [Feedback, typeof setFeedback];
+};

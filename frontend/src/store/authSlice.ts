@@ -8,13 +8,11 @@ import type { RootState } from './store';
 interface AuthState {
   user: AuthUser | null;
   accessToken: string | null;
-  isAvatarLoading: boolean;
 }
 
 const initialState: AuthState = {
   user: null,
   accessToken: null,
-  isAvatarLoading: false,
 };
 
 const authSlice = createSlice({
@@ -28,18 +26,14 @@ const authSlice = createSlice({
     updateAuthUser: (state, action: PayloadAction<Partial<AuthUser>>) => {
       if (state.user) state.user = { ...state.user, ...action.payload };
     },
-    setIsAvatarLoading: (state, action: PayloadAction<boolean>) => {
-      state.isAvatarLoading = action.payload;
-    },
   },
 });
 
-export const { setAuthUser, updateAuthUser, setIsAvatarLoading } = authSlice.actions;
+export const { setAuthUser, updateAuthUser } = authSlice.actions;
 
 export const selectAuthUser = {
   user: (state: RootState) => state.auth.user,
   accessToken: (state: RootState) => state.auth.accessToken,
-  isAvatarLoading: (state: RootState) => state.auth.isAvatarLoading,
 };
 
 export default authSlice.reducer;

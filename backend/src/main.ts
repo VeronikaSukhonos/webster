@@ -12,7 +12,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('SketCherry API Documentation')
     .setDescription(
-      'SketCherry is a simple online graphic editor that empowers anyone - regardless of design experience - to effortlessly create stunning visuals',
+      'SketCherry is a simple online graphic editor that empowers anyone – regardless of design experience – to effortlessly create stunning visuals',
     )
     .addBearerAuth({
       type: 'http',

@@ -16,7 +16,7 @@ const api = axios.create({
 });
 
 const setErrors = (err: any) => {
-  err.message = err.response.data.message;
+  err.message = err.response.data.message.replace('token', 'link');
   if (err.response.data.errors)
     err.errors = (err.response.data.errors as { param: string; error: string }[]).reduce(
       (prev, cur) => {
