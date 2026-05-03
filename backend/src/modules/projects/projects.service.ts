@@ -17,7 +17,7 @@ export class ProjectsService {
   ) {}
 
   async getAllPublic(query: ProjectQueryDto): Promise<QueryResponse> {
-    const { page, limit, search } = query;
+    const { authorId, page, limit, search } = query;
     const queryBuilder = this.projectsRepository
       .createQueryBuilder('project')
       .leftJoinAndSelect('project.author', 'author')
@@ -29,6 +29,9 @@ export class ProjectsService {
         search: `%${search.toLowerCase()}%`,
       });
     }
+    if (authorId) {
+      queryBuilder.andWhere('project.authorId = :authorId', { authorId });
+    }
 
     const [projects, total] = await queryBuilder
       .orderBy('project.editDate', 'DESC')
@@ -39,6 +42,7 @@ export class ProjectsService {
     return {
       projects: plainToInstance(ProjectResponseDto, projects),
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+      filters: [{ search: search ?? null }, { authorId: authorId ?? null }],
     };
   }
 
@@ -64,6 +68,7 @@ export class ProjectsService {
     return {
       projects: plainToInstance(ProjectResponseDto, projects),
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+      filters: [{ search: search ?? null }],
     };
   }
 

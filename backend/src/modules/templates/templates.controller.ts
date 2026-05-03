@@ -74,32 +74,6 @@ export class TemplatesController {
     };
   }
 
-  @ApiOperation({ summary: 'Own templates fetch' })
-  @ApiBearerAuth()
-  @ApiQuery({ name: 'page', required: false, example: 1 })
-  @ApiQuery({ name: 'limit', required: false, example: 10 })
-  @ApiQuery({ name: 'search', required: false, example: 'resume' })
-  @ApiQuery({ name: 'type', required: false, example: 'resume' })
-  @ApiOkResponse({
-    description: 'Fetched own templates successfully',
-    example: {
-      statusCode: 200,
-      message: 'Fetched own templates successfully',
-      data: { templates: [], pagination: { page: 1, limit: 10, total: 0, pages: 0 } },
-    },
-  })
-  @Get('own')
-  @HttpCode(HttpStatus.OK)
-  async getAllOwn(
-    @User('id') authId: number,
-    @Query() query: TemplateQueryDto,
-  ): Promise<ApiResponse> {
-    return {
-      message: 'Fetched own templates successfully',
-      data: await this.templatesService.getAllByAuthor(authId, query),
-    };
-  }
-
   @ApiOperation({ summary: 'Template fetch' })
   @ApiParam({ name: 'id', description: 'Template id', example: 1 })
   @ApiOkResponse({

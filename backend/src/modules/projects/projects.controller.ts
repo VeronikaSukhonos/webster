@@ -37,6 +37,7 @@ export class ProjectsController {
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 10 })
   @ApiQuery({ name: 'search', required: false, example: 'instagram' })
+  @ApiQuery({ name: 'authorId', required: false, example: 1 })
   @ApiOkResponse({
     description: 'Fetched public projects successfully',
     example: {
@@ -57,6 +58,7 @@ export class ProjectsController {
           },
         ],
         pagination: { page: 1, limit: 10, total: 1, pages: 1 },
+        filters: [{ search: 'instagram' }, { authorId: 1 }],
       },
     },
   })

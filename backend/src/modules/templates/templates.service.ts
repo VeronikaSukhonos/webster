@@ -61,34 +61,6 @@ export class TemplatesService {
     };
   }
 
-  async getAllByAuthor(authorId: number, query: TemplateQueryDto): Promise<QueryResponse> {
-    const { page, limit, search, type } = query;
-    const queryBuilder = this.templatesRepository
-      .createQueryBuilder('template')
-      .where('template.authorId = :authorId', { authorId });
-
-    if (search) {
-      queryBuilder.andWhere('LOWER(template.title) LIKE :search', {
-        search: `%${search.toLowerCase()}%`,
-      });
-    }
-    if (type) {
-      queryBuilder.andWhere('template.type = :type', { type });
-    }
-
-    const [templates, total] = await queryBuilder
-      .orderBy('template.createDate', 'DESC')
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getManyAndCount();
-
-    return {
-      templates: plainToInstance(TemplateResponseDto, templates),
-      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
-      filters: [{ search: search ?? null }, { type: type ?? null }, { source: 'custom' }],
-    };
-  }
-
   async getOne(id: number): Promise<TemplateResponseDto> {
     const template = await this.templatesRepository.findOne({
       where: { id },
