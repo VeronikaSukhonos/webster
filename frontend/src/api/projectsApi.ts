@@ -5,7 +5,7 @@ import { createQuery } from '@utils/createQuery';
 import api from './api';
 
 class ProjectsApi {
-  async getPublicProjects(query?: { page?: number; limit?: number; user?: number }) {
+  async getPublicProjects(query?: { page?: number; limit?: number; author?: number }) {
     return await api.get(`/projects/public/${createQuery(query)}`);
   }
 

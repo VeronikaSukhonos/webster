@@ -3,6 +3,7 @@ import type { ProjectResponse, TemplateResponse } from '@mytypes/responseTypes';
 interface FormProps {
   isLoading?: boolean;
   setIsLoading?: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 interface FormProjectProps extends FormProps {
@@ -13,23 +14,44 @@ interface FormTemplateProps extends FormProps {
   template?: Omit<TemplateResponse, 'file'>;
 }
 
-export const CreateProjectForm = ({ template, isLoading, setIsLoading }: FormTemplateProps) => {
+export const CreateProjectForm = ({
+  setIsOpen,
+  template,
+  isLoading,
+  setIsLoading,
+}: FormTemplateProps) => {
   return <div>Forms</div>;
 };
 
-export const CreateTemplateForm = ({ project, isLoading, setIsLoading }: FormProjectProps) => {
+export const CreateTemplateForm = ({
+  setIsOpen,
+  project,
+  isLoading,
+  setIsLoading,
+}: FormProjectProps) => {
   return <div>Forms</div>;
 };
 
-export const ProjectSettingsForm = ({ project, isLoading, setIsLoading }: FormProjectProps) => {
+export const ProjectSettingsForm = ({
+  setIsOpen,
+  project,
+  isLoading,
+  setIsLoading,
+}: FormProjectProps) => {
   return <div>Forms</div>;
 };
 
-export const TemplateSettingsForm = ({ template, isLoading, setIsLoading }: FormTemplateProps) => {
+export const TemplateSettingsForm = ({
+  setIsOpen,
+  template,
+  isLoading,
+  setIsLoading,
+}: FormTemplateProps) => {
   return <div>Forms</div>;
 };
 
 export const DeletionForm = ({
+  setIsOpen,
   project,
   template,
   isLoading,
@@ -38,6 +60,11 @@ export const DeletionForm = ({
   return <div>Forms</div>;
 };
 
-export const ExportProjectForm = ({ project, isLoading, setIsLoading }: FormProjectProps) => {
+export const ExportProjectForm = ({
+  setIsOpen,
+  project,
+  isLoading,
+  setIsLoading,
+}: FormProjectProps) => {
   return <div>Forms</div>;
 };

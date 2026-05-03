@@ -1,6 +1,7 @@
 :root {
   --purple: #78366f;
   --light-blue: #91acd7;
+  --transparent-light-blue: #b1cbf480;
   --dark-blue: #4069a9;
   --faded-blue: #8ca2c5;
   --gray: #d9d9d9;
@@ -37,14 +38,14 @@
   padding: 0;
 }
 
-::selection {
-  background: var(--light-blue);
-  color: var(--main-font-color);
-}
-
 html {
   scrollbar-width: thin;
   scrollbar-color: var(--purple) var(--light-blue);
+}
+
+body::selection {
+  background: var(--light-blue);
+  color: var(--main-font-color);
 }
 
 body {
@@ -131,16 +132,11 @@ textarea,
 .row,
 .col {
   display: flex;
-  gap: 20px;
   width: 100%;
 }
 
 .col {
   flex-direction: column;
-}
-
-.grow {
-  flex-grow: 1;
 }
 
 .row.hor-center,
@@ -153,6 +149,20 @@ textarea,
 .col.hor-center,
 .all-center {
   align-items: center;
+}
+
+.row:not(.mini-gap),
+.col:not(.mini-gap) {
+  gap: 20px;
+}
+
+.mini-gap,
+.mini-gap {
+  gap: 5px;
+}
+
+.grow {
+  flex-grow: 1;
 }
 
 .load {
@@ -229,35 +239,58 @@ textarea,
   width: 25px;
 }
 
-.navlink {
+.navlink,
+.list-item {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 10px;
+}
+
+.navlink {
   font-size: 1.1rem;
   font-weight: 800;
 }
 
-button.navlink {
+.list-item {
   background: none;
   border: none;
-  transition: color ease-in-out 0.3s;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  padding: 3px 5px;
+  width: 100%;
+  cursor: pointer;
+  transition: all ease-in-out 0.3s;
 }
 
-button.navlink svg path {
+.list-item svg {
+  height: 20px;
+  width: 20px;
+}
+
+.list-item svg path {
   fill: var(--main-font-color);
   transition: fill ease-in-out 0.3s;
 }
 
 .link:hover,
 .navlink:hover,
-.navlink.active {
+.navlink.active,
+.list-item.active {
+  color: var(--accent-font-color);
+}
+
+.list-item:hover {
+  background: var(--transparent-light-blue);
   color: var(--accent-font-color);
 }
 
 .link:hover svg path,
 .navlink:hover svg path,
-.navlink.active svg path {
+.navlink.active svg path,
+.list-item:hover svg path,
+.list-item.active svg path {
   fill: var(--accent-font-color);
 }
 

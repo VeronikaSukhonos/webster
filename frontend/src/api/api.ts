@@ -69,8 +69,10 @@ api.interceptors.response.use(
         originalReq &&
         originalReq.url !== '/auth/login' &&
         originalReq.url !== '/auth/login-google' &&
-        originalReq.url !== '/auth/refresh'
+        !originalReq.retry
       ) {
+        originalReq.retry = true;
+
         if (!refreshPromise) {
           refreshPromise = refresh().then((res) => {
             refreshPromise = null;

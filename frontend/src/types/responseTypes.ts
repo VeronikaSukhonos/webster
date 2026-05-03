@@ -1,4 +1,4 @@
-interface UserResponse {
+export interface UserResponse {
   id: number;
   username: string;
   avatar: string;
@@ -14,7 +14,7 @@ export interface AuthUser extends UserResponse {
 
 export interface ProjectResponse {
   id: number;
-  author: Pick<UserResponse, 'id' | 'username' | 'avatar'>;
+  author: Pick<UserResponse, 'id' | 'username'>;
   title: string;
   preview: string;
   file: string | object;
@@ -26,7 +26,7 @@ export interface ProjectResponse {
 
 export interface TemplateResponse {
   id: number;
-  author: Pick<UserResponse, 'id' | 'username' | 'avatar'>;
+  author: Pick<UserResponse, 'id' | 'username'>;
   title: string;
   preview: string;
   file: string | object;

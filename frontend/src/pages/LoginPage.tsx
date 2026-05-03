@@ -5,9 +5,9 @@ import authApi from '@api/authApi';
 import { setAuthUser } from '@store/authSlice';
 
 import { Feedback } from '@components/Feedback';
-import { GoogleLogin } from '@components/GoogleLogin';
 import { PasswordField, TextField } from '@components/InputFields';
 import { MainButton } from '@components/MainButton';
+import { GoogleLogin } from '@components/users/GoogleLogin';
 
 import { useForm } from '@hooks/useForm';
 import { useAppDispatch, useAuth } from '@hooks/utilHooks';

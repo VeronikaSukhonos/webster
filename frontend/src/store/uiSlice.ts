@@ -7,6 +7,7 @@ import type { RootState } from './store';
 
 interface Modal {
   type:
+    | 'updateAvatar'
     | 'createProject'
     | 'createTemplate'
     | 'projectSettings'

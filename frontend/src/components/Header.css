@@ -22,12 +22,16 @@
   transition: ease-in-out 0.3s;
 }
 
+.header nav .logo-container {
+  display: flex;
+  flex-grow: 1;
+}
+
 .header nav .logo {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 10px;
-  flex-grow: 1;
   font-size: 1.7rem;
   line-height: 1;
 }
@@ -69,7 +73,7 @@
     gap: 20px;
   }
 
-  .header nav .logo {
+  .header nav .logo-container {
     flex-grow: 0;
   }
 

@@ -1,0 +1,43 @@
+.profile-avatar-container {
+  background: var(--opaque-container-color);
+  border: var(--main-border);
+  border-radius: 50%;
+  width: max-content;
+}
+
+.profile-avatar {
+  border-radius: 50%;
+  height: 120px;
+  width: 120px;
+  object-fit: cover;
+  transition: all ease-in-out 0.3s;
+}
+
+.profile-avatar.self {
+  cursor: pointer;
+}
+
+.profile-login {
+  color: var(--purple);
+  font-size: 1.7rem;
+  font-weight: 800;
+}
+
+.profile-email {
+  font-weight: bold;
+}
+
+.profile-description {
+  font-style: italic;
+}
+
+@media (max-width: 620px) {
+  .profile-avatar {
+    height: 100px;
+    width: 100px;
+  }
+
+  .profile-login {
+    font-size: 1.3rem;
+  }
+}

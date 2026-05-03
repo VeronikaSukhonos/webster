@@ -11,6 +11,7 @@ import {
   ProjectSettingsForm,
   TemplateSettingsForm,
 } from '@components/Forms';
+import { AvatarForm } from '@components/users/AvatarForm';
 
 import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
 
@@ -69,7 +70,12 @@ export const ModalWrapper = () => {
   useEffect(() => {
     if (modal) {
       setIsOpen(true);
-      if (modal.type === 'createProject')
+      if (modal.type === 'updateAvatar')
+        setModalContent({
+          title: 'Avatar',
+          children: <AvatarForm setIsOpen={setIsOpen} />,
+        });
+      else if (modal.type === 'createProject')
         setModalContent({
           title: 'New Project',
           children: (
@@ -77,6 +83,7 @@ export const ModalWrapper = () => {
               template={modal.template}
               isLoading={isLoading}
               setIsLoading={setIsLoading}
+              setIsOpen={setIsOpen}
             />
           ),
         });
@@ -88,6 +95,7 @@ export const ModalWrapper = () => {
               project={modal.project}
               isLoading={isLoading}
               setIsLoading={setIsLoading}
+              setIsOpen={setIsOpen}
             />
           ),
         });
@@ -99,6 +107,7 @@ export const ModalWrapper = () => {
               project={modal.project}
               isLoading={isLoading}
               setIsLoading={setIsLoading}
+              setIsOpen={setIsOpen}
             />
           ),
         });
@@ -110,6 +119,7 @@ export const ModalWrapper = () => {
               template={modal.template}
               isLoading={isLoading}
               setIsLoading={setIsLoading}
+              setIsOpen={setIsOpen}
             />
           ),
         });
@@ -121,6 +131,7 @@ export const ModalWrapper = () => {
               project={modal.project}
               isLoading={isLoading}
               setIsLoading={setIsLoading}
+              setIsOpen={setIsOpen}
             />
           ),
         });
@@ -132,6 +143,7 @@ export const ModalWrapper = () => {
               template={modal.template}
               isLoading={isLoading}
               setIsLoading={setIsLoading}
+              setIsOpen={setIsOpen}
             />
           ),
         });
@@ -143,6 +155,7 @@ export const ModalWrapper = () => {
               project={modal.project}
               isLoading={isLoading}
               setIsLoading={setIsLoading}
+              setIsOpen={setIsOpen}
             />
           ),
         });

@@ -134,3 +134,9 @@
 .main-button + .btn-tooltip * {
   padding: 3px 6px;
 }
+
+@media (max-width: 400px) {
+  .pagination-nav-button {
+    display: none;
+  }
+}

@@ -25,7 +25,7 @@ const EmailConfirmationPage = () => {
   const request = useForm(authRequestLinkParams, { email: '' }, true);
 
   useEffect(() => {
-    if (hasChecked.current || !token) return;
+    if (!token || hasChecked.current) return;
     hasChecked.current = true;
 
     authApi

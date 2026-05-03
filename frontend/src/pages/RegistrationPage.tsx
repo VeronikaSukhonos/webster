@@ -3,9 +3,9 @@ import { Link, Navigate } from 'react-router-dom';
 import authApi from '@api/authApi';
 
 import { Feedback } from '@components/Feedback';
-import { GoogleLogin } from '@components/GoogleLogin';
 import { PasswordField, TextField } from '@components/InputFields';
 import { MainButton } from '@components/MainButton';
+import { GoogleLogin } from '@components/users/GoogleLogin';
 
 import { useForm } from '@hooks/useForm';
 import { useAuth } from '@hooks/utilHooks';

@@ -59,12 +59,14 @@ export const Header = () => {
   return (
     <header className="header">
       <nav>
-        <Link className="logo" to="/">
-          <Logo />
-          <div className="app-name t-art">
-            Sket<span>Cherry</span>
-          </div>
-        </Link>
+        <div className="logo-container">
+          <Link className="logo" to="/">
+            <Logo />
+            <div className="app-name t-art">
+              Sket<span>Cherry</span>
+            </div>
+          </Link>
+        </div>
 
         {auth ? (
           <>
@@ -96,15 +98,15 @@ export const Header = () => {
                 />
               }
               items={[
-                <NavLink className="navlink" to={`/users/${auth?.id}`} end>
+                <NavLink className="list-item" to={`/users/${auth?.id}`} end>
                   <ProfileIcon />
                   <span>Profile</span>
                 </NavLink>,
-                <NavLink className="navlink" to="/settings">
+                <NavLink className="list-item" to="/settings">
                   <SettingsIcon />
                   <span>Settings</span>
                 </NavLink>,
-                <button className="navlink" type="button" onClick={logout}>
+                <button className="list-item" type="button" onClick={logout}>
                   <LogoutIcon />
                   <span>Log Out</span>
                 </button>,

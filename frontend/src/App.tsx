@@ -75,7 +75,7 @@ const App = () => {
   }, []);
 
   if (isLoading) return <Load />;
-  if (feedback.status === 'fail' && !feedback.message.toLowerCase().includes('refresh'))
+  if (feedback.status === 'fail' && !feedback.message.toLowerCase().includes('log in'))
     return (
       <>
         <Header />
@@ -100,7 +100,6 @@ const App = () => {
             <Route path="/password-reset" element={<PasswordResetPage />} />
             <Route path="/password-reset/:token" element={<PasswordResetPage />} />
 
-            <Route path="/users" element={<UserProfilePage />} />
             <Route path="/users/:userId" element={<UserProfilePage />} />
             <Route path="/settings" element={<UserSettingsPage />} />
             <Route path="/account-deletion" element={<UserAccountDeletionPage />} />

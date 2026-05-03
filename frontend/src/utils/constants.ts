@@ -1,0 +1,1 @@
+export const DEFAULT_PROJECT_LIST_LIMIT = 20;

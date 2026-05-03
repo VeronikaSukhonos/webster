@@ -6,11 +6,11 @@ import api from './api';
 
 class TemplatesApi {
   async getBuiltInTemplates(query?: { page?: number; limit?: number; title?: string }) {
-    return await api.get(`/templates/built/${createQuery(query)}`);
+    return await api.get(`/templates/${createQuery(query)}`);
   }
 
   async getOwnTemplates(query?: { page?: number; limit?: number; title?: string }) {
-    return await api.get(`/templates/${createQuery(query)}`);
+    return await api.get(`/templates/own/${createQuery(query)}`);
   }
 
   async getTemplate(id: number) {
