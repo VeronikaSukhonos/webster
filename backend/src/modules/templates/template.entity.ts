@@ -34,6 +34,9 @@ export class Template {
   @Column({ type: 'varchar', length: 50 })
   type!: string;
 
+  @Column({ type: 'boolean', default: false })
+  isBuiltIn!: boolean;
+
   @OneToMany(() => Project, (project) => project.template)
   projects!: Project[];
 }

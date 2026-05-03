@@ -23,7 +23,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { TemplatesService } from './templates.service';
-import { CreateTemplateDto, UpdateTemplateDto } from './dtos';
+import { CreateTemplateDto, TemplateQueryDto, UpdateTemplateDto } from './dtos';
 import { Public, User } from '../../common/decorators';
 import { AtLeastOneParamPipe, ParseIntWithMessagePipe } from '../../common/pipes';
 import type { ApiResponse } from '../../common/types';
@@ -34,7 +34,11 @@ export class TemplatesController {
   constructor(private readonly templatesService: TemplatesService) {}
 
   @ApiOperation({ summary: 'Templates fetch' })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 10 })
+  @ApiQuery({ name: 'search', required: false, example: 'instagram' })
   @ApiQuery({ name: 'type', required: false, example: 'instagram-post' })
+  @ApiQuery({ name: 'source', required: false, enum: ['all', 'built-in', 'custom'] })
   @ApiOkResponse({
     description: 'Fetched templates successfully',
     example: {
@@ -49,37 +53,50 @@ export class TemplatesController {
             file: 'http://localhost:3000/files/templates/template.json',
             createDate: '2026-04-28T18:17:06.813Z',
             type: 'invitation',
+            isBuiltIn: true,
           },
         ],
+        pagination: { page: 1, limit: 10, total: 1, pages: 1 },
+        filters: [{ search: 'instagram' }, { type: 'instagram-post' }, { source: 'built-in' }],
       },
     },
   })
   @Public()
   @Get()
   @HttpCode(HttpStatus.OK)
-  async getAll(@Query('type') type?: string): Promise<ApiResponse> {
+  async getAll(
+    @Query() query: TemplateQueryDto,
+    @User('id') authId?: number,
+  ): Promise<ApiResponse> {
     return {
       message: 'Fetched templates successfully',
-      data: { templates: await this.templatesService.getAll(type) },
+      data: await this.templatesService.getAll(query, authId),
     };
   }
 
   @ApiOperation({ summary: 'Own templates fetch' })
   @ApiBearerAuth()
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 10 })
+  @ApiQuery({ name: 'search', required: false, example: 'resume' })
+  @ApiQuery({ name: 'type', required: false, example: 'resume' })
   @ApiOkResponse({
     description: 'Fetched own templates successfully',
     example: {
       statusCode: 200,
       message: 'Fetched own templates successfully',
-      data: { templates: [] },
+      data: { templates: [], pagination: { page: 1, limit: 10, total: 0, pages: 0 } },
     },
   })
   @Get('own')
   @HttpCode(HttpStatus.OK)
-  async getAllOwn(@User('id') authId: number): Promise<ApiResponse> {
+  async getAllOwn(
+    @User('id') authId: number,
+    @Query() query: TemplateQueryDto,
+  ): Promise<ApiResponse> {
     return {
       message: 'Fetched own templates successfully',
-      data: { templates: await this.templatesService.getAllByAuthor(authId) },
+      data: await this.templatesService.getAllByAuthor(authId, query),
     };
   }
 
@@ -98,6 +115,7 @@ export class TemplatesController {
           file: 'http://localhost:3000/files/templates/template.json',
           createDate: '2026-04-28T18:17:06.813Z',
           type: 'invitation',
+          isBuiltIn: true,
         },
       },
     },
@@ -131,6 +149,7 @@ export class TemplatesController {
           file: 'http://localhost:3000/files/templates/template.json',
           createDate: '2026-04-28T18:17:06.813Z',
           type: 'invitation',
+          isBuiltIn: false,
         },
       },
     },
@@ -170,6 +189,7 @@ export class TemplatesController {
           file: 'http://localhost:3000/files/templates/template.json',
           createDate: '2026-04-28T18:17:06.813Z',
           type: 'invitation',
+          isBuiltIn: false,
         },
       },
     },

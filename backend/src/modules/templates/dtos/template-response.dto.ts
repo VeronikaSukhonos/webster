@@ -21,6 +21,9 @@ export class TemplateResponseDto {
   readonly type!: string;
 
   @Expose()
+  readonly isBuiltIn!: boolean;
+
+  @Expose()
   @Type(() => UserProfileResponseDto)
   readonly author?: UserProfileResponseDto;
 }

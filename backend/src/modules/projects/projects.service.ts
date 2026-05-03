@@ -3,8 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { Repository } from 'typeorm';
 import { Project } from './project.entity';
-import { CreateProjectDto, ProjectResponseDto, UpdateProjectDto } from './dtos';
+import { CreateProjectDto, ProjectQueryDto, ProjectResponseDto, UpdateProjectDto } from './dtos';
 import { Template } from '../templates/template.entity';
+import type { QueryResponse } from '../../common/types';
 
 @Injectable()
 export class ProjectsService {
@@ -15,24 +16,55 @@ export class ProjectsService {
     private templatesRepository: Repository<Template>,
   ) {}
 
-  async getAllPublic(): Promise<ProjectResponseDto[]> {
-    const projects = await this.projectsRepository.find({
-      where: { isPublic: true },
-      relations: { author: true, template: true },
-      order: { editDate: 'DESC' },
-    });
+  async getAllPublic(query: ProjectQueryDto): Promise<QueryResponse> {
+    const { page, limit, search } = query;
+    const queryBuilder = this.projectsRepository
+      .createQueryBuilder('project')
+      .leftJoinAndSelect('project.author', 'author')
+      .leftJoinAndSelect('project.template', 'template')
+      .where('project.isPublic = :isPublic', { isPublic: true });
 
-    return plainToInstance(ProjectResponseDto, projects);
+    if (search) {
+      queryBuilder.andWhere('LOWER(project.title) LIKE :search', {
+        search: `%${search.toLowerCase()}%`,
+      });
+    }
+
+    const [projects, total] = await queryBuilder
+      .orderBy('project.editDate', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      projects: plainToInstance(ProjectResponseDto, projects),
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    };
   }
 
-  async getAllByAuthor(authorId: number): Promise<ProjectResponseDto[]> {
-    const projects = await this.projectsRepository.find({
-      where: { authorId },
-      relations: { template: true },
-      order: { editDate: 'DESC' },
-    });
+  async getAllByAuthor(authorId: number, query: ProjectQueryDto): Promise<QueryResponse> {
+    const { page, limit, search } = query;
+    const queryBuilder = this.projectsRepository
+      .createQueryBuilder('project')
+      .leftJoinAndSelect('project.template', 'template')
+      .where('project.authorId = :authorId', { authorId });
 
-    return plainToInstance(ProjectResponseDto, projects);
+    if (search) {
+      queryBuilder.andWhere('LOWER(project.title) LIKE :search', {
+        search: `%${search.toLowerCase()}%`,
+      });
+    }
+
+    const [projects, total] = await queryBuilder
+      .orderBy('project.editDate', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      projects: plainToInstance(ProjectResponseDto, projects),
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    };
   }
 
   async getOne(id: number, authId?: number): Promise<ProjectResponseDto> {

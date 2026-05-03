@@ -3,7 +3,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { Repository } from 'typeorm';
 import { Template } from './template.entity';
-import { CreateTemplateDto, TemplateResponseDto, UpdateTemplateDto } from './dtos';
+import {
+  CreateTemplateDto,
+  TemplateQueryDto,
+  TemplateResponseDto,
+  UpdateTemplateDto,
+} from './dtos';
+import type { QueryResponse } from '../../common/types';
 
 @Injectable()
 export class TemplatesService {
@@ -12,23 +18,75 @@ export class TemplatesService {
     private templatesRepository: Repository<Template>,
   ) {}
 
-  async getAll(type?: string): Promise<TemplateResponseDto[]> {
-    const templates = await this.templatesRepository.find({
-      where: { ...(type && { type }) },
-      relations: { author: true },
-      order: { createDate: 'DESC' },
-    });
+  async getAll(query: TemplateQueryDto, authId?: number): Promise<QueryResponse> {
+    const { page, limit, search, source, type } = query;
+    const queryBuilder = this.templatesRepository
+      .createQueryBuilder('template')
+      .leftJoinAndSelect('template.author', 'author');
 
-    return plainToInstance(TemplateResponseDto, templates);
+    if (search) {
+      queryBuilder.andWhere('LOWER(template.title) LIKE :search', {
+        search: `%${search.toLowerCase()}%`,
+      });
+    }
+    if (type) {
+      queryBuilder.andWhere('template.type = :type', { type });
+    }
+    if (source === 'built-in') {
+      queryBuilder.andWhere('template.isBuiltIn = :isBuiltIn', { isBuiltIn: true });
+    } else if (source === 'custom') {
+      if (authId) {
+        queryBuilder.andWhere('template.authorId = :authId', { authId });
+      } else {
+        queryBuilder.andWhere('1 = 0');
+      }
+    } else if (authId) {
+      queryBuilder.andWhere('(template.isBuiltIn = true OR template.authorId = :authId)', {
+        authId,
+      });
+    } else {
+      queryBuilder.andWhere('template.isBuiltIn = true');
+    }
+
+    const [templates, total] = await queryBuilder
+      .orderBy('template.createDate', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      templates: plainToInstance(TemplateResponseDto, templates),
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+      filters: [{ search: search ?? null }, { type: type ?? null }, { source }],
+    };
   }
 
-  async getAllByAuthor(authorId: number): Promise<TemplateResponseDto[]> {
-    const templates = await this.templatesRepository.find({
-      where: { authorId },
-      order: { createDate: 'DESC' },
-    });
+  async getAllByAuthor(authorId: number, query: TemplateQueryDto): Promise<QueryResponse> {
+    const { page, limit, search, type } = query;
+    const queryBuilder = this.templatesRepository
+      .createQueryBuilder('template')
+      .where('template.authorId = :authorId', { authorId });
 
-    return plainToInstance(TemplateResponseDto, templates);
+    if (search) {
+      queryBuilder.andWhere('LOWER(template.title) LIKE :search', {
+        search: `%${search.toLowerCase()}%`,
+      });
+    }
+    if (type) {
+      queryBuilder.andWhere('template.type = :type', { type });
+    }
+
+    const [templates, total] = await queryBuilder
+      .orderBy('template.createDate', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      templates: plainToInstance(TemplateResponseDto, templates),
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+      filters: [{ search: search ?? null }, { type: type ?? null }, { source: 'custom' }],
+    };
   }
 
   async getOne(id: number): Promise<TemplateResponseDto> {
@@ -44,7 +102,7 @@ export class TemplatesService {
 
   async createOne(authorId: number, dto: CreateTemplateDto): Promise<TemplateResponseDto> {
     const template = await this.templatesRepository.save(
-      this.templatesRepository.create({ ...dto, authorId }),
+      this.templatesRepository.create({ ...dto, authorId, isBuiltIn: dto.isBuiltIn ?? false }),
     );
 
     return await this.getOne(template.id);

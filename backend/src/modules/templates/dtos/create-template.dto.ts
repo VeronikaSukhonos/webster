@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 import { SanitizeString } from '../../../common/decorators';
 
 export class CreateTemplateDto {
@@ -23,4 +23,9 @@ export class CreateTemplateDto {
   @IsNotEmpty({ message: 'type cannot be empty' })
   @SanitizeString('lower')
   readonly type!: string;
+
+  @ApiProperty({ required: false, default: false })
+  @IsOptional()
+  @IsBoolean({ message: 'isBuiltIn must be a boolean value' })
+  readonly isBuiltIn?: boolean;
 }

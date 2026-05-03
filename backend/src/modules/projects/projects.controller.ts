@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -18,10 +19,11 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
-import { CreateProjectDto, UpdateProjectDto } from './dtos';
+import { CreateProjectDto, ProjectQueryDto, UpdateProjectDto } from './dtos';
 import { Public, User } from '../../common/decorators';
 import { AtLeastOneParamPipe, ParseIntWithMessagePipe } from '../../common/pipes';
 import type { ApiResponse } from '../../common/types';
@@ -32,6 +34,9 @@ export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
   @ApiOperation({ summary: 'Public projects fetch' })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 10 })
+  @ApiQuery({ name: 'search', required: false, example: 'instagram' })
   @ApiOkResponse({
     description: 'Fetched public projects successfully',
     example: {
@@ -51,35 +56,42 @@ export class ProjectsController {
             templateId: 1,
           },
         ],
+        pagination: { page: 1, limit: 10, total: 1, pages: 1 },
       },
     },
   })
   @Public()
   @Get('public')
   @HttpCode(HttpStatus.OK)
-  async getAllPublic(): Promise<ApiResponse> {
+  async getAllPublic(@Query() query: ProjectQueryDto): Promise<ApiResponse> {
     return {
       message: 'Fetched public projects successfully',
-      data: { projects: await this.projectsService.getAllPublic() },
+      data: await this.projectsService.getAllPublic(query),
     };
   }
 
   @ApiOperation({ summary: 'Own projects fetch' })
   @ApiBearerAuth()
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 10 })
+  @ApiQuery({ name: 'search', required: false, example: 'spring' })
   @ApiOkResponse({
     description: 'Fetched projects successfully',
     example: {
       statusCode: 200,
       message: 'Fetched projects successfully',
-      data: { projects: [] },
+      data: { projects: [], pagination: { page: 1, limit: 10, total: 0, pages: 0 } },
     },
   })
   @Get()
   @HttpCode(HttpStatus.OK)
-  async getAllOwn(@User('id') authId: number): Promise<ApiResponse> {
+  async getAllOwn(
+    @User('id') authId: number,
+    @Query() query: ProjectQueryDto,
+  ): Promise<ApiResponse> {
     return {
       message: 'Fetched projects successfully',
-      data: { projects: await this.projectsService.getAllByAuthor(authId) },
+      data: await this.projectsService.getAllByAuthor(authId, query),
     };
   }
 

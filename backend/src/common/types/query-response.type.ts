@@ -2,6 +2,7 @@ interface PaginationResponse {
   page: number;
   limit: number;
   total: number;
+  pages: number;
 }
 
 interface SortResponse {
@@ -10,12 +11,12 @@ interface SortResponse {
 }
 
 interface FilterResponse {
-  [param: string]: any;
+  [param: string]: unknown;
 }
 
 export interface QueryResponse {
   pagination?: PaginationResponse;
   sort?: SortResponse;
   filters?: FilterResponse[];
-  [entity: string]: any;
+  [entity: string]: unknown;
 }
