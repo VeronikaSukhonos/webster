@@ -18,7 +18,7 @@ TODO
 All you need preinstalled is [Docker](https://www.docker.com/) (and we recommend to have [Node.js](https://nodejs.org/en)).
 
 - Backend: Nest.js, PostgreSQL, TypeORM, Swagger, JWT, Google APIs, Nodemailer, Multer
-- Frontend: React, Vite, Redux Toolkit, CSS, Konva, Zod, Axios
+- Frontend: React, Vite, Redux Toolkit, CSS, Konva, Zod, Axios, React Aria
 - Docker
 
 ## How to use

@@ -113,6 +113,10 @@ button:disabled {
   pointer-events: none;
 }
 
+label {
+  cursor: pointer;
+}
+
 hr {
   background: var(--white);
   border: none;
@@ -236,7 +240,8 @@ textarea,
 }
 
 .link svg {
-  width: 25px;
+  height: 24px;
+  width: auto;
 }
 
 .navlink,
@@ -267,6 +272,7 @@ textarea,
 .list-item svg {
   height: 20px;
   width: 20px;
+  flex-shrink: 0;
 }
 
 .list-item svg path {

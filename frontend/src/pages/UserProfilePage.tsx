@@ -72,7 +72,7 @@ const UserProfilePage = () => {
     setAreProjectsLoading(true);
     (userId === auth?.id
       ? projectsApi.getOwnProjects(pagination)
-      : projectsApi.getPublicProjects({ ...pagination, author: userId })
+      : projectsApi.getPublicProjects({ ...pagination, authorId: userId })
     )
       .then(({ data: res }) => {
         setAreProjectsLoading(false);

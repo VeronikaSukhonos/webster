@@ -5,12 +5,14 @@ import { createQuery } from '@utils/createQuery';
 import api from './api';
 
 class TemplatesApi {
-  async getBuiltInTemplates(query?: { page?: number; limit?: number; title?: string }) {
+  async getTemplates(query?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    type?: string;
+    source?: 'all' | 'built-in' | 'custom';
+  }) {
     return await api.get(`/templates/${createQuery(query)}`);
-  }
-
-  async getOwnTemplates(query?: { page?: number; limit?: number; title?: string }) {
-    return await api.get(`/templates/own/${createQuery(query)}`);
   }
 
   async getTemplate(id: number) {

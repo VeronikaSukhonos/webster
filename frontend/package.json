@@ -19,6 +19,7 @@
     "date-fns": "^4.1.0",
     "konva": "^10.2.5",
     "react": "^19.2.0",
+    "react-aria-components": "^1.17.0",
     "react-dom": "^19.2.0",
     "react-konva": "^19.2.3",
     "react-multi-carousel": "^2.8.6",
