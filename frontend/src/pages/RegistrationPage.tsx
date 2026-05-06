@@ -58,7 +58,9 @@ const RegistrationPage = () => {
 
         <Feedback feedback={feedback} />
 
-        <MainButton content="Register" type="submit" upperText wide disabled={isLoading} />
+        <MainButton type="submit" disabled={isLoading} upperText wide>
+          Register
+        </MainButton>
 
         <div className="f-note">
           <span>Already creating with us? </span>

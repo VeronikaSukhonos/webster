@@ -93,7 +93,9 @@ const EmailConfirmationPage = () => {
 
         <Feedback feedback={request.feedback} />
 
-        <MainButton content="Send Link" type="submit" upperText wide disabled={request.isLoading} />
+        <MainButton type="submit" disabled={request.isLoading} upperText wide>
+          Send Link
+        </MainButton>
 
         <div className="f-note">
           <Link className="link" to="/login">

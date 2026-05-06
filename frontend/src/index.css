@@ -36,9 +36,16 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  outline: none !important;
+}
+
+:focus-visible {
+  outline: var(--light-blue) !important;
+  box-shadow: 0 0 2px 2px var(--light-blue);
 }
 
 html {
+  background: var(--light-blue);
   scrollbar-width: thin;
   scrollbar-color: var(--purple) var(--light-blue);
 }
@@ -103,24 +110,22 @@ button {
   color: var(--main-font-color);
 }
 
-button:not(:disabled) {
+button:not(:disabled),
+label:not(.disabled) {
   cursor: pointer;
 }
 
-button:disabled {
+button:disabled,
+.disabled {
   opacity: 0.75;
   cursor: auto;
   pointer-events: none;
 }
 
-label {
-  cursor: pointer;
-}
-
 hr {
   background: var(--white);
   border: none;
-  height: 2px;
+  height: 1px;
 }
 
 ul {
@@ -244,59 +249,24 @@ textarea,
   width: auto;
 }
 
-.navlink,
-.list-item {
+.navlink {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 10px;
-}
-
-.navlink {
   font-size: 1.1rem;
   font-weight: 800;
 }
 
-.list-item {
-  background: none;
-  border: none;
-  border-radius: 10px;
-  font-size: 1.05rem;
-  font-weight: 700;
-  padding: 3px 5px;
-  width: 100%;
-  cursor: pointer;
-  transition: all ease-in-out 0.3s;
-}
-
-.list-item svg {
-  height: 20px;
-  width: 20px;
-  flex-shrink: 0;
-}
-
-.list-item svg path {
-  fill: var(--main-font-color);
-  transition: fill ease-in-out 0.3s;
-}
-
 .link:hover,
 .navlink:hover,
-.navlink.active,
-.list-item.active {
-  color: var(--accent-font-color);
-}
-
-.list-item:hover {
-  background: var(--transparent-light-blue);
+.navlink.active {
   color: var(--accent-font-color);
 }
 
 .link:hover svg path,
 .navlink:hover svg path,
-.navlink.active svg path,
-.list-item:hover svg path,
-.list-item.active svg path {
+.navlink.active svg path {
   fill: var(--accent-font-color);
 }
 
@@ -340,6 +310,10 @@ textarea,
   font-size: 0.95rem;
   font-weight: 500;
   text-align: center;
+}
+
+.f-note.faded {
+  color: var(--dark-blue);
 }
 
 .feedback {

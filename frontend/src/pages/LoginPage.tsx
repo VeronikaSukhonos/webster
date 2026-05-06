@@ -71,7 +71,9 @@ const LoginPage = () => {
           </div>
         )}
 
-        <MainButton content="Log in" type="submit" upperText wide disabled={isLoading} />
+        <MainButton type="submit" disabled={isLoading} upperText wide>
+          Log in
+        </MainButton>
 
         <div className="f-group">
           <div className="f-note">

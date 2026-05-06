@@ -71,13 +71,9 @@ const PasswordResetPage = () => {
 
           <Feedback feedback={reset.feedback} />
 
-          <MainButton
-            content="Reset Password"
-            type="submit"
-            upperText
-            wide
-            disabled={reset.isLoading}
-          />
+          <MainButton type="submit" disabled={reset.isLoading} upperText wide>
+            Reset Password
+          </MainButton>
 
           <div className="f-group">
             {reset.feedback.status === 'fail' && reset.feedback.message.includes('link') && (
@@ -109,7 +105,9 @@ const PasswordResetPage = () => {
 
         <Feedback feedback={request.feedback} />
 
-        <MainButton content="Send Link" type="submit" upperText wide disabled={request.isLoading} />
+        <MainButton type="submit" disabled={request.isLoading} upperText wide>
+          Send Link
+        </MainButton>
 
         <div className="f-note">
           <Link className="link" to="/login">

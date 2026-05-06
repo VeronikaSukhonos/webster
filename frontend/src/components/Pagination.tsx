@@ -16,26 +16,23 @@ interface PageButtonProps {
 const PageButton = ({ page, current, onClick, disabled = false }: PageButtonProps) => {
   return (
     <MainButton
-      content={page.toString()}
       onClick={() => onClick(page)}
       disabled={disabled || page === current}
       color={page === current ? 'purple' : 'white'}
       square
       mini
       style={{ paddingTop: '4px' }}
-    />
+    >
+      {page.toString()}
+    </MainButton>
   );
 };
 
 const DotsButton = () => {
   return (
-    <MainButton
-      content={<DotsIcon style={{ transform: 'rotate(-90deg)' }} />}
-      disabled
-      color="white"
-      square
-      mini
-    />
+    <MainButton disabled color="white" square mini>
+      <DotsIcon style={{ transform: 'rotate(-90deg)' }} />
+    </MainButton>
   );
 };
 
@@ -103,24 +100,26 @@ export const Pagination = ({ totalPages: tp, disabled = false }: PaginationProps
   return (
     <div className="row all-center mini-gap" style={{ maxWidth: 'max-content' }}>
       <MainButton
-        content={<ChevronIcon style={{ padding: '2px' }} />}
         onClick={() => selectPage(page - 1)}
         disabled={page <= 1 || disabled}
         color="white"
         square
         mini
         classes="pagination-nav-button"
-      />
+      >
+        <ChevronIcon style={{ padding: '2px' }} />
+      </MainButton>
       {pageOptions}
       <MainButton
-        content={<ChevronIcon style={{ transform: 'rotate(180deg)', padding: '2px' }} />}
         onClick={() => selectPage(page + 1)}
         disabled={page >= tp || disabled}
         color="white"
         square
         mini
         classes="pagination-nav-button"
-      />
+      >
+        <ChevronIcon style={{ transform: 'rotate(180deg)', padding: '2px' }} />
+      </MainButton>
     </div>
   );
 };

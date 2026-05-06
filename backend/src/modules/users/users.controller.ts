@@ -114,6 +114,18 @@ export class UsersController {
     example: {
       statusCode: 200,
       message: 'Nothing has changed',
+      data: {
+        user: {
+          id: 1,
+          username: 'user',
+          email: 'user@gmail.com',
+          avatar: 'http://localhost:3000/files/avatars/default-avatar.png',
+          about: 'Love creating postcards',
+          registerDate: '2026-04-27T18:17:06.813Z',
+          hasPassword: true,
+          googleId: null,
+        },
+      },
     },
   })
   @ApiBadRequestResponse({
@@ -144,16 +156,12 @@ export class UsersController {
     @Body(new AtLeastOneParamPipe(['username', 'about']))
     dto: UpdateUserProfileDto,
   ): Promise<ApiResponse> {
-    const updated = await this.usersService.updateOneProfile(authId, dto);
+    const { user, updated } = await this.usersService.updateOneProfile(authId, dto);
 
-    if (updated) {
-      return {
-        message: 'Updated profile successfully',
-        data: { user: updated },
-      };
-    } else {
-      return { message: 'Nothing has changed' };
-    }
+    return {
+      message: updated ? 'Updated profile successfully' : 'Nothing has changed',
+      data: { user },
+    };
   }
 
   @ApiOperation({

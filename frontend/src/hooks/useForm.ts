@@ -81,11 +81,11 @@ export const useForm = <T>(
     else setFeedback(message, 'fail');
   };
 
-  const clearForm = () => {
+  const clearForm = (params?: T) => {
     setIsLoading(false);
     setFeedback();
     setErrors({});
-    setParams(initialValues);
+    setParams(params ?? initialValues);
   };
 
   return {

@@ -1,10 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+// import { useEffect, useMemo, useRef, useState } from 'react';
+// import { MainButton } from '@components/MainButton';
+import { useState } from 'react';
 
-import { MainButton } from '@components/MainButton';
-
-import { ArrowIcon, EyeCloseIcon, EyeOpenIcon } from '@assets/index';
-
-import { useClickOutside } from '@hooks/useClickOutside';
+import { EyeCloseIcon, EyeOpenIcon } from '@assets/index';
 
 import type { FakeEvent } from '@mytypes/utilTypes';
 
@@ -126,7 +124,7 @@ export const PasswordField = ({
           placeholder={placeholder}
           autoComplete={autoComplete}
         />
-        <button className="icon-button" type="button">
+        <button className="icon-button" type="button" aria-label="Password Display">
           {pwOpen ? (
             <EyeOpenIcon onClick={() => setPwOpen(false)} />
           ) : (

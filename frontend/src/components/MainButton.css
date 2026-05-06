@@ -17,15 +17,14 @@
   max-width: 100%;
   padding: 6px 10px 3px 10px;
   text-align: center;
-  transition:
-    background-position ease-in-out 0.5s,
-    transform ease-in-out 0.5s;
   -webkit-user-select: none;
   user-select: none;
   position: relative;
+  transition: all ease-in-out 0.5s;
 }
 
-.main-button:hover:not(:disabled) {
+.main-button:hover:not(:disabled),
+.main-button:hover:not(.disabled) {
   background-position: center right;
   transform: scale(1.03);
 }
@@ -34,6 +33,7 @@
   height: 18px;
   width: 18px;
   padding-bottom: 3px;
+  flex-shrink: 0;
   transition: transform ease-in-out 0.5s;
 }
 
@@ -41,7 +41,8 @@
   transition: all ease-in-out 0.5s;
 }
 
-.main-button:hover:not(:disabled) .live-icon {
+.main-button:hover:not(:disabled) .live-icon,
+.main-button:hover:not(.disabled) .live-icon {
   transform: rotate(15deg);
 }
 

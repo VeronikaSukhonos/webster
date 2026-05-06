@@ -89,7 +89,7 @@ export class UsersService {
   async updateOneProfile(
     id: number,
     dto: UpdateUserProfileDto,
-  ): Promise<UserProfileResponseDto | void> {
+  ): Promise<{ user: UserProfileResponseDto; updated: boolean }> {
     const user = await this.getOne({ id }, true);
     let updated = false;
 
@@ -109,13 +109,15 @@ export class UsersService {
       user.about = dto.about;
       updated = true;
     }
-    if (!updated) return;
+    if (updated) await this.usersRepository.save(user);
 
-    await this.usersRepository.save(user);
-    return plainToInstance(AuthResponseDto, {
-      ...user,
-      hasPassword: user.password ? true : false,
-    });
+    return {
+      user: plainToInstance(AuthResponseDto, {
+        ...user,
+        hasPassword: user.password ? true : false,
+      }),
+      updated,
+    };
   }
 
   async updateOnePassword(id: number, dto: UpdateUserPasswordDto): Promise<void> {

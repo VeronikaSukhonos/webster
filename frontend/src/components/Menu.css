@@ -1,0 +1,85 @@
+.popover {
+  display: flex;
+  flex-direction: column;
+  background: var(--opaque-container-color);
+  border: var(--main-border);
+  border-radius: 17px;
+  box-shadow: var(--shadow);
+  padding: 5px;
+  min-width: max-content;
+  max-width: 250px;
+  transition:
+    transform 0.3s,
+    opacity 0.3s;
+
+  &[data-entering],
+  &[data-exiting] {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.menu-item,
+.m-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.menu-item {
+  background: none;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  padding: 3px 5px;
+  cursor: pointer;
+  transition: all ease-in-out 0.3s;
+}
+
+.menu-item:has(.m-row) {
+  padding: 0;
+}
+
+.m-row {
+  padding: 3px 5px;
+}
+
+.menu-item svg {
+  height: 20px;
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.menu-item svg path {
+  fill: var(--main-font-color);
+  transition: fill ease-in-out 0.3s;
+}
+
+.menu-item:hover,
+.menu-item:focus-visible {
+  background: var(--transparent-light-blue);
+  box-shadow: none;
+  color: var(--accent-font-color);
+  outline: none;
+}
+
+.menu-item:hover a,
+.menu-item:focus-visible a,
+.menu-item .active {
+  color: var(--accent-font-color);
+}
+
+.menu-item:hover svg path,
+.menu-item:focus-visible svg path,
+.menu-item .active svg path {
+  fill: var(--accent-font-color);
+}

@@ -8,7 +8,8 @@ interface FeedbackProps {
 }
 
 export const Feedback = ({ feedback: { message, status }, showIcon = false }: FeedbackProps) => {
-  if (!message) return;
+  if (!message || !status) return;
+
   return (
     <>
       <p className={'feedback ' + status}>{message}</p>

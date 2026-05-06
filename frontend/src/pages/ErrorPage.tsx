@@ -25,7 +25,7 @@ const ErrorPage = ({ reason = 'not found', entity = 'page' }: ErrorPageProps) =>
           <div style={errorHeader}>
             A sudden stroke disrupted <span style={{ whiteSpace: 'nowrap' }}>the sketch...</span>
           </div>
-          <div className="t-center">{reason}</div>
+          <div>{reason}</div>
         </>
       )}
     </div>

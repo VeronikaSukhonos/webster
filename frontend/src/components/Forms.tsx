@@ -14,57 +14,69 @@ interface FormTemplateProps extends FormProps {
   template?: Omit<TemplateResponse, 'file'>;
 }
 
-export const CreateProjectForm = ({
-  setIsOpen,
-  template,
-  isLoading,
-  setIsLoading,
-}: FormTemplateProps) => {
+export const CreateProjectForm = (
+  {
+    // setIsOpen,
+    // template,
+    // isLoading,
+    // setIsLoading,
+  }: FormTemplateProps,
+) => {
   return <div>Forms</div>;
 };
 
-export const CreateTemplateForm = ({
-  setIsOpen,
-  project,
-  isLoading,
-  setIsLoading,
-}: FormProjectProps) => {
+export const CreateTemplateForm = (
+  {
+    // setIsOpen,
+    // project,
+    // isLoading,
+    // setIsLoading,
+  }: FormProjectProps,
+) => {
   return <div>Forms</div>;
 };
 
-export const ProjectSettingsForm = ({
-  setIsOpen,
-  project,
-  isLoading,
-  setIsLoading,
-}: FormProjectProps) => {
+export const ProjectSettingsForm = (
+  {
+    // setIsOpen,
+    // project,
+    // isLoading,
+    // setIsLoading,
+  }: FormProjectProps,
+) => {
   return <div>Forms</div>;
 };
 
-export const TemplateSettingsForm = ({
-  setIsOpen,
-  template,
-  isLoading,
-  setIsLoading,
-}: FormTemplateProps) => {
+export const TemplateSettingsForm = (
+  {
+    // setIsOpen,
+    // template,
+    // isLoading,
+    // setIsLoading,
+  }: FormTemplateProps,
+) => {
   return <div>Forms</div>;
 };
 
-export const DeletionForm = ({
-  setIsOpen,
-  project,
-  template,
-  isLoading,
-  setIsLoading,
-}: FormProjectProps | FormTemplateProps) => {
+export const DeletionForm = (
+  {
+    // setIsOpen,
+    // project,
+    // template,
+    // isLoading,
+    // setIsLoading,
+  }: FormProjectProps | FormTemplateProps,
+) => {
   return <div>Forms</div>;
 };
 
-export const ExportProjectForm = ({
-  setIsOpen,
-  project,
-  isLoading,
-  setIsLoading,
-}: FormProjectProps) => {
+export const ExportProjectForm = (
+  {
+    // setIsOpen,
+    // project,
+    // isLoading,
+    // setIsLoading,
+  }: FormProjectProps,
+) => {
   return <div>Forms</div>;
 };

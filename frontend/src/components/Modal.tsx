@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { Dialog } from 'react-aria-components/Dialog';
+import {
+  Modal as RACModal,
+  type ModalOverlayProps as RACModalProps,
+} from 'react-aria-components/Modal';
 
 import { selectUi, setModal } from '@store/uiSlice';
 
@@ -17,7 +21,7 @@ import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
 
 import './Modal.css';
 
-interface ModalProps {
+interface ModalProps extends Omit<RACModalProps, 'isOpen' | 'children'> {
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   title?: string;
@@ -33,43 +37,45 @@ export const Modal = ({
   children,
   isCloseDisabled,
   onClose,
+  ...props
 }: ModalProps) => {
-  return createPortal(
-    <div
-      className={'modal-container col all-center ' + (isOpen ? 'open' : 'close')}
-      onClick={() => {
-        if (!isCloseDisabled) {
-          setIsOpen(false);
-          if (onClose) onClose();
-        }
-      }}
+  useEffect(() => {
+    if (!isOpen && onClose) onClose();
+  }, [isOpen]);
+
+  return (
+    <RACModal
+      className="modal-container col all-center"
+      isOpen={isOpen}
+      onOpenChange={setIsOpen}
+      isDismissable={!isCloseDisabled}
+      isKeyboardDismissDisabled={isCloseDisabled}
+      {...props}
     >
-      <div
-        className="modal-content col box pd-box scroll"
-        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-      >
+      <Dialog className="modal-content col box pd-box scroll" aria-label={title}>
         {title && <h2 className="content-title t-art t-center">{title}</h2>}
         {children}
-      </div>
-    </div>,
-    document.getElementById('portal') as HTMLDivElement,
+      </Dialog>
+    </RACModal>
   );
 };
+
+interface ModalContent {
+  title: string;
+  children: React.ReactNode;
+}
 
 export const ModalWrapper = () => {
   const dispatch = useAppDispatch();
 
   const modal = useAppSelector(selectUi.modal);
   const [isOpen, setIsOpen] = useState(false);
-  const [modalContent, setModalContent] = useState<{ title: string; children: React.ReactNode }>({
-    title: '',
-    children: <></>,
-  });
+  const initialContent = { title: '', children: <></> };
+  const [modalContent, setModalContent] = useState<ModalContent>(initialContent);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (modal) {
-      setIsOpen(true);
       if (modal.type === 'updateAvatar')
         setModalContent({
           title: 'Avatar',
@@ -159,6 +165,7 @@ export const ModalWrapper = () => {
             />
           ),
         });
+      setIsOpen(true);
     }
   }, [modal]);
 

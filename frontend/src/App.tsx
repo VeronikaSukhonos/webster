@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react';
-import { Outlet, Route, Routes } from 'react-router-dom';
+import { RouterProvider } from 'react-aria-components';
+import { Outlet, Route, Routes, useNavigate } from 'react-router-dom';
 import { Slide, ToastContainer } from 'react-toastify';
 
 import authApi from '@api/authApi';
@@ -51,6 +52,7 @@ const AppLayout = ({ fullScreen = false }: AppLayoutProps) => {
 
 const App = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(true);
   const [feedback, setFeedback] = useFeedback();
@@ -78,7 +80,7 @@ const App = () => {
   if (feedback.status === 'fail' && !feedback.message.toLowerCase().includes('log in'))
     return (
       <>
-        <Header />
+        <Header error />
         <main>
           <ErrorPage reason={feedback.message} />
         </main>
@@ -87,7 +89,7 @@ const App = () => {
     );
 
   return (
-    <>
+    <RouterProvider navigate={navigate}>
       <Suspense fallback={<Load />}>
         <Routes>
           <Route element={<AppLayout />}>
@@ -131,7 +133,7 @@ const App = () => {
         limit={1}
         transition={Slide}
       />
-    </>
+    </RouterProvider>
   );
 };
 

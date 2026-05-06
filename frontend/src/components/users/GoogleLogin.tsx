@@ -40,16 +40,13 @@ export const GoogleLogin = ({ isLoading, setIsLoading }: GoogleLoginProps) => {
 
   return (
     <MainButton
-      content={
-        <>
-          Continue with Google <GoogleIcon className="own-color" />
-        </>
-      }
       onClick={() => login()}
       disabled={isLoading}
       color="white"
       wide
       style={{ fontSize: '1.05rem', fontWeight: 700 }}
-    />
+    >
+      Continue with Google <GoogleIcon className="own-color" />
+    </MainButton>
   );
 };

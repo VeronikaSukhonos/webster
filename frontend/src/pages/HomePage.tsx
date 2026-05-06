@@ -10,6 +10,7 @@ import type { AuthUser } from '@mytypes/responseTypes';
 
 const HomePageAuth = ({ auth }: { auth: AuthUser }) => {
   // TODO
+  console.log(auth);
 
   return (
     <>
@@ -47,28 +48,17 @@ const HomePageGuest = () => {
       </div>
       <div className="row all-center" style={{ width: '340px', maxWidth: '100%' }}>
         <MainButton
-          content={
-            <>
-              <PlusIcon />
-              Create
-            </>
-          }
           onClick={() => dispatch(setModal({ type: 'createProject' }))}
           upperText
           style={{ flex: 1 }}
-        />
-        <MainButton
-          content={
-            <>
-              <TemplateIcon />
-              Templates
-            </>
-          }
-          to="/templates"
-          color="white"
-          upperText
-          style={{ flex: 1 }}
-        />
+        >
+          <PlusIcon />
+          Create
+        </MainButton>
+        <MainButton to="/templates" color="white" upperText style={{ flex: 1 }}>
+          <TemplateIcon />
+          Templates
+        </MainButton>
       </div>
     </>
   );

@@ -11,7 +11,7 @@ class UsersApi {
     return await api.patch(`/users/profile`, params);
   }
 
-  async updateUserPassword(params: UpdatePasswordParams) {
+  async updateUserPassword(params: Omit<UpdatePasswordParams, 'passwordConfirmation'>) {
     return await api.patch(`/users/password`, params);
   }
 
@@ -25,8 +25,8 @@ class UsersApi {
     return await api.delete(`/users/avatar`);
   }
 
-  async requestUserProfileDeletion(id: number) {
-    return await api.post(`/users/${id}`);
+  async requestUserProfileDeletion() {
+    return await api.post(`/users`);
   }
 
   async deleteUserProfile(token: string) {

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
@@ -7,8 +6,8 @@ import authApi from '@api/authApi';
 import { setAuthUser } from '@store/authSlice';
 import { selectUi, setModal } from '@store/uiSlice';
 
-import { Dropdown } from '@components/Dropdown';
 import { MainButton } from '@components/MainButton';
+import { DropdownMenu, MenuItem } from '@components/Menu';
 
 import {
   Logo,
@@ -24,13 +23,12 @@ import { useAppDispatch, useAppSelector, useAuth } from '@hooks/utilHooks';
 
 import './Header.css';
 
-export const Header = () => {
+export const Header = ({ error = false }: { error?: boolean }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
   const auth = useAuth();
   const isAvatarLoading = useAppSelector(selectUi.isAvatarLoading);
-  const [isAuthMenuOpen, setIsAuthMenuOpen] = useState(false);
 
   const logout = () => {
     authApi
@@ -45,16 +43,27 @@ export const Header = () => {
   };
 
   const createButton = (
-    <MainButton
-      content={
-        <>
-          <PlusIcon />
-          Create
-        </>
-      }
-      onClick={() => dispatch(setModal({ type: 'createProject' }))}
-    />
+    <MainButton onClick={() => dispatch(setModal({ type: 'createProject' }))}>
+      <PlusIcon />
+      Create
+    </MainButton>
   );
+
+  if (error)
+    return (
+      <header className="header">
+        <nav>
+          <div className="row all-center">
+            <a className="logo logo-error" href="/">
+              <Logo />
+              <div className="app-name t-art">
+                Sket<span>Cherry</span>
+              </div>
+            </a>
+          </div>
+        </nav>
+      </header>
+    );
 
   return (
     <header className="header">
@@ -79,39 +88,39 @@ export const Header = () => {
               <span className="tab-name">Templates</span>
             </NavLink>
             {createButton}
-            <Dropdown
-              isOpen={isAuthMenuOpen}
-              setIsOpen={setIsAuthMenuOpen}
+            <DropdownMenu
               button={
                 <MainButton
-                  content={
-                    <img
-                      className={'auth-avatar' + (isAvatarLoading ? ' img-load' : '')}
-                      src={auth?.avatar}
-                      alt="My avatar"
-                    />
-                  }
-                  onClick={() => setIsAuthMenuOpen((open: boolean) => !open)}
                   color="white"
                   square
                   style={{ borderRadius: '50%' }}
-                />
+                  aria-label="Account Menu"
+                >
+                  <img
+                    className={'auth-avatar' + (isAvatarLoading ? ' img-load' : '')}
+                    src={auth?.avatar}
+                    alt="My avatar"
+                  />
+                </MainButton>
               }
-              items={[
-                <NavLink className="list-item" to={`/users/${auth?.id}`} end>
+            >
+              <MenuItem>
+                <NavLink className="m-row" to={`/users/${auth?.id}`} end>
                   <ProfileIcon />
                   <span>Profile</span>
-                </NavLink>,
-                <NavLink className="list-item" to="/settings">
+                </NavLink>
+              </MenuItem>
+              <MenuItem>
+                <NavLink className="m-row" to="/settings">
                   <SettingsIcon />
                   <span>Settings</span>
-                </NavLink>,
-                <button className="list-item" type="button" onClick={logout}>
-                  <LogoutIcon />
-                  <span>Log Out</span>
-                </button>,
-              ]}
-            />
+                </NavLink>
+              </MenuItem>
+              <MenuItem className="m-row" onAction={logout}>
+                <LogoutIcon />
+                <span>Log Out</span>
+              </MenuItem>
+            </DropdownMenu>
           </>
         ) : (
           <>
