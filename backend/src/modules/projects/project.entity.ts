@@ -31,7 +31,7 @@ export class Project {
   @Column({ type: 'text' })
   file!: string;
 
-  @Column({ type: 'text' })
+  @Column({ type: 'text', default: '' })
   preview!: string;
 
   @Column({ type: 'boolean', default: false })

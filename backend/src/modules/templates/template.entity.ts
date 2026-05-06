@@ -28,7 +28,7 @@ export class Template {
   @Column({ type: 'text' })
   file!: string;
 
-  @Column({ type: 'text' })
+  @Column({ type: 'text', default: '' })
   preview!: string;
 
   @CreateDateColumn({ type: 'timestamp' })
