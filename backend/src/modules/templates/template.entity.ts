@@ -25,8 +25,11 @@ export class Template {
   @Column({ type: 'varchar', length: 100 })
   title!: string;
 
-  @Column({ type: 'varchar', length: 500 })
+  @Column({ type: 'text' })
   file!: string;
+
+  @Column({ type: 'text' })
+  preview!: string;
 
   @CreateDateColumn({ type: 'timestamp' })
   createDate!: Date;

@@ -21,11 +21,18 @@ export class CreateProjectDto {
   readonly description?: string;
 
   @ApiProperty({ example: 'http://localhost:3000/files/projects/design.json' })
-  @MaxLength(500, { message: 'file must be at most 500 characters' })
+  @MaxLength(2000000, { message: 'file must be at most 2000000 characters' })
   @IsString()
   @IsNotEmpty({ message: 'file cannot be empty' })
   @SanitizeString('any')
   readonly file!: string;
+
+  @ApiProperty({ example: 'http://localhost:3000/files/projects/preview.png' })
+  @MaxLength(2000000, { message: 'preview must be at most 2000000 characters' })
+  @IsString()
+  @IsNotEmpty({ message: 'preview cannot be empty' })
+  @SanitizeString('any')
+  readonly preview!: string;
 
   @ApiProperty({ required: false, default: false })
   @IsOptional()

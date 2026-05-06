@@ -51,10 +51,13 @@ export class ProjectsController {
             title: 'Instagram spring sale post',
             description: 'Draft design for a social media campaign',
             file: 'http://localhost:3000/files/projects/design.json',
+            preview: 'http://localhost:3000/files/projects/preview.png',
             isPublic: true,
             createDate: '2026-04-28T18:17:06.813Z',
             editDate: '2026-04-28T18:17:06.813Z',
             templateId: 1,
+            author: { id: 1, username: 'user' },
+            template: { id: 1, title: 'Instagram Post' },
           },
         ],
         pagination: { page: 1, limit: 10, total: 1, pages: 1 },
@@ -111,10 +114,13 @@ export class ProjectsController {
           title: 'Instagram spring sale post',
           description: 'Draft design for a social media campaign',
           file: 'http://localhost:3000/files/projects/design.json',
+          preview: 'http://localhost:3000/files/projects/preview.png',
           isPublic: true,
           createDate: '2026-04-28T18:17:06.813Z',
           editDate: '2026-04-28T18:17:06.813Z',
           templateId: 1,
+          author: { id: 1, username: 'user' },
+          template: { id: 1, title: 'Instagram Post' },
         },
       },
     },
@@ -149,10 +155,13 @@ export class ProjectsController {
           title: 'Instagram spring sale post',
           description: 'Draft design for a social media campaign',
           file: 'http://localhost:3000/files/projects/design.json',
+          preview: 'http://localhost:3000/files/projects/preview.png',
           isPublic: false,
           createDate: '2026-04-28T18:17:06.813Z',
           editDate: '2026-04-28T18:17:06.813Z',
           templateId: null,
+          author: { id: 1, username: 'user' },
+          template: null,
         },
       },
     },
@@ -189,10 +198,13 @@ export class ProjectsController {
           title: 'Updated project title',
           description: null,
           file: 'http://localhost:3000/files/projects/design.json',
+          preview: 'http://localhost:3000/files/projects/preview.png',
           isPublic: true,
           createDate: '2026-04-28T18:17:06.813Z',
           editDate: '2026-04-28T19:17:06.813Z',
           templateId: null,
+          author: { id: 1, username: 'user' },
+          template: null,
         },
       },
     },
@@ -202,7 +214,7 @@ export class ProjectsController {
     example: {
       statusCode: 400,
       message:
-        'At least one parameter must be provided: title, description, file, isPublic, templateId',
+        'At least one parameter must be provided: title, description, file, preview, isPublic, templateId',
     },
   })
   @ApiForbiddenResponse({ description: 'Project belongs to another user' })
@@ -213,7 +225,16 @@ export class ProjectsController {
     @Param('id', new ParseIntWithMessagePipe('Project is not found', HttpStatus.NOT_FOUND))
     id: number,
     @User('id') authId: number,
-    @Body(new AtLeastOneParamPipe(['title', 'description', 'file', 'isPublic', 'templateId']))
+    @Body(
+      new AtLeastOneParamPipe([
+        'title',
+        'description',
+        'file',
+        'preview',
+        'isPublic',
+        'templateId',
+      ]),
+    )
     dto: UpdateProjectDto,
   ): Promise<ApiResponse> {
     return {

@@ -28,8 +28,11 @@ export class Project {
   @Column({ type: 'varchar', nullable: true, length: 300 })
   description!: string | null;
 
-  @Column({ type: 'varchar', length: 500 })
+  @Column({ type: 'text' })
   file!: string;
+
+  @Column({ type: 'text' })
+  preview!: string;
 
   @Column({ type: 'boolean', default: false })
   isPublic!: boolean;

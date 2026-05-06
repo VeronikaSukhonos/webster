@@ -11,11 +11,18 @@ export class CreateTemplateDto {
   readonly title!: string;
 
   @ApiProperty({ example: 'http://localhost:3000/files/templates/template.json' })
-  @MaxLength(500, { message: 'file must be at most 500 characters' })
+  @MaxLength(2000000, { message: 'file must be at most 2000000 characters' })
   @IsString()
   @IsNotEmpty({ message: 'file cannot be empty' })
   @SanitizeString('any')
   readonly file!: string;
+
+  @ApiProperty({ example: 'http://localhost:3000/files/templates/preview.png' })
+  @MaxLength(2000000, { message: 'preview must be at most 2000000 characters' })
+  @IsString()
+  @IsNotEmpty({ message: 'preview cannot be empty' })
+  @SanitizeString('any')
+  readonly preview!: string;
 
   @ApiProperty({ example: 'instagram-post' })
   @MaxLength(50, { message: 'type must be at most 50 characters' })

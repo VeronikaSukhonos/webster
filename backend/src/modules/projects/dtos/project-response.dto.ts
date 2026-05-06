@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer';
-import { UserProfileResponseDto } from '../../users/dtos';
+import { EntityAuthorResponseDto } from '../../../common/dtos';
 
 class ProjectTemplateResponseDto {
   @Expose()
@@ -7,9 +7,6 @@ class ProjectTemplateResponseDto {
 
   @Expose()
   readonly title!: string;
-
-  @Expose()
-  readonly type!: string;
 }
 
 export class ProjectResponseDto {
@@ -29,6 +26,9 @@ export class ProjectResponseDto {
   readonly file!: string;
 
   @Expose()
+  readonly preview!: string;
+
+  @Expose()
   readonly isPublic!: boolean;
 
   @Expose()
@@ -41,8 +41,8 @@ export class ProjectResponseDto {
   readonly templateId!: number | null;
 
   @Expose()
-  @Type(() => UserProfileResponseDto)
-  readonly author?: UserProfileResponseDto;
+  @Type(() => EntityAuthorResponseDto)
+  readonly author!: EntityAuthorResponseDto;
 
   @Expose()
   @Type(() => ProjectTemplateResponseDto)

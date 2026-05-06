@@ -50,6 +50,7 @@ export class ProjectsService {
     const { page, limit, search } = query;
     const queryBuilder = this.projectsRepository
       .createQueryBuilder('project')
+      .leftJoinAndSelect('project.author', 'author')
       .leftJoinAndSelect('project.template', 'template')
       .where('project.authorId = :authorId', { authorId });
 
@@ -118,6 +119,7 @@ export class ProjectsService {
       ...(dto.title !== undefined && { title: dto.title }),
       ...(dto.description !== undefined && { description: dto.description ?? null }),
       ...(dto.file !== undefined && { file: dto.file }),
+      ...(dto.preview !== undefined && { preview: dto.preview }),
       ...(dto.isPublic !== undefined && { isPublic: dto.isPublic }),
       ...(dto.templateId !== undefined && { templateId: dto.templateId }),
     });
@@ -138,7 +140,7 @@ export class ProjectsService {
   private async getOwnProject(id: number, authorId: number): Promise<ProjectResponseDto> {
     const project = await this.projectsRepository.findOne({
       where: { id, authorId },
-      relations: { template: true },
+      relations: { author: true, template: true },
     });
 
     if (!project) throw new NotFoundException('Project is not found');
