@@ -26,6 +26,7 @@ export { default as InstagramIcon } from './instagram.svg?react';
 export { default as LayerIcon } from './layer.svg?react';
 export { default as LinkIcon } from './link.svg?react';
 export { default as LockIcon } from './lock.svg?react';
+export { default as LoginIcon } from './login.svg?react';
 export { default as LogoutIcon } from './logout.svg?react';
 export { default as MinusIcon } from './minus.svg?react';
 export { default as PlusIcon } from './plus.svg?react';

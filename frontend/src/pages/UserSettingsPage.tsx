@@ -116,6 +116,18 @@ const UserSettingsPage = () => {
       <h1 className="f-title">Settings</h1>
 
       <div className="col box pd-box">
+        <div
+          className="box t-center"
+          style={{
+            alignSelf: 'center',
+            color: 'var(--dark-blue)',
+            fontWeight: 'bold',
+            padding: '2px 10px',
+            width: 'max-content',
+          }}
+        >
+          {auth.email}
+        </div>
         <Tabs
           onSelectionChange={() => {
             updateProfile.clearForm(auth);

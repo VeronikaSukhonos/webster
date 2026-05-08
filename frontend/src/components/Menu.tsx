@@ -5,7 +5,12 @@ import {
   type MenuProps as RACMenuProps,
   MenuTrigger as RACMenuTrigger,
 } from 'react-aria-components/Menu';
-import { type Placement, Popover as RACPopover } from 'react-aria-components/Popover';
+import {
+  type Placement,
+  DialogTrigger as RACDialogTrigger,
+  Popover as RACPopover,
+  type PopoverProps as RACPopoverProps,
+} from 'react-aria-components/Popover';
 
 import type { MainButton } from '@components/MainButton';
 
@@ -45,5 +50,21 @@ export const DropdownMenu = <T extends object>({
         <Menu {...props} />
       </RACPopover>
     </RACMenuTrigger>
+  );
+};
+
+interface PopoverProps extends Omit<RACPopoverProps, 'children'> {
+  button: React.ReactElement<typeof MainButton>;
+  children: React.ReactNode;
+}
+
+export const Popover = ({ button, children, ...props }: PopoverProps) => {
+  return (
+    <RACDialogTrigger>
+      {button}
+      <RACPopover className="popover" {...props}>
+        {children}
+      </RACPopover>
+    </RACDialogTrigger>
   );
 };

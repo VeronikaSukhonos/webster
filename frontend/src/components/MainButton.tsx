@@ -1,4 +1,5 @@
 import {
+  type PressEvent,
   Button as RACButton,
   type ButtonProps as RACButtonProps,
 } from 'react-aria-components/Button';
@@ -7,8 +8,9 @@ import { Tooltip } from 'react-tooltip';
 
 import './MainButton.css';
 
-interface MainButtonProps extends Omit<RACButtonProps, 'children'> {
+interface MainButtonProps extends Omit<RACButtonProps, 'children' | 'className' | 'onClick'> {
   children: React.ReactNode;
+  onClick?: (e: PressEvent) => void;
   type?: 'button' | 'submit';
   to?: string;
   tooltip?: string;
@@ -20,7 +22,7 @@ interface MainButtonProps extends Omit<RACButtonProps, 'children'> {
   wide?: boolean;
   square?: boolean;
   mini?: boolean;
-  classes?: string;
+  className?: string;
   style?: React.CSSProperties;
 }
 
@@ -38,13 +40,13 @@ export const MainButton = ({
   wide = false,
   square = false,
   mini = false,
-  classes = '',
+  className = '',
   style = {},
   ...props
 }: MainButtonProps) => {
-  const className =
+  const classes =
     `main-button ${color}` +
-    (classes ? ` ${classes}` : '') +
+    (className ? ` ${className}` : '') +
     (upperText ? ' upper-text' : '') +
     (wide ? ' wide' : '') +
     (square ? ' square' : '') +
@@ -52,16 +54,16 @@ export const MainButton = ({
   const button = to ? (
     <Link
       to={to}
-      className={className + (disabled ? ' disabled' : '') + (tooltipId ? ` ${tooltipId}` : '')}
+      className={classes + (disabled ? ' disabled' : '') + (tooltipId ? ` ${tooltipId}` : '')}
       style={style}
     >
       {children}
     </Link>
   ) : (
     <RACButton
-      className={className + (tooltipId ? ` ${tooltipId}` : '')}
+      className={classes + (tooltipId ? ` ${tooltipId}` : '')}
       type={type}
-      onClick={onClick}
+      onPress={onClick}
       isDisabled={disabled}
       style={style}
       {...props}

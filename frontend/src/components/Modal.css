@@ -18,12 +18,13 @@
 }
 
 .modal-content {
-  background: var(--opaque-container-color);
+  background: var(--container-color);
   gap: 10px;
   max-height: 90%;
   overflow-y: auto;
   min-width: 320px;
-  width: auto;
+  width: 100%;
+  max-width: 450px;
   pointer-events: all;
   transition: all 0.3s ease-in-out;
 }

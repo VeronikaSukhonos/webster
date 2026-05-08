@@ -45,7 +45,7 @@
 }
 
 html {
-  background: var(--light-blue);
+  background: var(--main-bg-color);
   scrollbar-width: thin;
   scrollbar-color: var(--purple) var(--light-blue);
 }

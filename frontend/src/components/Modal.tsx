@@ -21,13 +21,14 @@ import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
 
 import './Modal.css';
 
-interface ModalProps extends Omit<RACModalProps, 'isOpen' | 'children'> {
+export interface ModalProps extends Omit<RACModalProps, 'isOpen' | 'children' | 'style'> {
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   title?: string;
   children?: React.ReactNode;
   isCloseDisabled?: boolean;
   onClose?: () => void;
+  style?: React.CSSProperties;
 }
 
 export const Modal = ({
@@ -37,6 +38,7 @@ export const Modal = ({
   children,
   isCloseDisabled,
   onClose,
+  style,
   ...props
 }: ModalProps) => {
   useEffect(() => {
@@ -52,7 +54,7 @@ export const Modal = ({
       isKeyboardDismissDisabled={isCloseDisabled}
       {...props}
     >
-      <Dialog className="modal-content col box pd-box scroll" aria-label={title}>
+      <Dialog className="modal-content col box pd-box scroll" aria-label={title} style={style}>
         {title && <h2 className="content-title t-art t-center">{title}</h2>}
         {children}
       </Dialog>
@@ -63,6 +65,7 @@ export const Modal = ({
 interface ModalContent {
   title: string;
   children: React.ReactNode;
+  style?: React.CSSProperties;
 }
 
 export const ModalWrapper = () => {
@@ -80,6 +83,7 @@ export const ModalWrapper = () => {
         setModalContent({
           title: 'Avatar',
           children: <AvatarForm setIsOpen={setIsOpen} />,
+          style: { background: 'var(--opaque-container-color)', width: 'auto' },
         });
       else if (modal.type === 'createProject')
         setModalContent({

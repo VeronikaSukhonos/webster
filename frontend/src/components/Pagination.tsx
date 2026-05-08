@@ -105,7 +105,7 @@ export const Pagination = ({ totalPages: tp, disabled = false }: PaginationProps
         color="white"
         square
         mini
-        classes="pagination-nav-button"
+        className="pagination-nav-button"
       >
         <ChevronIcon style={{ padding: '2px' }} />
       </MainButton>
@@ -116,7 +116,7 @@ export const Pagination = ({ totalPages: tp, disabled = false }: PaginationProps
         color="white"
         square
         mini
-        classes="pagination-nav-button"
+        className="pagination-nav-button"
       >
         <ChevronIcon style={{ transform: 'rotate(180deg)', padding: '2px' }} />
       </MainButton>
