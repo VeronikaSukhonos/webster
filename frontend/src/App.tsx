@@ -1,6 +1,13 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { RouterProvider } from 'react-aria-components';
-import { Outlet, Route, Routes, useNavigate } from 'react-router-dom';
+import {
+  Outlet,
+  Route,
+  createBrowserRouter,
+  createRoutesFromElements,
+  useNavigate,
+  useRouteError,
+} from 'react-router-dom';
 import { Slide, ToastContainer } from 'react-toastify';
 
 import authApi from '@api/authApi';
@@ -10,15 +17,18 @@ import { setAuthUser } from '@store/authSlice';
 import ErrorPage from '@pages/ErrorPage';
 
 import { Footer } from '@components/Footer';
-import { Header } from '@components/Header';
+import { ErrorHeader, Header } from '@components/Header';
 import { Load } from '@components/Load';
 import { ModalWrapper } from '@components/Modal';
 
+// import { EditorHeader } from '@components/editor/EditorHeader';
+
 import { useAppDispatch, useFeedback } from '@hooks/utilHooks';
+
+import { ERROR_TYPES } from '@utils/constants';
 
 const HomePage = lazy(() => import('./pages/HomePage'));
 const EditorPage = lazy(() => import('./pages/EditorPage'));
-const ProjectPage = lazy(() => import('./pages/ProjectPage'));
 
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegistrationPage = lazy(() => import('./pages/RegistrationPage'));
@@ -38,12 +48,38 @@ interface AppLayoutProps {
 
 const AppLayout = ({ fullScreen = false }: AppLayoutProps) => {
   return fullScreen ? (
-    <Outlet />
+    <>
+      {/* <EditorHeader /> */}
+      <main className="full-screen">
+        <Outlet />
+      </main>
+    </>
   ) : (
     <>
       <Header />
       <main>
         <Outlet />
+      </main>
+      <Footer />
+    </>
+  );
+};
+
+interface ErrorLayoutProps {
+  reason?: string;
+}
+
+const ErrorLayout = ({ reason }: ErrorLayoutProps) => {
+  const error = useRouteError();
+
+  if (!navigator.onLine && (reason || (error as any)?.message?.includes('fetch')))
+    reason = ERROR_TYPES.OFL;
+
+  return (
+    <>
+      <ErrorHeader />
+      <main>
+        <ErrorPage reason={reason || ERROR_TYPES.SWW} />
       </main>
       <Footer />
     </>
@@ -78,63 +114,62 @@ const App = () => {
 
   if (isLoading) return <Load />;
   if (feedback.status === 'fail' && !feedback.message.toLowerCase().includes('log in'))
-    return (
-      <>
-        <Header error />
-        <main>
-          <ErrorPage reason={feedback.message} />
-        </main>
-        <Footer />
-      </>
-    );
+    return <ErrorLayout reason={feedback.message} />;
 
   return (
     <RouterProvider navigate={navigate}>
       <Suspense fallback={<Load />}>
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<HomePage />} />
-
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegistrationPage />} />
-            <Route path="/email-confirmation" element={<EmailConfirmationPage />} />
-            <Route path="/email-confirmation/:token" element={<EmailConfirmationPage />} />
-            <Route path="/password-reset" element={<PasswordResetPage />} />
-            <Route path="/password-reset/:token" element={<PasswordResetPage />} />
-
-            <Route path="/users/:userId" element={<UserProfilePage />} />
-            <Route path="/settings" element={<UserSettingsPage />} />
-            <Route path="/account-deletion" element={<UserAccountDeletionPage />} />
-            <Route path="/account-deletion/:token" element={<UserAccountDeletionPage />} />
-
-            <Route path="/projects" element={<ProjectsPage />} />
-            <Route path="/templates" element={<TemplatesPage />} />
-
-            <Route path="*" element={<ErrorPage />} />
-          </Route>
-          <Route element={<AppLayout fullScreen={true} />}>
-            <Route path="/editor" element={<EditorPage />} />
-            <Route path="/projects/:projectId" element={<ProjectPage />} />
-            <Route path="/templates/:templateId" element={<ProjectPage />} />
-          </Route>
-        </Routes>
+        <Outlet />
       </Suspense>
-
-      <ModalWrapper />
-
-      <ToastContainer
-        position="bottom-right"
-        autoClose={3000}
-        closeOnClick={true}
-        hideProgressBar={true}
-        pauseOnFocusLoss={false}
-        pauseOnHover={false}
-        draggable={false}
-        limit={1}
-        transition={Slide}
-      />
     </RouterProvider>
   );
 };
 
-export default App;
+export const router = createBrowserRouter(
+  createRoutesFromElements(
+    <Route
+      element={
+        <>
+          <App />
+          <ModalWrapper />
+          <ToastContainer
+            position="bottom-right"
+            autoClose={3000}
+            closeOnClick={true}
+            hideProgressBar={true}
+            pauseOnFocusLoss={false}
+            pauseOnHover={false}
+            draggable={false}
+            limit={1}
+            transition={Slide}
+          />
+        </>
+      }
+      errorElement={<ErrorLayout />}
+    >
+      <Route element={<AppLayout />}>
+        <Route path="/" element={<HomePage />} />
+
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegistrationPage />} />
+        <Route path="/email-confirmation" element={<EmailConfirmationPage />} />
+        <Route path="/email-confirmation/:token" element={<EmailConfirmationPage />} />
+        <Route path="/password-reset" element={<PasswordResetPage />} />
+        <Route path="/password-reset/:token" element={<PasswordResetPage />} />
+
+        <Route path="/users/:userId" element={<UserProfilePage />} />
+        <Route path="/settings" element={<UserSettingsPage />} />
+        <Route path="/account-deletion" element={<UserAccountDeletionPage />} />
+        <Route path="/account-deletion/:token" element={<UserAccountDeletionPage />} />
+
+        <Route path="/projects" element={<ProjectsPage />} />
+        <Route path="/templates" element={<TemplatesPage />} />
+
+        <Route path="*" element={<ErrorPage />} />
+      </Route>
+      <Route element={<AppLayout fullScreen />}>
+        <Route path="/editor" element={<EditorPage />} />
+      </Route>
+    </Route>,
+  ),
+);

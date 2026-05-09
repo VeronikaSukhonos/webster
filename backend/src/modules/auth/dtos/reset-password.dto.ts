@@ -11,7 +11,7 @@ export class ResetPasswordDto {
       minNumbers: 1,
       minSymbols: 0,
     },
-    { message: 'password must be longer than 8 characters (A-Z, a-z, 0-9)' },
+    { message: 'password must be at least 8 characters (A-Z, a-z, 0-9)' },
   )
   @IsString()
   @IsNotEmpty({ message: 'password is required' })

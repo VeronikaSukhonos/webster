@@ -1,4 +1,4 @@
-header {
+.header {
   border-bottom: var(--main-border);
   box-shadow: var(--shadow);
   -webkit-user-select: none;

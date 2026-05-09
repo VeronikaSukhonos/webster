@@ -48,20 +48,27 @@ const UserProfilePage = () => {
 
   useEffect(() => {
     if (!userId) return;
+    let cancel = false;
 
     setIsUserLoading(true);
     usersApi
       .getUserProfile(userId)
       .then(({ data: res }) => {
+        if (cancel) return;
         setIsUserLoading(false);
         setUserFeedback(res.message, 'ok');
         setUser(res.data.user);
         if (userId === auth?.id) dispatch(updateAuthUser(res.data.user));
       })
       .catch((err) => {
+        if (cancel) return;
         setIsUserLoading(false);
         setUserFeedback(err.message, 'fail');
       });
+
+    return () => {
+      cancel = true;
+    };
   }, [userId]);
 
   useEffect(() => {

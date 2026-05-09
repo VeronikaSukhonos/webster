@@ -1,3 +1,9 @@
+export const ERROR_TYPES = {
+  SNR: 'Unable to connect to the server. Please try again later',
+  OFL: 'You are offline. Please check your internet connection',
+  SWW: 'Something went wrong',
+};
+
 export const DEFAULT_PROJECT_LIST_LIMIT = 20;
 
 export const TEMPLATE_TYPES = [

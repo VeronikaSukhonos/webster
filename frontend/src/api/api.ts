@@ -3,6 +3,8 @@ import axios, { type AxiosResponse } from 'axios';
 import { setAuthUser } from '@store/authSlice';
 import store from '@store/store';
 
+import { ERROR_TYPES } from '@utils/constants';
+
 import type { AuthUser } from '@mytypes/responseTypes';
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -26,9 +28,6 @@ const setErrors = (err: any) => {
       {} as { [param: string]: string },
     );
 };
-
-const SNR = 'Server is not responding. Please try again later';
-const SWW = 'Something went wrong. Please try again later';
 
 const refresh = () => {
   return axios.post(
@@ -94,18 +93,18 @@ api.interceptors.response.use(
             } else if (err.response) {
               setErrors(err);
             } else if (err.request) {
-              err.message = SNR;
+              err.message = ERROR_TYPES.SNR;
             } else {
-              err.message = SWW;
+              err.message = ERROR_TYPES.SWW;
             }
             return Promise.reject(err);
           });
       }
       setErrors(err);
     } else if (err.request) {
-      err.message = SNR;
+      err.message = ERROR_TYPES.SNR;
     } else {
-      err.message = SWW;
+      err.message = ERROR_TYPES.SWW;
     }
     return Promise.reject(err);
   },

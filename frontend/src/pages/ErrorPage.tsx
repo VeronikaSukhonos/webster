@@ -37,14 +37,14 @@ const ErrorPage = ({ reason = 'not found', entity = 'page' }: ErrorPageProps) =>
       {reason.includes('not found') ? (
         <>
           <div style={errorHeader}>Nothing sketched here...</div>
-          <div>This {entity} is not found</div>
+          <div className="t-center">This {entity} is not found</div>
         </>
       ) : (
         <>
           <div style={errorHeader}>
             A sudden stroke disrupted <span style={{ whiteSpace: 'nowrap' }}>the sketch...</span>
           </div>
-          <div>{reason}</div>
+          <div className="t-center">{reason}</div>
         </>
       )}
     </div>

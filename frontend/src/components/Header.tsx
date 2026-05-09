@@ -11,7 +11,7 @@ import { useAppDispatch, useAuth } from '@hooks/utilHooks';
 
 import './Header.css';
 
-export const Header = ({ error = false }: { error?: boolean }) => {
+export const Header = () => {
   const dispatch = useAppDispatch();
 
   const auth = useAuth();
@@ -22,22 +22,6 @@ export const Header = ({ error = false }: { error?: boolean }) => {
       Create
     </MainButton>
   );
-
-  if (error)
-    return (
-      <header className="header">
-        <nav>
-          <div className="row all-center">
-            <a className="logo logo-error" href="/">
-              <Logo />
-              <div className="app-name t-art">
-                Sket<span>Cherry</span>
-              </div>
-            </a>
-          </div>
-        </nav>
-      </header>
-    );
 
   return (
     <header className="header">
@@ -75,6 +59,23 @@ export const Header = ({ error = false }: { error?: boolean }) => {
             {createButton}
           </>
         )}
+      </nav>
+    </header>
+  );
+};
+
+export const ErrorHeader = () => {
+  return (
+    <header className="header">
+      <nav>
+        <div className="row all-center">
+          <a className="logo logo-error" href="/">
+            <Logo />
+            <div className="app-name t-art">
+              Sket<span>Cherry</span>
+            </div>
+          </a>
+        </div>
       </nav>
     </header>
   );

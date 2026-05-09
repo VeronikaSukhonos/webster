@@ -28,7 +28,12 @@ const title = z
   .nonempty('title is required');
 
 const sizeField = (fieldname: string) => {
-  return z.number().positive(`${fieldname} must be a positive integer`).optional();
+  return z
+    .number()
+    .positive(`${fieldname} must be a positive integer`)
+    .min(40, `${fieldname} must be at least 40 pixels`)
+    .max(4000, `${fieldname} must be at most 4000 pixels`)
+    .optional();
 };
 
 export const passwordParams = z
@@ -38,7 +43,7 @@ export const passwordParams = z
       .regex(/[0-9]/, 'password must contain at least 1 digit')
       .regex(/[A-Z]/, 'password must contain at least 1 uppercase letter')
       .regex(/[a-z]/, 'password must contain at least 1 lowercase letter')
-      .min(8, 'password must be longer than 8 characters')
+      .min(8, 'password must be at least 8 characters')
       .nonempty('password is required'),
     passwordConfirmation: z.string().nonempty('password confirmation is required'),
   })
