@@ -24,6 +24,7 @@ import {
 } from '@nestjs/swagger';
 import { TemplatesService } from './templates.service';
 import { CreateTemplateDto, TemplateQueryDto, UpdateTemplateDto } from './dtos';
+import { TemplateType } from './template-type.enum';
 import { Public, User } from '../../common/decorators';
 import { AtLeastOneParamPipe, ParseIntWithMessagePipe } from '../../common/pipes';
 import type { ApiResponse } from '../../common/types';
@@ -37,7 +38,12 @@ export class TemplatesController {
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 10 })
   @ApiQuery({ name: 'search', required: false, example: 'instagram' })
-  @ApiQuery({ name: 'type', required: false, example: 'instagram-post' })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    enum: TemplateType,
+    example: TemplateType.InstagramPost,
+  })
   @ApiQuery({ name: 'source', required: false, enum: ['all', 'built-in', 'custom'] })
   @ApiOkResponse({
     description: 'Fetched templates successfully',
@@ -55,6 +61,7 @@ export class TemplatesController {
             createDate: '2026-04-28T18:17:06.813Z',
             type: 'invitation',
             isBuiltIn: true,
+            projectId: null,
             author: { id: 1, username: 'user' },
           },
         ],
@@ -93,11 +100,13 @@ export class TemplatesController {
           createDate: '2026-04-28T18:17:06.813Z',
           type: 'invitation',
           isBuiltIn: true,
+          projectId: null,
           author: { id: 1, username: 'user' },
         },
       },
     },
   })
+  @ApiForbiddenResponse({ description: 'Template is custom and belongs to another user' })
   @ApiNotFoundResponse({ description: 'Template is not found' })
   @Public()
   @Get(':id')
@@ -105,10 +114,11 @@ export class TemplatesController {
   async getOne(
     @Param('id', new ParseIntWithMessagePipe('Template is not found', HttpStatus.NOT_FOUND))
     id: number,
+    @User('id') authId?: number,
   ): Promise<ApiResponse> {
     return {
       message: 'Fetched template successfully',
-      data: { template: await this.templatesService.getOne(id) },
+      data: { template: await this.templatesService.getOne(id, authId) },
     };
   }
 
@@ -129,6 +139,7 @@ export class TemplatesController {
           createDate: '2026-04-28T18:17:06.813Z',
           type: 'invitation',
           isBuiltIn: false,
+          projectId: 1,
           author: { id: 1, username: 'user' },
         },
       },
@@ -142,6 +153,7 @@ export class TemplatesController {
       errors: [{ param: 'title', error: 'title cannot be empty' }],
     },
   })
+  @ApiNotFoundResponse({ description: 'Project is not found' })
   @Post()
   async createOne(
     @User('id') authId: number,
@@ -171,6 +183,7 @@ export class TemplatesController {
           createDate: '2026-04-28T18:17:06.813Z',
           type: 'invitation',
           isBuiltIn: false,
+          projectId: 1,
           author: { id: 1, username: 'user' },
         },
       },
@@ -180,7 +193,7 @@ export class TemplatesController {
     description: 'No update data or invalid template data',
     example: {
       statusCode: 400,
-      message: 'At least one parameter must be provided: title, file, preview, type',
+      message: 'At least one parameter must be provided: title, type',
     },
   })
   @ApiForbiddenResponse({ description: 'Template belongs to another user' })
@@ -191,7 +204,8 @@ export class TemplatesController {
     @Param('id', new ParseIntWithMessagePipe('Template is not found', HttpStatus.NOT_FOUND))
     id: number,
     @User('id') authId: number,
-    @Body(new AtLeastOneParamPipe(['title', 'file', 'preview', 'type'])) dto: UpdateTemplateDto,
+    @Body(new AtLeastOneParamPipe(['title', 'type']))
+    dto: UpdateTemplateDto,
   ): Promise<ApiResponse> {
     return {
       message: 'Updated template successfully',

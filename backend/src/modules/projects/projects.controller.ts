@@ -214,7 +214,7 @@ export class ProjectsController {
     example: {
       statusCode: 400,
       message:
-        'At least one parameter must be provided: title, description, file, preview, isPublic, templateId',
+        'At least one parameter must be provided: title, description, content, preview, isPublic, templateId',
     },
   })
   @ApiForbiddenResponse({ description: 'Project belongs to another user' })
@@ -229,7 +229,7 @@ export class ProjectsController {
       new AtLeastOneParamPipe([
         'title',
         'description',
-        'file',
+        'content',
         'preview',
         'isPublic',
         'templateId',

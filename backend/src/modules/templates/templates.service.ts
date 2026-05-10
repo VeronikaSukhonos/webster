@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { Repository } from 'typeorm';
 import { Template } from './template.entity';
+import { Project } from '../projects/project.entity';
 import {
   CreateTemplateDto,
   TemplateQueryDto,
@@ -10,12 +11,15 @@ import {
   UpdateTemplateDto,
 } from './dtos';
 import type { QueryResponse } from '../../common/types';
+import { createJsonDocumentPath, readJsonDocument, writeJsonDocument } from '../../common/utils';
 
 @Injectable()
 export class TemplatesService {
   constructor(
     @InjectRepository(Template)
     private templatesRepository: Repository<Template>,
+    @InjectRepository(Project)
+    private projectsRepository: Repository<Project>,
   ) {}
 
   async getAll(query: TemplateQueryDto, authId?: number): Promise<QueryResponse> {
@@ -61,23 +65,42 @@ export class TemplatesService {
     };
   }
 
-  async getOne(id: number): Promise<TemplateResponseDto> {
+  async getOne(id: number, authId?: number): Promise<TemplateResponseDto> {
     const template = await this.templatesRepository.findOne({
       where: { id },
       relations: { author: true },
     });
 
     if (!template) throw new NotFoundException('Template is not found');
+    if (!template.isBuiltIn && template.authorId !== authId) {
+      throw new ForbiddenException('You do not have access to this template');
+    }
 
-    return plainToInstance(TemplateResponseDto, template);
+    return plainToInstance(TemplateResponseDto, {
+      ...template,
+      content: await readJsonDocument(template.file),
+    });
   }
 
   async createOne(authorId: number, dto: CreateTemplateDto): Promise<TemplateResponseDto> {
+    await this.assertProjectBelongsToAuthor(dto.projectId, authorId);
+
+    const file = createJsonDocumentPath('templates');
+    await writeJsonDocument(file, dto.content);
+
     const template = await this.templatesRepository.save(
-      this.templatesRepository.create({ ...dto, authorId, isBuiltIn: dto.isBuiltIn ?? false }),
+      this.templatesRepository.create({
+        authorId,
+        title: dto.title,
+        file,
+        preview: dto.preview,
+        type: dto.type,
+        isBuiltIn: dto.isBuiltIn ?? false,
+        projectId: dto.projectId ?? null,
+      }),
     );
 
-    return await this.getOne(template.id);
+    return await this.getOne(template.id, authorId);
   }
 
   async updateOne(
@@ -91,9 +114,12 @@ export class TemplatesService {
     if (template.authorId !== authorId)
       throw new ForbiddenException('You cannot edit this template');
 
-    await this.templatesRepository.update(id, dto);
+    await this.templatesRepository.update(id, {
+      ...(dto.title !== undefined && { title: dto.title }),
+      ...(dto.type !== undefined && { type: dto.type }),
+    });
 
-    return await this.getOne(id);
+    return await this.getOne(id, authorId);
   }
 
   async deleteOne(id: number, authorId: number): Promise<void> {
@@ -104,5 +130,15 @@ export class TemplatesService {
       throw new ForbiddenException('You cannot delete this template');
 
     await this.templatesRepository.delete(id);
+  }
+
+  private async assertProjectBelongsToAuthor(
+    projectId: number | null | undefined,
+    authorId: number,
+  ): Promise<void> {
+    if (projectId === undefined || projectId === null) return;
+    if (!(await this.projectsRepository.existsBy({ id: projectId, authorId }))) {
+      throw new NotFoundException('Project is not found');
+    }
   }
 }

@@ -1,7 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsNotEmpty,
+  IsNotEmptyObject,
+  IsObject,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { SanitizeString } from '../../../common/decorators';
+import type { JsonDocument } from '../../../common/utils';
 
 export class CreateProjectDto {
   @ApiProperty({ example: 'Instagram spring sale post' })
@@ -20,15 +30,17 @@ export class CreateProjectDto {
   @SanitizeString('any')
   readonly description?: string;
 
-  @ApiProperty({ example: 'http://localhost:3000/files/projects/design.json' })
-  @MaxLength(2000000, { message: 'file must be at most 2000000 characters' })
-  @IsString()
-  @IsNotEmpty({ message: 'file cannot be empty' })
-  @SanitizeString('any')
-  readonly file!: string;
+  @ApiProperty({
+    type: 'object',
+    example: { version: 1, elements: [] },
+    additionalProperties: true,
+  })
+  @IsObject({ message: 'content must be an object' })
+  @IsNotEmptyObject({}, { message: 'content cannot be empty' })
+  readonly content!: JsonDocument;
 
   @ApiProperty({ example: 'http://localhost:3000/files/projects/preview.png' })
-  @MaxLength(2000000, { message: 'preview must be at most 2000000 characters' })
+  @MaxLength(100, { message: 'preview must be at most 100 characters' })
   @IsString()
   @IsNotEmpty({ message: 'preview cannot be empty' })
   @SanitizeString('any')

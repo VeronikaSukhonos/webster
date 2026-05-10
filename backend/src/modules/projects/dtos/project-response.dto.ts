@@ -1,5 +1,6 @@
 import { Expose, Type } from 'class-transformer';
 import { EntityAuthorResponseDto } from '../../../common/dtos';
+import type { JsonDocument } from '../../../common/utils';
 
 class ProjectTemplateResponseDto {
   @Expose()
@@ -24,6 +25,9 @@ export class ProjectResponseDto {
 
   @Expose()
   readonly file!: string;
+
+  @Expose()
+  readonly content?: JsonDocument;
 
   @Expose()
   readonly preview!: string;

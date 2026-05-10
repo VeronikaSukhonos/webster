@@ -1,14 +1,18 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsIn, IsOptional } from 'class-validator';
 import { SanitizeString } from '../../../common/decorators';
 import { PaginationQueryDto } from '../../../common/dtos';
+import { TemplateType } from '../template-type.enum';
 
 export class TemplateQueryDto extends PaginationQueryDto {
-  @ApiPropertyOptional({ example: 'instagram-post' })
+  @ApiPropertyOptional({ enum: TemplateType, example: TemplateType.InstagramPost })
   @IsOptional()
-  @IsString()
+  @IsEnum(TemplateType, {
+    message:
+      'type must be one of the following values: other, collage, instagram-post, instagram-story, invitation, presentation, resume',
+  })
   @SanitizeString('lower')
-  readonly type?: string;
+  readonly type?: TemplateType;
 
   @ApiPropertyOptional({ enum: ['all', 'built-in', 'custom'], default: 'all' })
   @IsOptional()

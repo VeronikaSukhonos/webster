@@ -14,7 +14,7 @@ export const TEMPLATE_TYPES = [
   { value: 'invitation', label: 'Invitation' },
   { value: 'presentation', label: 'Presentation' },
   { value: 'resume', label: 'Resume' },
-];
+] as const;
 
 export const VISIBILITY_TYPES = [
   { value: 'me', label: 'Only me' },

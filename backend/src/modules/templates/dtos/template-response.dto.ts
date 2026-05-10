@@ -1,5 +1,7 @@
 import { Expose, Type } from 'class-transformer';
 import { EntityAuthorResponseDto } from '../../../common/dtos';
+import type { JsonDocument } from '../../../common/utils';
+import { TemplateType } from '../template-type.enum';
 
 export class TemplateResponseDto {
   @Expose()
@@ -15,16 +17,22 @@ export class TemplateResponseDto {
   readonly file!: string;
 
   @Expose()
+  readonly content?: JsonDocument;
+
+  @Expose()
   readonly preview!: string;
 
   @Expose()
   readonly createDate!: Date;
 
   @Expose()
-  readonly type!: string;
+  readonly type!: TemplateType;
 
   @Expose()
   readonly isBuiltIn!: boolean;
+
+  @Expose()
+  readonly projectId!: number | null;
 
   @Expose()
   @Type(() => EntityAuthorResponseDto)

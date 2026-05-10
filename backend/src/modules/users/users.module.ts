@@ -5,10 +5,11 @@ import { UsersController } from './users.controller';
 import { TokenModule } from '../token/token.module';
 import { EmailModule } from '../email/email.module';
 import { User } from './user.entity';
+import { AdminSeederService } from './admin-seeder.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([User]), TokenModule, EmailModule],
-  providers: [UsersService],
+  providers: [UsersService, AdminSeederService],
   controllers: [UsersController],
   exports: [UsersService],
 })

@@ -1,3 +1,8 @@
+import { TEMPLATE_TYPES } from '../utils/constants';
+
+export type TemplateType = (typeof TEMPLATE_TYPES)[number]['value'];
+export type JsonContent = Record<string, unknown>;
+
 export interface UserResponse {
   id: number;
   username: string;
@@ -17,7 +22,8 @@ export interface ProjectResponse {
   author: Pick<UserResponse, 'id' | 'username'>;
   title: string;
   preview: string;
-  file: string | object;
+  file: string;
+  content?: JsonContent;
   isPublic: boolean;
   createDate: string;
   editDate: string;
@@ -29,7 +35,8 @@ export interface TemplateResponse {
   author: Pick<UserResponse, 'id' | 'username'>;
   title: string;
   preview: string;
-  file: string | object;
-  type: string;
+  file: string;
+  content?: JsonContent;
+  type: TemplateType;
   createDate: string;
 }

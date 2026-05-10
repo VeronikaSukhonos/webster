@@ -6,6 +6,12 @@ import { Project } from './project.entity';
 import { CreateProjectDto, ProjectQueryDto, ProjectResponseDto, UpdateProjectDto } from './dtos';
 import { Template } from '../templates/template.entity';
 import type { QueryResponse } from '../../common/types';
+import {
+  createJsonDocumentPath,
+  isJsonDocumentPath,
+  readJsonDocument,
+  writeJsonDocument,
+} from '../../common/utils';
 
 @Injectable()
 export class ProjectsService {
@@ -84,17 +90,25 @@ export class ProjectsService {
       throw new ForbiddenException('You do not have access to this project');
     }
 
-    return plainToInstance(ProjectResponseDto, project);
+    return plainToInstance(ProjectResponseDto, {
+      ...project,
+      content: await readJsonDocument(project.file),
+    });
   }
 
   async createOne(authorId: number, dto: CreateProjectDto): Promise<ProjectResponseDto> {
     await this.assertTemplateExists(dto.templateId);
 
+    const file = createJsonDocumentPath('projects');
+    await writeJsonDocument(file, dto.content);
+
     const project = await this.projectsRepository.save(
       this.projectsRepository.create({
-        ...dto,
         authorId,
+        title: dto.title,
         description: dto.description ?? null,
+        file,
+        preview: dto.preview,
         isPublic: dto.isPublic ?? false,
         templateId: dto.templateId ?? null,
       }),
@@ -115,10 +129,19 @@ export class ProjectsService {
 
     await this.assertTemplateExists(dto.templateId);
 
+    let file = project.file;
+
+    if (dto.content !== undefined) {
+      if (!isJsonDocumentPath(file, 'projects')) {
+        file = createJsonDocumentPath('projects');
+      }
+      await writeJsonDocument(file, dto.content);
+    }
+
     await this.projectsRepository.update(id, {
       ...(dto.title !== undefined && { title: dto.title }),
       ...(dto.description !== undefined && { description: dto.description ?? null }),
-      ...(dto.file !== undefined && { file: dto.file }),
+      ...(dto.content !== undefined && { file }),
       ...(dto.preview !== undefined && { preview: dto.preview }),
       ...(dto.isPublic !== undefined && { isPublic: dto.isPublic }),
       ...(dto.templateId !== undefined && { templateId: dto.templateId }),
@@ -145,7 +168,10 @@ export class ProjectsService {
 
     if (!project) throw new NotFoundException('Project is not found');
 
-    return plainToInstance(ProjectResponseDto, project);
+    return plainToInstance(ProjectResponseDto, {
+      ...project,
+      content: await readJsonDocument(project.file),
+    });
   }
 
   private async assertTemplateExists(templateId?: number | null): Promise<void> {

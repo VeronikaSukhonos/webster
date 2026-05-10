@@ -1,8 +1,26 @@
 import { createQuery } from '@utils/createQuery';
 
-// import type { CreateProjectParams, UpdateProjectParams } from '@mytypes/formParams';
+import type { JsonContent } from '@mytypes/responseTypes';
 
 import api from './api';
+
+interface CreateProjectRequest {
+  title: string;
+  description?: string | null;
+  content: JsonContent;
+  preview: string;
+  isPublic?: boolean;
+  templateId?: number | null;
+}
+
+interface UpdateProjectRequest {
+  title?: string;
+  description?: string | null;
+  content?: JsonContent;
+  preview?: string;
+  isPublic?: boolean;
+  templateId?: number | null;
+}
 
 class ProjectsApi {
   async getPublicProjects(query?: {
@@ -22,17 +40,17 @@ class ProjectsApi {
     return await api.get(`/projects/${id}`);
   }
 
-  // async createProject(params: CreateProjectParams) {
-  //   return await api.post(`/projects`, params);
-  // }
+  async createProject(params: CreateProjectRequest) {
+    return await api.post(`/projects`, params);
+  }
 
   async duplicateProject(id: number) {
     return await api.post(`/projects/${id}/duplicate`);
   }
 
-  // async updateProject(id: number, params: UpdateProjectParams) {
-  //   return await api.patch(`/projects/${id}`, params);
-  // }
+  async updateProject(id: number, params: UpdateProjectRequest) {
+    return await api.patch(`/projects/${id}`, params);
+  }
 
   async deleteProject(id: number) {
     return await api.delete(`/projects/${id}`);

@@ -9,6 +9,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { TemplatesModule } from './modules/templates/templates.module';
+import { SocialAccountsModule } from './modules/social-accounts/social-accounts.module';
 import { LoggerMiddleware } from './common/middlewares';
 
 function getPostgresConfig() {
@@ -101,6 +102,7 @@ async function ensurePostgresDatabaseExists(): Promise<void> {
     }),
     AuthModule,
     UsersModule,
+    SocialAccountsModule,
     ProjectsModule,
     TemplatesModule,
   ],

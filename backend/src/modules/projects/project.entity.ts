@@ -4,6 +4,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -28,10 +29,10 @@ export class Project {
   @Column({ type: 'varchar', nullable: true, length: 300 })
   description!: string | null;
 
-  @Column({ type: 'text' })
+  @Column({ type: 'varchar', length: 100 })
   file!: string;
 
-  @Column({ type: 'text', default: '' })
+  @Column({ type: 'varchar', length: 100, default: '' })
   preview!: string;
 
   @Column({ type: 'boolean', default: false })
@@ -52,4 +53,7 @@ export class Project {
   })
   @JoinColumn({ name: 'templateId' })
   template!: Template | null;
+
+  @OneToMany(() => Template, (template) => template.project)
+  createdTemplates!: Template[];
 }
