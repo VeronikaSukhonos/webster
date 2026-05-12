@@ -13,8 +13,11 @@ export type JsonDocumentFolder = 'projects' | 'templates';
 const DOCUMENT_STORAGE_ROOT = path.resolve(process.cwd(), 'storage', 'documents');
 const MAX_DOCUMENT_BYTES = 1000000;
 
-export function createJsonDocumentPath(folder: JsonDocumentFolder): string {
-  return `${folder}/${crypto.randomBytes(12).toString('hex')}.json`;
+export function createJsonDocumentPath(
+  folder: JsonDocumentFolder,
+  filename: string | number = crypto.randomBytes(12).toString('hex'),
+): string {
+  return `${folder}/${filename}.json`;
 }
 
 export function isJsonDocumentPath(relativePath: string, folder: JsonDocumentFolder): boolean {
@@ -62,6 +65,18 @@ export async function writeJsonDocument(
   await writeFile(filepath, serialized, 'utf8');
 }
 
+export function parseJsonDocumentInput(value: unknown): JsonDocument | undefined {
+  if (value === undefined) return undefined;
+
+  const parsed = typeof value === 'string' ? parseJsonString(value) : value;
+
+  if (!isPlainJsonObject(parsed)) {
+    throw new BadRequestException('Document content must be a JSON object');
+  }
+
+  return parsed;
+}
+
 function resolveJsonDocumentPath(relativePath: string, folder?: JsonDocumentFolder): string {
   const normalizedPath = relativePath.replace(/\\/g, '/');
 
@@ -85,6 +100,14 @@ function resolveJsonDocumentPath(relativePath: string, folder?: JsonDocumentFold
 
 function isPlainJsonObject(value: unknown): value is JsonDocument {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseJsonString(value: string): unknown {
+  try {
+    return JSON.parse(value);
+  } catch {
+    throw new BadRequestException('Document content must be valid JSON');
+  }
 }
 
 function isNodeError(error: unknown): error is NodeJS.ErrnoException {

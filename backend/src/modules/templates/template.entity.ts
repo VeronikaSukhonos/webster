@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import { Project } from '../projects/project.entity';
 import { User } from '../users/user.entity';
-import { TemplateType } from './template-type.enum';
+import { TEMPLATE_TYPE_ENUM, type TemplateType } from './template-type.enum';
 
 @Entity({ name: 'templates' })
 export class Template {
@@ -41,7 +41,7 @@ export class Template {
   @CreateDateColumn({ type: 'timestamp' })
   createDate!: Date;
 
-  @Column({ type: 'enum', enum: TemplateType, enumName: 'template_type_enum' })
+  @Column({ type: 'enum', enum: TEMPLATE_TYPE_ENUM, enumName: 'template_type_enum' })
   type!: TemplateType;
 
   @Column({ type: 'boolean', default: false })

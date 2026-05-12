@@ -3,6 +3,7 @@ export { uploadFileToPath } from './upload-file-to-path.util';
 export {
   createJsonDocumentPath,
   isJsonDocumentPath,
+  parseJsonDocumentInput,
   readJsonDocument,
   writeJsonDocument,
 } from './json-document.util';

@@ -11,9 +11,21 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { SanitizeString } from '../../../common/decorators';
-import type { JsonDocument } from '../../../common/utils';
+import { parseJsonDocumentInput, type JsonDocument } from '../../../common/utils';
+
+function parseBooleanInput(value: unknown): unknown {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return value;
+}
+
+function parseNullableNumberInput(value: unknown): unknown {
+  if (value === '' || value === 'null') return null;
+  if (typeof value === 'string') return Number(value);
+  return value;
+}
 
 export class CreateProjectDto {
   @ApiProperty({ example: 'Instagram spring sale post' })
@@ -37,16 +49,18 @@ export class CreateProjectDto {
     example: { version: 1, elements: [] },
     additionalProperties: true,
   })
+  @Transform(({ value }) => parseJsonDocumentInput(value))
   @IsObject({ message: 'content must be an object' })
   @IsNotEmptyObject({}, { message: 'content cannot be empty' })
   readonly content!: JsonDocument;
 
-  @ApiProperty({ example: 'projects/preview.png' })
+  @ApiProperty({ required: false, example: 'projects/preview.png' })
+  @IsOptional()
   @MaxLength(100, { message: 'preview must be at most 100 characters' })
   @IsString()
   @IsNotEmpty({ message: 'preview cannot be empty' })
   @SanitizeString('any')
-  readonly preview!: string;
+  readonly preview?: string;
 
   @ApiProperty({ example: 1080, minimum: 40, maximum: 4000 })
   @Type(() => Number)
@@ -64,12 +78,13 @@ export class CreateProjectDto {
 
   @ApiProperty({ required: false, default: false })
   @IsOptional()
+  @Transform(({ value }) => parseBooleanInput(value))
   @IsBoolean({ message: 'isPublic must be a boolean value' })
   readonly isPublic?: boolean;
 
   @ApiProperty({ required: false, nullable: true, example: 1 })
   @IsOptional()
-  @Type(() => Number)
+  @Transform(({ value }) => parseNullableNumberInput(value))
   @IsInt({ message: 'templateId must be an integer' })
   readonly templateId?: number | null;
 }

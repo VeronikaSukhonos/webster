@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -19,8 +20,8 @@ import { Template } from '../templates/template.entity';
 import type { QueryResponse } from '../../common/types';
 import {
   createJsonDocumentPath,
-  isJsonDocumentPath,
   readJsonDocument,
+  uploadFileToPath,
   writeJsonDocument,
 } from '../../common/utils';
 
@@ -107,25 +108,37 @@ export class ProjectsService {
     });
   }
 
-  async createOne(authorId: number, dto: CreateProjectDto): Promise<ProjectResponseDto> {
-    await this.assertTemplateExists(dto.templateId, authorId);
+  async createOne(
+    authorId: number,
+    dto: CreateProjectDto,
+    previewFile?: Express.Multer.File,
+  ): Promise<ProjectResponseDto> {
+    if (!previewFile && !dto.preview) {
+      throw new BadRequestException('preview is required');
+    }
 
-    const file = createJsonDocumentPath('projects');
-    await writeJsonDocument(file, dto.content);
+    await this.assertTemplateExists(dto.templateId, authorId);
 
     const project = await this.projectsRepository.save(
       this.projectsRepository.create({
         authorId,
         title: dto.title,
         description: dto.description ?? null,
-        file,
-        preview: dto.preview,
+        file: createJsonDocumentPath('projects'),
+        preview: dto.preview ?? '',
         width: dto.width,
         height: dto.height,
         isPublic: dto.isPublic ?? false,
         templateId: dto.templateId ?? null,
       }),
     );
+
+    const file = await this.writeProjectDocument(project.id, dto.content);
+    const preview = previewFile
+      ? await this.uploadProjectPreview(project.id, previewFile)
+      : dto.preview;
+
+    await this.projectsRepository.update(project.id, { file, preview });
 
     return await this.getOwnProject(project.id, authorId);
   }
@@ -137,16 +150,13 @@ export class ProjectsService {
   ): Promise<ProjectResponseDto> {
     const template = await this.getAccessibleTemplate(templateId, authorId);
     const content = await readJsonDocument(template.file);
-    const file = createJsonDocumentPath('projects');
-
-    await writeJsonDocument(file, content);
 
     const project = await this.projectsRepository.save(
       this.projectsRepository.create({
         authorId,
         title: dto.title,
         description: dto.description ?? null,
-        file,
+        file: createJsonDocumentPath('projects'),
         preview: template.preview,
         width: template.width,
         height: template.height,
@@ -154,6 +164,10 @@ export class ProjectsService {
         templateId: template.id,
       }),
     );
+
+    await this.projectsRepository.update(project.id, {
+      file: await this.writeProjectDocument(project.id, content),
+    });
 
     return await this.getOwnProject(project.id, authorId);
   }
@@ -164,16 +178,13 @@ export class ProjectsService {
     if (!sourceProject) throw new NotFoundException('Project is not found');
 
     const content = await readJsonDocument(sourceProject.file);
-    const file = createJsonDocumentPath('projects');
-
-    await writeJsonDocument(file, content);
 
     const project = await this.projectsRepository.save(
       this.projectsRepository.create({
         authorId,
         title: this.createDuplicateTitle(sourceProject.title),
         description: sourceProject.description,
-        file,
+        file: createJsonDocumentPath('projects'),
         preview: sourceProject.preview,
         width: sourceProject.width,
         height: sourceProject.height,
@@ -182,6 +193,10 @@ export class ProjectsService {
       }),
     );
 
+    await this.projectsRepository.update(project.id, {
+      file: await this.writeProjectDocument(project.id, content),
+    });
+
     return await this.getOwnProject(project.id, authorId);
   }
 
@@ -189,6 +204,7 @@ export class ProjectsService {
     id: number,
     authorId: number,
     dto: UpdateProjectDto,
+    previewFile?: Express.Multer.File,
   ): Promise<ProjectResponseDto> {
     const project = await this.projectsRepository.findOneBy({ id });
 
@@ -199,19 +215,19 @@ export class ProjectsService {
     await this.assertTemplateExists(dto.templateId, authorId);
 
     let file = project.file;
+    const preview = previewFile
+      ? await this.uploadProjectPreview(project.id, previewFile)
+      : dto.preview;
 
     if (dto.content !== undefined) {
-      if (!isJsonDocumentPath(file, 'projects')) {
-        file = createJsonDocumentPath('projects');
-      }
-      await writeJsonDocument(file, dto.content);
+      file = await this.writeProjectDocument(project.id, dto.content);
     }
 
     await this.projectsRepository.update(id, {
       ...(dto.title !== undefined && { title: dto.title }),
       ...(dto.description !== undefined && { description: dto.description ?? null }),
       ...(dto.content !== undefined && { file }),
-      ...(dto.preview !== undefined && { preview: dto.preview }),
+      ...(preview !== undefined && { preview }),
       ...(dto.width !== undefined && { width: dto.width }),
       ...(dto.height !== undefined && { height: dto.height }),
       ...(dto.isPublic !== undefined && { isPublic: dto.isPublic }),
@@ -278,5 +294,23 @@ export class ProjectsService {
     if (title.length + suffix.length <= maxTitleLength) return `${title}${suffix}`;
 
     return `${title.substring(0, maxTitleLength - suffix.length)}${suffix}`;
+  }
+
+  private async writeProjectDocument(
+    projectId: number,
+    content: Record<string, unknown>,
+  ): Promise<string> {
+    const file = createJsonDocumentPath('projects', projectId);
+
+    await writeJsonDocument(file, content);
+
+    return file;
+  }
+
+  private async uploadProjectPreview(
+    projectId: number,
+    preview: Express.Multer.File,
+  ): Promise<string> {
+    return await uploadFileToPath(preview, 'projects', `project-${projectId}`, '.jpg');
   }
 }

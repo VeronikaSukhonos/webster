@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -9,11 +10,15 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiBody,
   ApiConflictResponse,
+  ApiConsumes,
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
@@ -23,6 +28,7 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ProjectsService } from './projects.service';
 import {
   CreateProjectDto,
@@ -31,8 +37,61 @@ import {
   UpdateProjectDto,
 } from './dtos';
 import { Public, User } from '../../common/decorators';
-import { AtLeastOneParamPipe, ParseIntWithMessagePipe } from '../../common/pipes';
+import { FileValidationPipe, ParseIntWithMessagePipe } from '../../common/pipes';
 import type { ApiResponse } from '../../common/types';
+
+const PROJECT_PREVIEW_FILE_PIPE = new FileValidationPipe({
+  fileIsRequired: false,
+  fileType: /^image\/jpeg$/,
+  invalidFormatMessage: 'Invalid file format - only JPG (JPEG) is allowed',
+});
+
+const PROJECT_MULTIPART_CREATE_SCHEMA = {
+  schema: {
+    type: 'object',
+    required: ['title', 'content', 'width', 'height', 'preview'],
+    properties: {
+      title: { type: 'string', maxLength: 100, example: 'Instagram spring sale post' },
+      description: {
+        type: 'string',
+        maxLength: 300,
+        nullable: true,
+        example: 'Draft design for a social media campaign',
+      },
+      isPublic: { type: 'string', example: 'false' },
+      width: { type: 'string', minimum: 40, maximum: 4000, example: '1080' },
+      height: { type: 'string', minimum: 40, maximum: 4000, example: '1350' },
+      templateId: { type: 'string', nullable: true, example: '1' },
+      content: {
+        type: 'string',
+        description: 'JSON string with project metadata/content',
+        example: '{"version":1,"elements":[]}',
+      },
+      preview: { type: 'string', format: 'binary', description: 'JPG preview image' },
+    },
+  },
+};
+
+const PROJECT_MULTIPART_UPDATE_SCHEMA = {
+  schema: {
+    type: 'object',
+    properties: {
+      title: { type: 'string', maxLength: 100, example: 'Updated project title' },
+      description: { type: 'string', maxLength: 300, nullable: true, example: null },
+      isPublic: { type: 'string', example: 'true' },
+      width: { type: 'string', minimum: 40, maximum: 4000, example: '1080' },
+      height: { type: 'string', minimum: 40, maximum: 4000, example: '1350' },
+      templateId: { type: 'string', nullable: true, example: '1' },
+      editDate: { type: 'string', format: 'date-time', example: '2026-04-28T19:17:06.813Z' },
+      content: {
+        type: 'string',
+        description: 'JSON string with project metadata/content',
+        example: '{"version":1,"elements":[]}',
+      },
+      preview: { type: 'string', format: 'binary', description: 'JPG preview image' },
+    },
+  },
+};
 
 @ApiTags('Projects')
 @Controller('projects')
@@ -180,6 +239,8 @@ export class ProjectsController {
       },
     },
   })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody(PROJECT_MULTIPART_CREATE_SCHEMA)
   @ApiBadRequestResponse({
     description: 'Invalid project data',
     example: {
@@ -191,10 +252,16 @@ export class ProjectsController {
   @ApiForbiddenResponse({ description: 'Template belongs to another user' })
   @ApiNotFoundResponse({ description: 'Template is not found' })
   @Post()
-  async createOne(@User('id') authId: number, @Body() dto: CreateProjectDto): Promise<ApiResponse> {
+  @UseInterceptors(FileInterceptor('preview'))
+  async createOne(
+    @User('id') authId: number,
+    @Body() dto: CreateProjectDto,
+    @UploadedFile(PROJECT_PREVIEW_FILE_PIPE)
+    preview?: Express.Multer.File,
+  ): Promise<ApiResponse> {
     return {
       message: 'Created project successfully',
-      data: { project: await this.projectsService.createOne(authId, dto) },
+      data: { project: await this.projectsService.createOne(authId, dto, preview) },
     };
   }
 
@@ -313,6 +380,8 @@ export class ProjectsController {
       },
     },
   })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody(PROJECT_MULTIPART_UPDATE_SCHEMA)
   @ApiBadRequestResponse({
     description: 'No update data or invalid project data',
     example: {
@@ -326,27 +395,21 @@ export class ProjectsController {
   @ApiNotFoundResponse({ description: 'Project or template is not found' })
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('preview'))
   async updateOne(
     @Param('id', new ParseIntWithMessagePipe('Project is not found', HttpStatus.NOT_FOUND))
     id: number,
     @User('id') authId: number,
-    @Body(
-      new AtLeastOneParamPipe([
-        'title',
-        'description',
-        'content',
-        'preview',
-        'width',
-        'height',
-        'isPublic',
-        'templateId',
-      ]),
-    )
+    @Body()
     dto: UpdateProjectDto,
+    @UploadedFile(PROJECT_PREVIEW_FILE_PIPE)
+    preview?: Express.Multer.File,
   ): Promise<ApiResponse> {
+    this.assertProjectUpdateHasPayload(dto, preview);
+
     return {
       message: 'Updated project successfully',
-      data: { project: await this.projectsService.updateOne(id, authId, dto) },
+      data: { project: await this.projectsService.updateOne(id, authId, dto, preview) },
     };
   }
 
@@ -371,5 +434,27 @@ export class ProjectsController {
   ): Promise<ApiResponse> {
     await this.projectsService.deleteOne(id, authId);
     return { message: 'Deleted project successfully' };
+  }
+
+  private assertProjectUpdateHasPayload(
+    dto: UpdateProjectDto,
+    preview?: Express.Multer.File,
+  ): void {
+    const hasBodyUpdate = [
+      dto.title,
+      dto.description,
+      dto.content,
+      dto.preview,
+      dto.width,
+      dto.height,
+      dto.isPublic,
+      dto.templateId,
+    ].some((value) => value !== undefined);
+
+    if (!hasBodyUpdate && !preview) {
+      throw new BadRequestException(
+        'At least one parameter must be provided: title, description, content, preview, width, height, isPublic, templateId',
+      );
+    }
   }
 }

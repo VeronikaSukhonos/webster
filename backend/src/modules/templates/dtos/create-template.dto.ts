@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-  IsEnum,
   IsInt,
+  IsIn,
   IsNotEmpty,
   IsNotEmptyObject,
   IsObject,
@@ -14,7 +14,11 @@ import {
 } from 'class-validator';
 import { SanitizeString } from '../../../common/decorators';
 import type { JsonDocument } from '../../../common/utils';
-import { TemplateType } from '../template-type.enum';
+import {
+  TEMPLATE_TYPE_ENUM,
+  TEMPLATE_TYPE_EXAMPLE,
+  type TemplateType,
+} from '../template-type.enum';
 
 export class CreateTemplateDto {
   @ApiProperty({ example: 'Minimal birthday invitation' })
@@ -54,8 +58,8 @@ export class CreateTemplateDto {
   @Max(4000, { message: 'height must be at most 4000 pixels' })
   readonly height!: number;
 
-  @ApiProperty({ enum: TemplateType, example: TemplateType.InstagramPost })
-  @IsEnum(TemplateType, {
+  @ApiProperty({ enum: TEMPLATE_TYPE_ENUM, example: TEMPLATE_TYPE_EXAMPLE })
+  @IsIn(TEMPLATE_TYPE_ENUM, {
     message:
       'type must be one of the following values: other, collage, instagram-post, instagram-story, invitation, presentation, resume',
   })

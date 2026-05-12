@@ -1,7 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsIn, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 import { SanitizeString } from '../../../common/decorators';
-import { TemplateType } from '../template-type.enum';
+import {
+  TEMPLATE_TYPE_ENUM,
+  TEMPLATE_TYPE_EXAMPLE,
+  type TemplateType,
+} from '../template-type.enum';
 
 export class UpdateTemplateDto {
   @ApiProperty({ required: false, example: 'Updated invitation template' })
@@ -12,9 +16,9 @@ export class UpdateTemplateDto {
   @SanitizeString('any')
   readonly title?: string;
 
-  @ApiProperty({ required: false, enum: TemplateType, example: TemplateType.Invitation })
+  @ApiProperty({ required: false, enum: TEMPLATE_TYPE_ENUM, example: TEMPLATE_TYPE_EXAMPLE })
   @IsOptional()
-  @IsEnum(TemplateType, {
+  @IsIn(TEMPLATE_TYPE_ENUM, {
     message:
       'type must be one of the following values: other, collage, instagram-post, instagram-story, invitation, presentation, resume',
   })

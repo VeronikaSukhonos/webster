@@ -1,7 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { IsIn, IsNotEmpty, IsString, MaxLength } from 'class-validator';
 import { SanitizeString } from '../../../common/decorators';
-import { TemplateType } from '../template-type.enum';
+import {
+  TEMPLATE_TYPE_ENUM,
+  TEMPLATE_TYPE_EXAMPLE,
+  type TemplateType,
+} from '../template-type.enum';
 
 export class CreateTemplateFromProjectDto {
   @ApiProperty({ example: 'Template from my project' })
@@ -11,8 +15,8 @@ export class CreateTemplateFromProjectDto {
   @SanitizeString('any')
   readonly title!: string;
 
-  @ApiProperty({ enum: TemplateType, example: TemplateType.InstagramPost })
-  @IsEnum(TemplateType, {
+  @ApiProperty({ enum: TEMPLATE_TYPE_ENUM, example: TEMPLATE_TYPE_EXAMPLE })
+  @IsIn(TEMPLATE_TYPE_ENUM, {
     message:
       'type must be one of the following values: other, collage, instagram-post, instagram-story, invitation, presentation, resume',
   })

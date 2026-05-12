@@ -29,7 +29,7 @@ import {
   TemplateQueryDto,
   UpdateTemplateDto,
 } from './dtos';
-import { TemplateType } from './template-type.enum';
+import { TEMPLATE_TYPE_ENUM, TEMPLATE_TYPE_EXAMPLE } from './template-type.enum';
 import { Public, User } from '../../common/decorators';
 import { AtLeastOneParamPipe, ParseIntWithMessagePipe } from '../../common/pipes';
 import type { ApiResponse } from '../../common/types';
@@ -46,8 +46,8 @@ export class TemplatesController {
   @ApiQuery({
     name: 'type',
     required: false,
-    enum: TemplateType,
-    example: TemplateType.InstagramPost,
+    enum: TEMPLATE_TYPE_ENUM,
+    example: TEMPLATE_TYPE_EXAMPLE,
   })
   @ApiQuery({ name: 'source', required: false, enum: ['all', 'built-in', 'custom'] })
   @ApiOkResponse({

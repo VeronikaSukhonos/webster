@@ -1,6 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsBoolean, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 import { SanitizeString } from '../../../common/decorators';
+
+function parseBooleanInput(value: unknown): unknown {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return value;
+}
 
 export class CreateProjectFromTemplateDto {
   @ApiProperty({ example: 'Project from Instagram template' })
@@ -21,6 +28,7 @@ export class CreateProjectFromTemplateDto {
 
   @ApiProperty({ required: false, default: false })
   @IsOptional()
+  @Transform(({ value }) => parseBooleanInput(value))
   @IsBoolean({ message: 'isPublic must be a boolean value' })
   readonly isPublic?: boolean;
 }

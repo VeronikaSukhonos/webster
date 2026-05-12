@@ -1,7 +1,7 @@
 import { Expose, Type } from 'class-transformer';
 import { EntityAuthorResponseDto } from '../../../common/dtos';
 import type { JsonDocument } from '../../../common/utils';
-import { TemplateType } from '../template-type.enum';
+import type { TemplateType } from '../template-type.enum';
 
 export class TemplateResponseDto {
   @Expose()
