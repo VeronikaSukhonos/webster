@@ -13,6 +13,7 @@ import {
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
@@ -23,7 +24,12 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
-import { CreateProjectDto, ProjectQueryDto, UpdateProjectDto } from './dtos';
+import {
+  CreateProjectDto,
+  CreateProjectFromTemplateDto,
+  ProjectQueryDto,
+  UpdateProjectDto,
+} from './dtos';
 import { Public, User } from '../../common/decorators';
 import { AtLeastOneParamPipe, ParseIntWithMessagePipe } from '../../common/pipes';
 import type { ApiResponse } from '../../common/types';
@@ -50,8 +56,10 @@ export class ProjectsController {
             authorId: 1,
             title: 'Instagram spring sale post',
             description: 'Draft design for a social media campaign',
-            file: 'http://localhost:3000/files/projects/design.json',
-            preview: 'http://localhost:3000/files/projects/preview.png',
+            file: 'projects/design.json',
+            preview: 'projects/preview.png',
+            width: 1080,
+            height: 1350,
             isPublic: true,
             createDate: '2026-04-28T18:17:06.813Z',
             editDate: '2026-04-28T18:17:06.813Z',
@@ -113,8 +121,11 @@ export class ProjectsController {
           authorId: 1,
           title: 'Instagram spring sale post',
           description: 'Draft design for a social media campaign',
-          file: 'http://localhost:3000/files/projects/design.json',
-          preview: 'http://localhost:3000/files/projects/preview.png',
+          file: 'projects/design.json',
+          content: { version: 1, elements: [] },
+          preview: 'projects/preview.png',
+          width: 1080,
+          height: 1350,
           isPublic: true,
           createDate: '2026-04-28T18:17:06.813Z',
           editDate: '2026-04-28T18:17:06.813Z',
@@ -154,8 +165,11 @@ export class ProjectsController {
           authorId: 1,
           title: 'Instagram spring sale post',
           description: 'Draft design for a social media campaign',
-          file: 'http://localhost:3000/files/projects/design.json',
-          preview: 'http://localhost:3000/files/projects/preview.png',
+          file: 'projects/design.json',
+          content: { version: 1, elements: [] },
+          preview: 'projects/preview.png',
+          width: 1080,
+          height: 1350,
           isPublic: false,
           createDate: '2026-04-28T18:17:06.813Z',
           editDate: '2026-04-28T18:17:06.813Z',
@@ -174,12 +188,99 @@ export class ProjectsController {
       errors: [{ param: 'title', error: 'title cannot be empty' }],
     },
   })
+  @ApiForbiddenResponse({ description: 'Template belongs to another user' })
   @ApiNotFoundResponse({ description: 'Template is not found' })
   @Post()
   async createOne(@User('id') authId: number, @Body() dto: CreateProjectDto): Promise<ApiResponse> {
     return {
       message: 'Created project successfully',
       data: { project: await this.projectsService.createOne(authId, dto) },
+    };
+  }
+
+  @ApiOperation({ summary: 'Project creation from template' })
+  @ApiBearerAuth()
+  @ApiParam({ name: 'templateId', description: 'Source template id', example: 1 })
+  @ApiCreatedResponse({
+    description: 'Created project from template successfully',
+    example: {
+      statusCode: 201,
+      message: 'Created project from template successfully',
+      data: {
+        project: {
+          id: 1,
+          authorId: 1,
+          title: 'Project from Instagram template',
+          description: 'Draft design based on a template',
+          file: 'projects/35d8fb8a536d97e4a811aa1f.json',
+          content: { version: 1, elements: [] },
+          preview: 'templates/preview.jpg',
+          width: 1080,
+          height: 1350,
+          isPublic: false,
+          createDate: '2026-04-28T18:17:06.813Z',
+          editDate: '2026-04-28T18:17:06.813Z',
+          templateId: 1,
+          author: { id: 1, username: 'user' },
+          template: { id: 1, title: 'Instagram Post' },
+        },
+      },
+    },
+  })
+  @ApiForbiddenResponse({ description: 'Template belongs to another user' })
+  @ApiNotFoundResponse({ description: 'Template is not found' })
+  @Post('from-template/:templateId')
+  async createOneFromTemplate(
+    @User('id') authId: number,
+    @Param('templateId', new ParseIntWithMessagePipe('Template is not found', HttpStatus.NOT_FOUND))
+    templateId: number,
+    @Body() dto: CreateProjectFromTemplateDto,
+  ): Promise<ApiResponse> {
+    return {
+      message: 'Created project from template successfully',
+      data: { project: await this.projectsService.createOneFromTemplate(authId, templateId, dto) },
+    };
+  }
+
+  @ApiOperation({ summary: 'Project duplication' })
+  @ApiBearerAuth()
+  @ApiParam({ name: 'id', description: 'Source project id', example: 1 })
+  @ApiCreatedResponse({
+    description: 'Duplicated project successfully',
+    example: {
+      statusCode: 201,
+      message: 'Duplicated project successfully',
+      data: {
+        project: {
+          id: 2,
+          authorId: 1,
+          title: 'Instagram spring sale post copy',
+          description: 'Draft design for a social media campaign',
+          file: 'projects/35d8fb8a536d97e4a811aa1f.json',
+          content: { version: 1, elements: [] },
+          preview: 'projects/preview.png',
+          width: 1080,
+          height: 1350,
+          isPublic: true,
+          createDate: '2026-04-28T18:17:06.813Z',
+          editDate: '2026-04-28T18:17:06.813Z',
+          templateId: 1,
+          author: { id: 1, username: 'user' },
+          template: { id: 1, title: 'Instagram Post' },
+        },
+      },
+    },
+  })
+  @ApiNotFoundResponse({ description: 'Project is not found' })
+  @Post(':id/duplicate')
+  async duplicateOne(
+    @Param('id', new ParseIntWithMessagePipe('Project is not found', HttpStatus.NOT_FOUND))
+    id: number,
+    @User('id') authId: number,
+  ): Promise<ApiResponse> {
+    return {
+      message: 'Duplicated project successfully',
+      data: { project: await this.projectsService.duplicateOne(id, authId) },
     };
   }
 
@@ -197,8 +298,11 @@ export class ProjectsController {
           authorId: 1,
           title: 'Updated project title',
           description: null,
-          file: 'http://localhost:3000/files/projects/design.json',
-          preview: 'http://localhost:3000/files/projects/preview.png',
+          file: 'projects/design.json',
+          content: { version: 1, elements: [] },
+          preview: 'projects/preview.png',
+          width: 1080,
+          height: 1350,
           isPublic: true,
           createDate: '2026-04-28T18:17:06.813Z',
           editDate: '2026-04-28T19:17:06.813Z',
@@ -214,10 +318,11 @@ export class ProjectsController {
     example: {
       statusCode: 400,
       message:
-        'At least one parameter must be provided: title, description, content, preview, isPublic, templateId',
+        'At least one parameter must be provided: title, description, content, preview, width, height, isPublic, templateId',
     },
   })
-  @ApiForbiddenResponse({ description: 'Project belongs to another user' })
+  @ApiForbiddenResponse({ description: 'Project or template belongs to another user' })
+  @ApiConflictResponse({ description: 'Project has newer changes' })
   @ApiNotFoundResponse({ description: 'Project or template is not found' })
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
@@ -231,6 +336,8 @@ export class ProjectsController {
         'description',
         'content',
         'preview',
+        'width',
+        'height',
         'isPublic',
         'templateId',
       ]),

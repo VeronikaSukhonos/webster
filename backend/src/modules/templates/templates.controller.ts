@@ -23,7 +23,12 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { TemplatesService } from './templates.service';
-import { CreateTemplateDto, TemplateQueryDto, UpdateTemplateDto } from './dtos';
+import {
+  CreateTemplateDto,
+  CreateTemplateFromProjectDto,
+  TemplateQueryDto,
+  UpdateTemplateDto,
+} from './dtos';
 import { TemplateType } from './template-type.enum';
 import { Public, User } from '../../common/decorators';
 import { AtLeastOneParamPipe, ParseIntWithMessagePipe } from '../../common/pipes';
@@ -56,8 +61,10 @@ export class TemplatesController {
             id: 1,
             authorId: 1,
             title: 'Minimal birthday invitation',
-            file: 'http://localhost:3000/files/templates/template.json',
-            preview: 'http://localhost:3000/files/templates/preview.png',
+            file: 'templates/template.json',
+            preview: 'templates/preview.png',
+            width: 1080,
+            height: 1350,
             createDate: '2026-04-28T18:17:06.813Z',
             type: 'invitation',
             isBuiltIn: true,
@@ -95,8 +102,11 @@ export class TemplatesController {
           id: 1,
           authorId: 1,
           title: 'Minimal birthday invitation',
-          file: 'http://localhost:3000/files/templates/template.json',
-          preview: 'http://localhost:3000/files/templates/preview.png',
+          file: 'templates/template.json',
+          content: { version: 1, elements: [] },
+          preview: 'templates/preview.png',
+          width: 1080,
+          height: 1350,
           createDate: '2026-04-28T18:17:06.813Z',
           type: 'invitation',
           isBuiltIn: true,
@@ -134,8 +144,11 @@ export class TemplatesController {
           id: 1,
           authorId: 1,
           title: 'Minimal birthday invitation',
-          file: 'http://localhost:3000/files/templates/template.json',
-          preview: 'http://localhost:3000/files/templates/preview.png',
+          file: 'templates/template.json',
+          content: { version: 1, elements: [] },
+          preview: 'templates/preview.png',
+          width: 1080,
+          height: 1350,
           createDate: '2026-04-28T18:17:06.813Z',
           type: 'invitation',
           isBuiltIn: false,
@@ -165,6 +178,55 @@ export class TemplatesController {
     };
   }
 
+  @ApiOperation({ summary: 'Template creation from project' })
+  @ApiBearerAuth()
+  @ApiParam({ name: 'projectId', description: 'Source project id', example: 1 })
+  @ApiCreatedResponse({
+    description: 'Created template from project successfully',
+    example: {
+      statusCode: 201,
+      message: 'Created template from project successfully',
+      data: {
+        template: {
+          id: 1,
+          authorId: 1,
+          title: 'Template from my project',
+          file: 'templates/35d8fb8a536d97e4a811aa1f.json',
+          content: { version: 1, elements: [] },
+          preview: 'projects/preview.jpg',
+          width: 1080,
+          height: 1350,
+          createDate: '2026-04-28T18:17:06.813Z',
+          type: 'instagram-post',
+          isBuiltIn: false,
+          projectId: 1,
+          author: { id: 1, username: 'user' },
+        },
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid template data',
+    example: {
+      statusCode: 400,
+      message: 'Validation failed',
+      errors: [{ param: 'title', error: 'title cannot be empty' }],
+    },
+  })
+  @ApiNotFoundResponse({ description: 'Project is not found' })
+  @Post('from-project/:projectId')
+  async createOneFromProject(
+    @User('id') authId: number,
+    @Param('projectId', new ParseIntWithMessagePipe('Project is not found', HttpStatus.NOT_FOUND))
+    projectId: number,
+    @Body() dto: CreateTemplateFromProjectDto,
+  ): Promise<ApiResponse> {
+    return {
+      message: 'Created template from project successfully',
+      data: { template: await this.templatesService.createOneFromProject(authId, projectId, dto) },
+    };
+  }
+
   @ApiOperation({ summary: 'Template update' })
   @ApiBearerAuth()
   @ApiParam({ name: 'id', description: 'Template id', example: 1 })
@@ -178,8 +240,11 @@ export class TemplatesController {
           id: 1,
           authorId: 1,
           title: 'Updated invitation template',
-          file: 'http://localhost:3000/files/templates/template.json',
-          preview: 'http://localhost:3000/files/templates/preview.png',
+          file: 'templates/template.json',
+          content: { version: 1, elements: [] },
+          preview: 'templates/preview.png',
+          width: 1080,
+          height: 1350,
           createDate: '2026-04-28T18:17:06.813Z',
           type: 'invitation',
           isBuiltIn: false,

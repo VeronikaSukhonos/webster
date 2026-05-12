@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-  IsBoolean,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -9,7 +8,9 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
+  Min,
 } from 'class-validator';
 import { SanitizeString } from '../../../common/decorators';
 import type { JsonDocument } from '../../../common/utils';
@@ -32,12 +33,26 @@ export class CreateTemplateDto {
   @IsNotEmptyObject({}, { message: 'content cannot be empty' })
   readonly content!: JsonDocument;
 
-  @ApiProperty({ example: 'http://localhost:3000/files/templates/preview.png' })
+  @ApiProperty({ example: 'templates/preview.png' })
   @MaxLength(100, { message: 'preview must be at most 100 characters' })
   @IsString()
   @IsNotEmpty({ message: 'preview cannot be empty' })
   @SanitizeString('any')
   readonly preview!: string;
+
+  @ApiProperty({ example: 1080, minimum: 40, maximum: 4000 })
+  @Type(() => Number)
+  @IsInt({ message: 'width must be an integer' })
+  @Min(40, { message: 'width must be at least 40 pixels' })
+  @Max(4000, { message: 'width must be at most 4000 pixels' })
+  readonly width!: number;
+
+  @ApiProperty({ example: 1350, minimum: 40, maximum: 4000 })
+  @Type(() => Number)
+  @IsInt({ message: 'height must be an integer' })
+  @Min(40, { message: 'height must be at least 40 pixels' })
+  @Max(4000, { message: 'height must be at most 4000 pixels' })
+  readonly height!: number;
 
   @ApiProperty({ enum: TemplateType, example: TemplateType.InstagramPost })
   @IsEnum(TemplateType, {
@@ -47,11 +62,6 @@ export class CreateTemplateDto {
   @IsNotEmpty({ message: 'type cannot be empty' })
   @SanitizeString('lower')
   readonly type!: TemplateType;
-
-  @ApiProperty({ required: false, default: false })
-  @IsOptional()
-  @IsBoolean({ message: 'isBuiltIn must be a boolean value' })
-  readonly isBuiltIn?: boolean;
 
   @ApiProperty({ required: false, nullable: true, example: 1 })
   @IsOptional()

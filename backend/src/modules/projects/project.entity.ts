@@ -35,6 +35,12 @@ export class Project {
   @Column({ type: 'varchar', length: 100, default: '' })
   preview!: string;
 
+  @Column({ type: 'integer', default: 1080 })
+  width!: number;
+
+  @Column({ type: 'integer', default: 1080 })
+  height!: number;
+
   @Column({ type: 'boolean', default: false })
   isPublic!: boolean;
 

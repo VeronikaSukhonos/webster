@@ -9,6 +9,8 @@ interface CreateProjectRequest {
   description?: string | null;
   content: JsonContent;
   preview: string;
+  width: number;
+  height: number;
   isPublic?: boolean;
   templateId?: number | null;
 }
@@ -18,8 +20,17 @@ interface UpdateProjectRequest {
   description?: string | null;
   content?: JsonContent;
   preview?: string;
+  width?: number;
+  height?: number;
   isPublic?: boolean;
   templateId?: number | null;
+  editDate?: string;
+}
+
+interface CreateProjectFromTemplateRequest {
+  title: string;
+  description?: string | null;
+  isPublic?: boolean;
 }
 
 class ProjectsApi {
@@ -42,6 +53,13 @@ class ProjectsApi {
 
   async createProject(params: CreateProjectRequest) {
     return await api.post(`/projects`, params);
+  }
+
+  async createProjectFromTemplate(
+    templateId: number,
+    params: CreateProjectFromTemplateRequest,
+  ) {
+    return await api.post(`/projects/from-template/${templateId}`, params);
   }
 
   async duplicateProject(id: number) {

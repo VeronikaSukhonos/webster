@@ -22,6 +22,8 @@ export interface ProjectResponse {
   author: Pick<UserResponse, 'id' | 'username'>;
   title: string;
   preview: string;
+  width: number;
+  height: number;
   file: string;
   content?: JsonContent;
   isPublic: boolean;
@@ -35,6 +37,8 @@ export interface TemplateResponse {
   author: Pick<UserResponse, 'id' | 'username'>;
   title: string;
   preview: string;
+  width: number;
+  height: number;
   file: string;
   content?: JsonContent;
   type: TemplateType;

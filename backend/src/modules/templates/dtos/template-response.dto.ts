@@ -23,6 +23,12 @@ export class TemplateResponseDto {
   readonly preview!: string;
 
   @Expose()
+  readonly width!: number;
+
+  @Expose()
+  readonly height!: number;
+
+  @Expose()
   readonly createDate!: Date;
 
   @Expose()

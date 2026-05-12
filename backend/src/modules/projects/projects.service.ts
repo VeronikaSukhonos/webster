@@ -1,9 +1,20 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { Repository } from 'typeorm';
 import { Project } from './project.entity';
-import { CreateProjectDto, ProjectQueryDto, ProjectResponseDto, UpdateProjectDto } from './dtos';
+import {
+  CreateProjectDto,
+  CreateProjectFromTemplateDto,
+  ProjectQueryDto,
+  ProjectResponseDto,
+  UpdateProjectDto,
+} from './dtos';
 import { Template } from '../templates/template.entity';
 import type { QueryResponse } from '../../common/types';
 import {
@@ -97,7 +108,7 @@ export class ProjectsService {
   }
 
   async createOne(authorId: number, dto: CreateProjectDto): Promise<ProjectResponseDto> {
-    await this.assertTemplateExists(dto.templateId);
+    await this.assertTemplateExists(dto.templateId, authorId);
 
     const file = createJsonDocumentPath('projects');
     await writeJsonDocument(file, dto.content);
@@ -109,8 +120,65 @@ export class ProjectsService {
         description: dto.description ?? null,
         file,
         preview: dto.preview,
+        width: dto.width,
+        height: dto.height,
         isPublic: dto.isPublic ?? false,
         templateId: dto.templateId ?? null,
+      }),
+    );
+
+    return await this.getOwnProject(project.id, authorId);
+  }
+
+  async createOneFromTemplate(
+    authorId: number,
+    templateId: number,
+    dto: CreateProjectFromTemplateDto,
+  ): Promise<ProjectResponseDto> {
+    const template = await this.getAccessibleTemplate(templateId, authorId);
+    const content = await readJsonDocument(template.file);
+    const file = createJsonDocumentPath('projects');
+
+    await writeJsonDocument(file, content);
+
+    const project = await this.projectsRepository.save(
+      this.projectsRepository.create({
+        authorId,
+        title: dto.title,
+        description: dto.description ?? null,
+        file,
+        preview: template.preview,
+        width: template.width,
+        height: template.height,
+        isPublic: dto.isPublic ?? false,
+        templateId: template.id,
+      }),
+    );
+
+    return await this.getOwnProject(project.id, authorId);
+  }
+
+  async duplicateOne(id: number, authorId: number): Promise<ProjectResponseDto> {
+    const sourceProject = await this.projectsRepository.findOneBy({ id, authorId });
+
+    if (!sourceProject) throw new NotFoundException('Project is not found');
+
+    const content = await readJsonDocument(sourceProject.file);
+    const file = createJsonDocumentPath('projects');
+
+    await writeJsonDocument(file, content);
+
+    const project = await this.projectsRepository.save(
+      this.projectsRepository.create({
+        authorId,
+        title: this.createDuplicateTitle(sourceProject.title),
+        description: sourceProject.description,
+        file,
+        preview: sourceProject.preview,
+        width: sourceProject.width,
+        height: sourceProject.height,
+        isPublic: sourceProject.isPublic,
+        templateId: sourceProject.templateId,
       }),
     );
 
@@ -127,7 +195,8 @@ export class ProjectsService {
     if (!project) throw new NotFoundException('Project is not found');
     if (project.authorId !== authorId) throw new ForbiddenException('You cannot edit this project');
 
-    await this.assertTemplateExists(dto.templateId);
+    this.assertProjectIsNotNewer(project.editDate, dto.editDate);
+    await this.assertTemplateExists(dto.templateId, authorId);
 
     let file = project.file;
 
@@ -143,6 +212,8 @@ export class ProjectsService {
       ...(dto.description !== undefined && { description: dto.description ?? null }),
       ...(dto.content !== undefined && { file }),
       ...(dto.preview !== undefined && { preview: dto.preview }),
+      ...(dto.width !== undefined && { width: dto.width }),
+      ...(dto.height !== undefined && { height: dto.height }),
       ...(dto.isPublic !== undefined && { isPublic: dto.isPublic }),
       ...(dto.templateId !== undefined && { templateId: dto.templateId }),
     });
@@ -174,10 +245,38 @@ export class ProjectsService {
     });
   }
 
-  private async assertTemplateExists(templateId?: number | null): Promise<void> {
+  private async assertTemplateExists(templateId?: number | null, authorId?: number): Promise<void> {
     if (templateId === undefined || templateId === null) return;
-    if (!(await this.templatesRepository.existsBy({ id: templateId }))) {
-      throw new NotFoundException('Template is not found');
+    await this.getAccessibleTemplate(templateId, authorId);
+  }
+
+  private async getAccessibleTemplate(templateId: number, authorId?: number): Promise<Template> {
+    const template = await this.templatesRepository.findOneBy({ id: templateId });
+
+    if (!template) throw new NotFoundException('Template is not found');
+    if (!template.isBuiltIn && template.authorId !== authorId) {
+      throw new ForbiddenException('You do not have access to this template');
     }
+
+    return template;
+  }
+
+  private assertProjectIsNotNewer(currentEditDate: Date, lastKnownEditDate?: string): void {
+    if (!lastKnownEditDate) return;
+
+    const lastKnownTime = new Date(lastKnownEditDate).getTime();
+
+    if (currentEditDate.getTime() > lastKnownTime) {
+      throw new ConflictException('Project has been updated since it was last fetched');
+    }
+  }
+
+  private createDuplicateTitle(title: string): string {
+    const suffix = ' copy';
+    const maxTitleLength = 100;
+
+    if (title.length + suffix.length <= maxTitleLength) return `${title}${suffix}`;
+
+    return `${title.substring(0, maxTitleLength - suffix.length)}${suffix}`;
   }
 }

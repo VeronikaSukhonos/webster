@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { Template } from './template.entity';
 import { Project } from '../projects/project.entity';
 import {
+  CreateTemplateFromProjectDto,
   CreateTemplateDto,
   TemplateQueryDto,
   TemplateResponseDto,
@@ -94,9 +95,42 @@ export class TemplatesService {
         title: dto.title,
         file,
         preview: dto.preview,
+        width: dto.width,
+        height: dto.height,
         type: dto.type,
-        isBuiltIn: dto.isBuiltIn ?? false,
+        isBuiltIn: false,
         projectId: dto.projectId ?? null,
+      }),
+    );
+
+    return await this.getOne(template.id, authorId);
+  }
+
+  async createOneFromProject(
+    authorId: number,
+    projectId: number,
+    dto: CreateTemplateFromProjectDto,
+  ): Promise<TemplateResponseDto> {
+    const project = await this.projectsRepository.findOneBy({ id: projectId, authorId });
+
+    if (!project) throw new NotFoundException('Project is not found');
+
+    const content = await readJsonDocument(project.file);
+    const file = createJsonDocumentPath('templates');
+
+    await writeJsonDocument(file, content);
+
+    const template = await this.templatesRepository.save(
+      this.templatesRepository.create({
+        authorId,
+        title: dto.title,
+        file,
+        preview: project.preview,
+        width: project.width,
+        height: project.height,
+        type: dto.type,
+        isBuiltIn: false,
+        projectId: project.id,
       }),
     );
 

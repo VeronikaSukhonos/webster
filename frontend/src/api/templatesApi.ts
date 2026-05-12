@@ -8,14 +8,20 @@ interface CreateTemplateRequest {
   title: string;
   content: JsonContent;
   preview: string;
+  width: number;
+  height: number;
   type: TemplateType;
-  isBuiltIn?: boolean;
   projectId?: number | null;
 }
 
 interface UpdateTemplateRequest {
   title?: string;
   type?: TemplateType;
+}
+
+interface CreateTemplateFromProjectRequest {
+  title: string;
+  type: TemplateType;
 }
 
 class TemplatesApi {
@@ -35,6 +41,10 @@ class TemplatesApi {
 
   async createTemplate(params: CreateTemplateRequest) {
     return await api.post(`/templates`, params);
+  }
+
+  async createTemplateFromProject(projectId: number, params: CreateTemplateFromProjectRequest) {
+    return await api.post(`/templates/from-project/${projectId}`, params);
   }
 
   async updateTemplate(id: number, params: UpdateTemplateRequest) {

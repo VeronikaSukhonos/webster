@@ -33,6 +33,12 @@ export class ProjectResponseDto {
   readonly preview!: string;
 
   @Expose()
+  readonly width!: number;
+
+  @Expose()
+  readonly height!: number;
+
+  @Expose()
   readonly isPublic!: boolean;
 
   @Expose()
