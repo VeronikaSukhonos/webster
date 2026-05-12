@@ -45,6 +45,7 @@ export class UsersService {
         email: true,
         avatar: true,
         about: true,
+        isAdmin: true,
         registerDate: true,
         ...(sensitive && {
           password: true,
@@ -148,7 +149,10 @@ export class UsersService {
 
     if (!user) throw new NotFoundException('User is not found');
 
-    return await this.deleteOneAvatarAndSave(user, await uploadFileToPath(avatar, 'avatars'));
+    return await this.deleteOneAvatarAndSave(
+      user,
+      await uploadFileToPath(avatar, 'avatars', `avatar-${user.id}`),
+    );
   }
 
   async deleteOneAvatar(id: number): Promise<string> {

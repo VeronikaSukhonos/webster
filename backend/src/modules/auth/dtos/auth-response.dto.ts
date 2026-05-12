@@ -17,6 +17,9 @@ export class AuthResponseDto {
   readonly about!: string;
 
   @Expose()
+  readonly isAdmin!: boolean;
+
+  @Expose()
   readonly registerDate!: Date;
 
   @Expose()
