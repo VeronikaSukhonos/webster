@@ -32,7 +32,7 @@ export class Project {
   @Column({ type: 'varchar', length: 100 })
   file!: string;
 
-  @Column({ type: 'varchar', length: 100, default: '' })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   preview!: string;
 
   @Column({ type: 'integer', default: 1080 })
