@@ -99,7 +99,7 @@ export class ProjectsService {
 
     if (!project) throw new NotFoundException('Project is not found');
     if (!project.isPublic && project.authorId !== authId) {
-      throw new ForbiddenException('You do not have access to this project');
+      throw new NotFoundException('Project is not found');
     }
 
     return plainToInstance(ProjectResponseDto, {

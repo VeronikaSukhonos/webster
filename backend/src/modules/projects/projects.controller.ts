@@ -195,8 +195,7 @@ export class ProjectsController {
       },
     },
   })
-  @ApiForbiddenResponse({ description: 'Project is private and belongs to another user' })
-  @ApiNotFoundResponse({ description: 'Project is not found' })
+  @ApiNotFoundResponse({ description: 'Project is not found or is private' })
   @Public()
   @Get(':id')
   @HttpCode(HttpStatus.OK)
