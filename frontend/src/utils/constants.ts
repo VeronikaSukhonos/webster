@@ -4,7 +4,23 @@ export const ERROR_TYPES = {
   SWW: 'Something went wrong',
 };
 
-export const DEFAULT_PROJECT_LIST_LIMIT = 20;
+export const DEFAULT_PROJECT_LIST_LIMIT = 10;
+export const AUTOSAVE_DELAY = 7000;
+export const MAX_FILE_SIZE = 10 * 1024 * 1024;
+export const MIN_CANVAS_SIZE = 40;
+export const MAX_CANVAS_SIZE = 4000;
+export const DEFAULT_CANVAS_SIZE = 1080;
+export const DEFAULT_SHAPE_COLOR = '#eaeaea';
+export const SUPPORTED_UPLOADS = ['image/png', 'image/jpeg'];
+
+export const SIZE_TYPES = [
+  { width: null, height: null },
+  { width: 1080, height: 1080, proportion: '1:1' },
+  { width: 1080, height: 1920, proportion: '9:16' },
+  { width: 1080, height: 1350, proportion: '4:5' },
+  { width: 1920, height: 1080, proportion: '16:9' },
+  { width: 1350, height: 1080, proportion: '5:4' },
+];
 
 export const TEMPLATE_TYPES = [
   { value: 'other', label: 'Other' },

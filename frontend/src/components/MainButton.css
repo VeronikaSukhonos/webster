@@ -26,7 +26,7 @@
 .main-button:hover:not(:disabled),
 .main-button:hover:not(.disabled) {
   background-position: center right;
-  transform: scale(1.03);
+  transform: scale(0.97);
 }
 
 .main-button svg {
@@ -61,6 +61,11 @@
   color: var(--purple);
 }
 
+.main-button.blue {
+  background: var(--transparent-light-blue);
+  color: var(--purple);
+}
+
 .main-button.transparent {
   background: none;
   border: none;
@@ -68,6 +73,7 @@
 }
 
 .main-button.white svg:not(.own-color) path,
+.main-button.blue svg:not(.own-color) path,
 .main-button.transparent svg:not(.own-color) path {
   fill: var(--purple);
   stroke: var(--purple);
@@ -112,8 +118,8 @@
 }
 
 .main-button.mini.square.main-button.transparent svg {
-  height: 28px;
-  width: 28px;
+  height: 26px;
+  width: 26px;
 }
 
 @media (max-width: 500px) {
@@ -140,4 +146,16 @@
   .pagination-nav-button {
     display: none;
   }
+}
+
+.no-style-button {
+  display: flex;
+  background: none;
+  border: none;
+  transition: all ease-in-out 0.5s;
+}
+
+.no-style-button:hover:not(:disabled),
+.no-style-button:hover:not(.disabled) {
+  transform: scale(0.97);
 }

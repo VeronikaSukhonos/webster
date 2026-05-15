@@ -1,10 +1,12 @@
+import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 import authApi from '@api/authApi';
+import projectsApi from '@api/projectsApi';
 
 import { setAuthUser } from '@store/authSlice';
-// import { resetEditor } from '@store/editorSlice';
+import { clearEditor, selectEditor, setMode } from '@store/editorSlice';
 import { selectUi } from '@store/uiSlice';
 
 import { MainButton } from '@components/MainButton';
@@ -12,6 +14,7 @@ import { DropdownMenu, MenuItem } from '@components/Menu';
 
 import { LogoutIcon, ProfileIcon, SettingsIcon } from '@assets/index';
 
+import { useImages } from '@hooks/useImages';
 import { useAppDispatch, useAppSelector, useAuth } from '@hooks/utilHooks';
 
 export const AuthMenu = () => {
@@ -20,19 +23,53 @@ export const AuthMenu = () => {
 
   const auth = useAuth();
   const isAvatarLoading = useAppSelector(selectUi.isAvatarLoading);
+  const [isLoading, setIsLoading] = useState(false);
+  const imagesCtx = useImages();
+
+  const hasUnsavedChanges = useAppSelector(selectEditor.hasUnsavedChanges);
+  const canvas = useAppSelector(selectEditor.canvas);
+  const project = useAppSelector(selectEditor.project);
 
   const logout = () => {
+    setIsLoading(true);
     authApi
       .logout()
       .then(() => {
         dispatch(setAuthUser(null));
-        // TODO save project to server if any
+        setIsLoading(false);
         navigate('/login');
-        // dispatch(resetEditor());
       })
       .catch((err) => {
+        setIsLoading(false);
         toast(err.message);
       });
+  };
+
+  const saveAndlogout = () => {
+    if (hasUnsavedChanges && auth && project && project.author.id === auth.id) {
+      setIsLoading(true);
+      dispatch(setMode('load'));
+
+      projectsApi
+        .updateProject(project.id, {
+          size: { width: canvas.background.width, height: canvas.background.height },
+          content: canvas,
+          images: imagesCtx.files,
+          editDate: new Date().toISOString(),
+        })
+        .then(() => {
+          dispatch(clearEditor());
+          imagesCtx.clearFiles();
+          logout();
+        })
+        .catch((err) => {
+          dispatch(setMode('edit'));
+          setIsLoading(false);
+          toast(err.message);
+        });
+    } else {
+      logout();
+    }
   };
 
   return (
@@ -59,7 +96,7 @@ export const AuthMenu = () => {
           <span>Settings</span>
         </NavLink>
       </MenuItem>
-      <MenuItem className="m-row" onAction={logout}>
+      <MenuItem className={`m-row${isLoading ? ' disabled' : ''}`} onAction={saveAndlogout}>
         <LogoutIcon />
         <span>Log Out</span>
       </MenuItem>

@@ -95,7 +95,7 @@ export const Pagination = ({ totalPages: tp, disabled = false }: PaginationProps
     }
   }, [page, tp]);
 
-  if (!tp) return;
+  if (tp < 2) return;
 
   return (
     <div className="row all-center mini-gap" style={{ maxWidth: 'max-content' }}>

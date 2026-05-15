@@ -9,8 +9,8 @@
   min-width: max-content;
   max-width: 250px;
   transition:
-    transform 0.3s,
-    opacity 0.3s;
+    transform 0.2s,
+    opacity 0.2s;
 
   &[data-entering],
   &[data-exiting] {
@@ -41,8 +41,7 @@
   font-size: 1.05rem;
   font-weight: 700;
   padding: 3px 5px;
-  cursor: pointer;
-  transition: all ease-in-out 0.3s;
+  transition: all ease-in-out 0.2s;
 }
 
 .menu-item:has(.m-row) {
@@ -64,12 +63,17 @@
   transition: fill ease-in-out 0.3s;
 }
 
-.menu-item:hover,
+.menu-item:hover:not([data-disabled]),
 .menu-item:focus-visible {
   background: var(--transparent-light-blue);
   box-shadow: none;
   color: var(--accent-font-color);
   outline: none;
+  cursor: pointer;
+}
+
+.menu-item[data-disabled] {
+  opacity: 0.75;
 }
 
 .menu-item:hover a,
