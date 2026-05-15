@@ -33,7 +33,7 @@ const sizeField = (fieldname: string) => {
     .positive(`${fieldname} must be a positive integer`)
     .min(40, `${fieldname} must be at least 40 pixels`)
     .max(4000, `${fieldname} must be at most 4000 pixels`)
-    .optional();
+    .nullish();
 };
 
 export const passwordParams = z
@@ -88,17 +88,17 @@ export const createProjectParams = z
     title,
     type: z.enum(['blank', 'upload', 'template']),
     size: z.object({ width: sizeField('width'), height: sizeField('height') }),
-    image: z.string().trim().optional(),
+    image: z.array(z.any()),
   })
   .refine(
     (params) => {
-      return params.type === 'blank' && params.size.width && params.size.height;
+      return params.type !== 'blank' || (params.size.width && params.size.height);
     },
     { message: 'width and height are required', path: ['size'] },
   )
   .refine(
     (params) => {
-      return params.type === 'upload' && params.image;
+      return params.type !== 'upload' || params.image.length;
     },
     { message: 'image is required', path: ['image'] },
   );

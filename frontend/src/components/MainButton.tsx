@@ -6,6 +6,8 @@ import {
 import { Link } from 'react-router-dom';
 import { Tooltip } from 'react-tooltip';
 
+import clsx from 'clsx';
+
 import './MainButton.css';
 
 interface MainButtonProps extends Omit<RACButtonProps, 'children' | 'className' | 'onClick'> {
@@ -17,13 +19,15 @@ interface MainButtonProps extends Omit<RACButtonProps, 'children' | 'className' 
   tooltipId?: string;
   tooltipPlace?: 'top' | 'bottom';
   disabled?: boolean;
-  color?: 'purple' | 'white' | 'transparent';
+  noStyle?: boolean;
+  color?: 'purple' | 'white' | 'blue' | 'transparent';
   upperText?: boolean;
   wide?: boolean;
   square?: boolean;
   mini?: boolean;
   className?: string;
   style?: React.CSSProperties;
+  ref?: React.Ref<HTMLButtonElement>;
 }
 
 export const MainButton = ({
@@ -35,6 +39,7 @@ export const MainButton = ({
   tooltipId = '',
   tooltipPlace = 'top',
   disabled = false,
+  noStyle = false,
   color = 'purple',
   upperText = false,
   wide = false,
@@ -44,13 +49,15 @@ export const MainButton = ({
   style = {},
   ...props
 }: MainButtonProps) => {
-  const classes =
-    `main-button ${color}` +
-    (className ? ` ${className}` : '') +
-    (upperText ? ' upper-text' : '') +
-    (wide ? ' wide' : '') +
-    (square ? ' square' : '') +
-    (mini ? ' mini' : '');
+  const classes = clsx(
+    noStyle ? 'no-style-button' : 'main-button no-wrap',
+    color,
+    className,
+    upperText && 'upper-text',
+    wide && 'wide',
+    square && 'square',
+    mini && 'mini',
+  );
   const button = to ? (
     <Link
       to={to}

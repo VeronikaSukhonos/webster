@@ -1,5 +1,6 @@
 :root {
   --purple: #78366f;
+  --transparent-purple: #78366f0e;
   --light-blue: #91acd7;
   --transparent-light-blue: #b1cbf480;
   --dark-blue: #4069a9;
@@ -165,13 +166,20 @@ textarea,
   gap: 20px;
 }
 
-.mini-gap,
 .mini-gap {
   gap: 5px;
 }
 
 .grow {
   flex-grow: 1;
+}
+
+.no-wide {
+  width: auto;
+}
+
+.no-wrap {
+  white-space: nowrap;
 }
 
 .load {

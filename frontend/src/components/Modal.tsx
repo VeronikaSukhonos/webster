@@ -75,6 +75,7 @@ export const ModalWrapper = () => {
   const [isOpen, setIsOpen] = useState(false);
   const initialContent = { title: '', children: <></> };
   const [modalContent, setModalContent] = useState<ModalContent>(initialContent);
+  const [onOpenChange, setOnOpenChange] = useState<(() => void) | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -94,6 +95,7 @@ export const ModalWrapper = () => {
               isLoading={isLoading}
               setIsLoading={setIsLoading}
               setIsOpen={setIsOpen}
+              setOnOpenChange={setOnOpenChange}
             />
           ),
         });
@@ -180,6 +182,10 @@ export const ModalWrapper = () => {
       {...modalContent}
       isCloseDisabled={isLoading}
       onClose={() => dispatch(setModal(null))}
+      onOpenChange={(open) => {
+        if (!open && onOpenChange) onOpenChange();
+        setIsOpen(open);
+      }}
     />
   );
 };

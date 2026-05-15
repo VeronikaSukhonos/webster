@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -113,10 +112,6 @@ export class ProjectsService {
     dto: CreateProjectDto,
     previewFile?: Express.Multer.File,
   ): Promise<ProjectResponseDto> {
-    if (!previewFile && !dto.preview) {
-      throw new BadRequestException('preview is required');
-    }
-
     await this.assertTemplateExists(dto.templateId, authorId);
 
     const project = await this.projectsRepository.save(

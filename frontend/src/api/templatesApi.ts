@@ -1,28 +1,15 @@
 import { createQuery } from '@utils/createQuery';
 
-import type { JsonContent, TemplateType } from '@mytypes/responseTypes';
+import type { TemplateType } from '@mytypes/responseTypes';
 
 import api from './api';
-
-interface CreateTemplateRequest {
-  title: string;
-  content: JsonContent;
-  preview: string;
-  width: number;
-  height: number;
-  type: TemplateType;
-  projectId?: number | null;
-}
-
-interface UpdateTemplateRequest {
-  title?: string;
-  type?: TemplateType;
-}
 
 interface CreateTemplateFromProjectRequest {
   title: string;
   type: TemplateType;
 }
+
+interface UpdateTemplateRequest extends Partial<CreateTemplateFromProjectRequest> {}
 
 class TemplatesApi {
   async getTemplates(query?: {
@@ -37,10 +24,6 @@ class TemplatesApi {
 
   async getTemplate(id: number) {
     return await api.get(`/templates/${id}`);
-  }
-
-  async createTemplate(params: CreateTemplateRequest) {
-    return await api.post(`/templates`, params);
   }
 
   async createTemplateFromProject(projectId: number, params: CreateTemplateFromProjectRequest) {

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
+import clsx from 'clsx';
+
 import projectsApi from '@api/projectsApi';
 import usersApi from '@api/usersApi';
 
@@ -48,26 +50,26 @@ const UserProfilePage = () => {
 
   useEffect(() => {
     if (!userId) return;
-    let cancel = false;
+    let last = true;
 
     setIsUserLoading(true);
     usersApi
       .getUserProfile(userId)
       .then(({ data: res }) => {
-        if (cancel) return;
+        if (!last) return;
         setIsUserLoading(false);
         setUserFeedback(res.message, 'ok');
         setUser(res.data.user);
         if (userId === auth?.id) dispatch(updateAuthUser(res.data.user));
       })
       .catch((err) => {
-        if (cancel) return;
+        if (!last) return;
         setIsUserLoading(false);
         setUserFeedback(err.message, 'fail');
       });
 
     return () => {
-      cancel = true;
+      last = false;
     };
   }, [userId]);
 
@@ -108,7 +110,11 @@ const UserProfilePage = () => {
     <div className="col hor-center" style={{ paddingTop: '30px' }}>
       <div className="col profile-avatar-container">
         <img
-          className={`profile-avatar${userId === auth?.id ? ' self' : ''}${isAvatarLoading ? ' img-load' : ''}`}
+          className={clsx(
+            'profile-avatar',
+            userId === auth?.id && 'self',
+            isAvatarLoading && 'img-load',
+          )}
           onClick={() => {
             if (userId === auth?.id && !isAvatarLoading)
               dispatch(setModal({ type: 'updateAvatar' }));

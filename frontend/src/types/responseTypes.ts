@@ -1,4 +1,4 @@
-import { TEMPLATE_TYPES } from '../utils/constants';
+import { TEMPLATE_TYPES } from '@utils/constants';
 
 export type TemplateType = (typeof TEMPLATE_TYPES)[number]['value'];
 export type JsonContent = Record<string, unknown>;
@@ -13,11 +13,17 @@ export interface UserResponse {
 
 export interface AuthUser extends UserResponse {
   email: string;
+  isAdmin: boolean;
   hasPassword: boolean;
   googleId: string | null;
 }
 
-export interface ProjectResponse {
+export interface ImageResponse {
+  id: string;
+  url: string;
+}
+
+interface BaseContentResponse {
   id: number;
   author: Pick<UserResponse, 'id' | 'username'>;
   title: string;
@@ -26,21 +32,16 @@ export interface ProjectResponse {
   height: number;
   file: string;
   content?: JsonContent;
-  isPublic: boolean;
+  images?: ImageResponse[];
   createDate: string;
+}
+
+export interface ProjectResponse extends BaseContentResponse {
   editDate: string;
+  isPublic: boolean;
   template: Pick<TemplateResponse, 'id' | 'title'> | null;
 }
 
-export interface TemplateResponse {
-  id: number;
-  author: Pick<UserResponse, 'id' | 'username'>;
-  title: string;
-  preview: string;
-  width: number;
-  height: number;
-  file: string;
-  content?: JsonContent;
+export interface TemplateResponse extends BaseContentResponse {
   type: TemplateType;
-  createDate: string;
 }

@@ -9,7 +9,7 @@
   left: 0;
   z-index: 1000;
   pointer-events: none;
-  transition: opacity 0.3s ease-in-out;
+  transition: opacity 0.2s ease-in-out;
 
   &[data-entering],
   &[data-exiting] {
@@ -26,5 +26,5 @@
   width: 100%;
   max-width: 450px;
   pointer-events: all;
-  transition: all 0.3s ease-in-out;
+  transition: all 0.2s ease-in-out;
 }

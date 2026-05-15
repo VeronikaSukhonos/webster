@@ -1,3 +1,5 @@
+import clsx from 'clsx';
+
 import { ConfirmIcon, Error } from '@assets/index';
 
 import type { Feedback as FeedbackType } from '@mytypes/utilTypes';
@@ -12,7 +14,7 @@ export const Feedback = ({ feedback: { message, status }, showIcon = false }: Fe
 
   return (
     <>
-      <p className={'feedback ' + status}>{message}</p>
+      <p className={clsx('feedback', status)}>{message}</p>
       {showIcon &&
         (status === 'ok' ? (
           <ConfirmIcon className="result-icon" />

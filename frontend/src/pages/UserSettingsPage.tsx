@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
+import { clsx } from 'clsx';
+
 import usersApi from '@api/usersApi';
 
 import { updateAuthUser } from '@store/authSlice';
@@ -145,7 +147,7 @@ const UserSettingsPage = () => {
                 <div className="row all-center">
                   <div className="col profile-avatar-container">
                     <img
-                      className={`profile-avatar self${isAvatarLoading ? ' img-load' : ''}`}
+                      className={clsx('profile-avatar self', isAvatarLoading && 'img-load')}
                       onClick={() => {
                         if (!isAvatarLoading) dispatch(setModal({ type: 'updateAvatar' }));
                       }}

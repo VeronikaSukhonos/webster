@@ -94,6 +94,7 @@ export const useForm = <T>(
     isLoading,
     setIsLoading,
     feedback,
+    errors,
     setSuccess,
     setFailure,
     params,

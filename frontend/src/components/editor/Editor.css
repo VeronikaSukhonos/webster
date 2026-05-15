@@ -1,0 +1,17 @@
+.work-area {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: var(--dark-gray);
+  height: 100%;
+  width: 100%;
+  flex-grow: 1;
+  position: relative;
+}
+
+.stage-wrapper {
+  box-shadow: var(--shadow);
+  height: max-content;
+  width: max-content;
+}

@@ -1,36 +1,26 @@
 import { createQuery } from '@utils/createQuery';
 
-import type { JsonContent } from '@mytypes/responseTypes';
+import type { Canvas, ImageItem, Size } from '@mytypes/editorTypes';
 
 import api from './api';
 
 interface CreateProjectRequest {
   title: string;
-  description?: string | null;
-  content: JsonContent;
-  preview: string;
-  width: number;
-  height: number;
-  isPublic?: boolean;
-  templateId?: number | null;
-}
-
-interface UpdateProjectRequest {
-  title?: string;
-  description?: string | null;
-  content?: JsonContent;
-  preview?: string;
-  width?: number;
-  height?: number;
-  isPublic?: boolean;
-  templateId?: number | null;
-  editDate?: string;
+  size: Size;
+  content?: Canvas;
+  images?: ImageItem[];
 }
 
 interface CreateProjectFromTemplateRequest {
   title: string;
+}
+
+interface UpdateProjectRequest extends Partial<CreateProjectRequest> {
+  preview?: File;
   description?: string | null;
   isPublic?: boolean;
+  // imagesToDelete?: ImageItem[];
+  editDate: string;
 }
 
 class ProjectsApi {
@@ -52,13 +42,12 @@ class ProjectsApi {
   }
 
   async createProject(params: CreateProjectRequest) {
-    return await api.post(`/projects`, params);
+    return await api.post(`/projects`, this.createFd(params), {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
   }
 
-  async createProjectFromTemplate(
-    templateId: number,
-    params: CreateProjectFromTemplateRequest,
-  ) {
+  async createProjectFromTemplate(templateId: number, params: CreateProjectFromTemplateRequest) {
     return await api.post(`/projects/from-template/${templateId}`, params);
   }
 
@@ -67,11 +56,36 @@ class ProjectsApi {
   }
 
   async updateProject(id: number, params: UpdateProjectRequest) {
-    return await api.patch(`/projects/${id}`, params);
+    return await api.patch(`/projects/${id}`, this.createFd(params));
   }
 
   async deleteProject(id: number) {
     return await api.delete(`/projects/${id}`);
+  }
+
+  private createFd(params: any) {
+    const fd = new FormData();
+
+    if (params.title) fd.append('title', params.title);
+    if (params.description) fd.append('description', params.description);
+    if (params.size) {
+      fd.append('width', params.size.width.toString());
+      fd.append('height', params.size.height.toString());
+    }
+    if (params.content) fd.append('content', JSON.stringify(params.content));
+    if (params.preview) fd.append('preview', params.preview);
+    if (params.images?.length)
+      for (const img of params.images) {
+        fd.append('images', img.file);
+        fd.append('imagesIds', img.id);
+      }
+    // TODO
+    // if (params.imagesToDeleteIds?.length)
+    //   for (const img of params.imagesToDeleteIds) fd.append('imagesToDeleteIds', img.id);
+    if (params.isPublic) fd.append('isPublic', params.isPublic.toString());
+    if (params.editDate) fd.append('editDate', params.editDate);
+
+    return fd;
   }
 }
 

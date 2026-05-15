@@ -11,6 +11,8 @@ import {
   type TabsProps as RACTabsProps,
 } from 'react-aria-components/Tabs';
 
+import clsx from 'clsx';
+
 import './Tabs.css';
 
 export const Tabs = ({ ...props }: RACTabsProps) => <RACTabs className="col" {...props} />;
@@ -32,7 +34,7 @@ interface TabProps extends Omit<RACTabProps, 'children'> {
 
 export const Tab = ({ children, mini, ...props }: TabProps) => {
   return (
-    <RACTab className={'tab' + (mini ? ' mini' : '')} {...props}>
+    <RACTab className={clsx('tab', mini && 'mini')} {...props}>
       {children}
     </RACTab>
   );

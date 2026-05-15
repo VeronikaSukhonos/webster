@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Menu as RACMenu,
   MenuItem as RACMenuItem,
@@ -12,6 +13,8 @@ import {
   type PopoverProps as RACPopoverProps,
 } from 'react-aria-components/Popover';
 
+import clsx from 'clsx';
+
 import type { MainButton } from '@components/MainButton';
 
 import './Menu.css';
@@ -23,31 +26,40 @@ interface MenuItemProps extends Omit<RACMenuItemProps, 'children' | 'className'>
 
 export const MenuItem = ({ children, className, ...props }: MenuItemProps) => {
   return (
-    <RACMenuItem className={'menu-item' + (className ? ` ${className}` : '')} {...props}>
+    <RACMenuItem className={clsx('menu-item', className)} {...props}>
       {children}
     </RACMenuItem>
   );
 };
 
 export const Menu = <T extends object>({ ...props }: RACMenuProps<T>) => {
-  return <RACMenu className="menu" autoFocus {...props} />;
+  return <RACMenu className="menu scroll" autoFocus {...props} />;
 };
 
-interface DropdownMenuProps<T extends object> extends RACMenuProps<T> {
+interface DropdownMenuProps<T extends object> extends Omit<RACMenuProps<T>, 'children'> {
   button: React.ReactElement<typeof MainButton>;
   placement?: Placement;
+  children: React.ReactNode;
+  noItems?: string;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export const DropdownMenu = <T extends object>({
   button,
   placement = 'bottom',
+  children,
+  noItems = 'No items',
+  onOpenChange,
   ...props
 }: DropdownMenuProps<T>) => {
+  const hasChildren = React.Children.count(children) > 0;
+
   return (
-    <RACMenuTrigger>
+    <RACMenuTrigger onOpenChange={onOpenChange}>
       {button}
+
       <RACPopover className="popover" placement={placement}>
-        <Menu {...props} />
+        <Menu {...props}>{hasChildren ? children : <MenuItem isDisabled>{noItems}</MenuItem>}</Menu>
       </RACPopover>
     </RACMenuTrigger>
   );

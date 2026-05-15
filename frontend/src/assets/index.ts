@@ -40,4 +40,5 @@ export { default as ShapeIcon } from './shape.svg?react';
 export { default as ShareIcon } from './share.svg?react';
 export { default as TemplateIcon } from './template.svg?react';
 export { default as TextIcon } from './text.svg?react';
+export { default as UnlockIcon } from './unlock.svg?react';
 export { default as UploadIcon } from './upload.svg?react';
