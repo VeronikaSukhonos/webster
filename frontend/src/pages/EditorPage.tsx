@@ -69,8 +69,8 @@ const EditorPage = () => {
         images: imagesCtx.presentFiles,
         preview: await exportFile({
           stageRef,
-          filename: `preview-${project.id}.png`,
-          format: 'png',
+          filename: `preview-${project.id}.jpg`,
+          format: 'jpg',
           height: 300,
         }),
         editDate: new Date().toISOString(),

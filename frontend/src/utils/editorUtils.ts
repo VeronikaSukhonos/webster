@@ -75,11 +75,12 @@ export const exportFile = async ({
   else if (height) scale = height / stage.height();
 
   const canvas = stage.toCanvas({ pixelRatio: scale });
+  const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
   const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(ERROR_TYPES.SWW))), `image/${format}`);
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(ERROR_TYPES.SWW))), mimeType);
   });
 
   return new File([blob], filename, {
-    type: `image/${format}`,
+    type: mimeType,
   });
 };

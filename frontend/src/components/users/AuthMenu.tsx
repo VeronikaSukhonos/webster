@@ -66,8 +66,8 @@ export const AuthMenu = ({ stageRef }: EditorHeaderProps) => {
           ...(stageRef && {
             preview: await exportFile({
               stageRef,
-              filename: `preview-${project.id}.png`,
-              format: 'png',
+              filename: `preview-${project.id}.jpg`,
+              format: 'jpg',
               height: 300,
             }),
           }),

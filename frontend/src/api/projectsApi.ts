@@ -56,7 +56,9 @@ class ProjectsApi {
   }
 
   async updateProject(id: number, params: UpdateProjectRequest) {
-    return await api.patch(`/projects/${id}`, this.createFd(params));
+    return await api.patch(`/projects/${id}`, this.createFd(params), {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
   }
 
   async deleteProject(id: number) {
