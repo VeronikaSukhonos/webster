@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import projectsApi from '@api/projectsApi';
 import templatesApi from '@api/templatesApi';
 
-import { setCanvas, setProject, setTitle } from '@store/editorSlice';
+import { setProject } from '@store/editorSlice';
 
 import { Feedback } from '@components/Feedback';
 import {
@@ -131,8 +131,7 @@ export const CreateProjectForm = ({
           })
           .catch(handleError);
       } else {
-        dispatch(setTitle(params.title));
-        dispatch(setCanvas(content));
+        dispatch(setProject({ project: { title: params.title, content }, mode: 'edit' }));
         redirect();
       }
     } else if (createProject.params.type === 'template' && template) {
@@ -150,8 +149,12 @@ export const CreateProjectForm = ({
         templatesApi
           .getTemplate(template.id)
           .then(({ data: res }) => {
-            dispatch(setTitle(params.title));
-            dispatch(setCanvas(res.data.template.content));
+            dispatch(
+              setProject({
+                project: { title: params.title, content: res.data.template.content },
+                mode: 'edit',
+              }),
+            );
             redirect();
           })
           .catch(handleError);
@@ -167,7 +170,7 @@ export const CreateProjectForm = ({
 
         if (auth) {
           projectsApi
-            .createProject({ title: params.title, size, content, images: params.image })
+            .createProject({ title: params.title, size, content, uploads: params.image })
             .then(({ data: res }) => {
               dispatch(setProject({ project: res.data.project, mode: 'edit' }));
               imagesCtx.replaceImageItems(res.data.project.images, true);
@@ -176,8 +179,7 @@ export const CreateProjectForm = ({
             })
             .catch(handleError);
         } else {
-          dispatch(setTitle(params.title));
-          dispatch(setCanvas(content));
+          dispatch(setProject({ project: { title: params.title, content }, mode: 'edit' }));
           imagesCtx.addLocalImageItems(params.image);
           redirect();
         }
@@ -229,7 +231,7 @@ export const CreateProjectForm = ({
                 value={createProject.params.image}
                 onChange={(e) =>
                   createProject.setParam({
-                    target: { ...e.target, value: [createLocalImageItem(e.target.value[0])] },
+                    target: { ...e.target, value: [createLocalImageItem(e.target.value[0], true)] },
                   })
                 }
                 onDelete={(e) =>

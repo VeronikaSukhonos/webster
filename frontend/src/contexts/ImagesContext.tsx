@@ -7,6 +7,7 @@ import type { ImageResponse } from '@mytypes/responseTypes';
 
 interface ImagesContextValue {
   files: ImageItem[];
+  presentFiles: ImageItem[];
   findImageItem: (id: string) => ImageItem | undefined;
   addFiles: (files: File[]) => void;
   addLocalImageItems: (files: ImageItem[]) => void;
@@ -87,15 +88,20 @@ export const ImagesContextProvider = ({ children }: { children: React.ReactNode 
       if (full) {
         setFilesWithCleanup(() => newItems.map(createServerImageItem));
       } else {
-        setFiles((prev) =>
-          prev.map((f) => {
-            const item = newItems.find((i) => i.id === f.id);
+        setFiles((prev) => {
+          return [
+            ...prev.map((f) => {
+              const item = newItems.find((i) => i.id === f.id);
 
-            if (!item) return f;
-            URL.revokeObjectURL(f.url);
-            return { ...createServerImageItem(item), deleted: f.deleted };
-          }),
-        );
+              if (!item) return f;
+              URL.revokeObjectURL(f.url);
+              return { ...createServerImageItem(item) };
+            }),
+            ...newItems
+              .filter((i) => !prev.some((f) => f.id === i.id))
+              .map((i) => createServerImageItem(i)),
+          ];
+        });
       }
     },
     [setFilesWithCleanup],
@@ -109,9 +115,12 @@ export const ImagesContextProvider = ({ children }: { children: React.ReactNode 
     };
   }, [files]);
 
+  const presentFiles = useMemo(() => files.filter((f) => !f.deleted), [files]);
+
   const value = useMemo(
     () => ({
       files,
+      presentFiles,
       findImageItem,
       addFiles,
       addLocalImageItems,
@@ -124,6 +133,7 @@ export const ImagesContextProvider = ({ children }: { children: React.ReactNode 
     }),
     [
       files,
+      presentFiles,
       findImageItem,
       addFiles,
       addLocalImageItems,

@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { type BlockerFunction, useBlocker, useSearchParams } from 'react-router-dom';
+import { type BlockerFunction, useBlocker, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+
+import type Konva from 'konva';
 
 import projectsApi from '@api/projectsApi';
 import templatesApi from '@api/templatesApi';
 
 import {
-  clearEditor,
   selectEditor,
   setHasUnsavedChanges,
   setMode,
@@ -23,9 +24,11 @@ import { useImages } from '@hooks/useImages';
 import { useAppDispatch, useAppSelector, useAuth } from '@hooks/utilHooks';
 
 import { AUTOSAVE_DELAY } from '@utils/constants';
+import { exportFile } from '@utils/editorUtils';
 
 const EditorPage = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
   const auth = useAuth();
   const imagesCtx = useImages();
@@ -39,8 +42,9 @@ const EditorPage = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   const canvas = useAppSelector(selectEditor.canvas);
+  const stageRef = useRef<Konva.Stage | null>(null);
   const project = useAppSelector(selectEditor.project);
-  const isAuthor = !!auth && !!project && project.author.id === auth.id;
+  const isAuthor = !!auth && !!project && project.author?.id === auth.id;
 
   const history = useAppSelector(selectEditor.history);
   const dbHistory = useDebounce(history, AUTOSAVE_DELAY);
@@ -56,16 +60,21 @@ const EditorPage = () => {
   const blocker = useBlocker(shouldBlock);
 
   const saveProject = useCallback(async () => {
-    if (!project) return true;
+    if (!project || !project.id) return true;
     try {
       setIsSaving(true);
-      const { data: res } = await projectsApi.updateProject(project.id, {
+      await projectsApi.updateProject(project.id, {
         size: { width: canvas.background.width, height: canvas.background.height },
         content: canvas,
-        images: imagesCtx.files,
+        images: imagesCtx.presentFiles,
+        preview: await exportFile({
+          stageRef,
+          filename: `preview-${project.id}.png`,
+          format: 'png',
+          height: 300,
+        }),
         editDate: new Date().toISOString(),
       });
-      imagesCtx.replaceImageItems(res.data.project.images);
       lastSavedHistoryRef.current = history;
       setIsSaving(false);
       return true;
@@ -84,11 +93,8 @@ const EditorPage = () => {
     let last = true;
 
     if (!projectId && !templateId) {
-      setIsLoading(false);
-      if (!canvas) {
-        dispatch(clearEditor());
-        imagesCtx.clearFiles();
-      }
+      if (!project) navigate('/');
+      else setIsLoading(false);
       return;
     }
     if ((projectId && !pId) || (templateId && !tId)) {
@@ -190,9 +196,9 @@ const EditorPage = () => {
   if (isLoading) return <Load />;
   return (
     <>
-      <EditorHeader />
+      <EditorHeader stageRef={stageRef} />
       <main className="full-screen">
-        <Editor />
+        <Editor stageRef={stageRef} />
       </main>
     </>
   );

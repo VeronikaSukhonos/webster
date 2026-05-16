@@ -9,15 +9,20 @@ import type { ProjectResponse, TemplateResponse } from '@mytypes/responseTypes';
 
 import type { RootState } from './store';
 
-type Project = Omit<ProjectResponse, 'content' | 'file' | 'preview' | 'images'>;
-type Template = Omit<TemplateResponse, 'content' | 'file' | 'preview' | 'images'>;
-type Mode = 'edit' | 'view' | 'load';
+interface Project extends Partial<
+  Omit<ProjectResponse, 'content' | 'file' | 'preview' | 'images'>
+> {
+  title: string;
+}
+interface Template extends Omit<TemplateResponse, 'content' | 'file' | 'preview' | 'images'> {}
 
 interface History {
   canvas: Canvas;
   target: string;
   action: 'add' | 'change' | 'delele';
 }
+
+type Mode = 'edit' | 'view' | 'load';
 
 interface LeftSheet {
   type: 'shapes' | 'images' | 'layers';
@@ -64,23 +69,33 @@ const editorSlice = createSlice({
     setCanvas: (state, action: PayloadAction<Canvas>) => {
       state.canvas = action.payload;
     },
-    setProject: (state, action: PayloadAction<{ project: ProjectResponse; mode: Mode }>) => {
-      const { content, ...project } = action.payload.project;
+    setProject: (
+      state,
+      action: PayloadAction<{
+        project: Partial<ProjectResponse> & Pick<ProjectResponse, 'title'>;
+        mode: Mode;
+      }>,
+    ) => {
+      const { content, file: _f, preview: _p, images: _i, ...project } = action.payload.project;
 
       Object.assign(state, initialState);
-      state.title = project.title;
-      state.canvas = content as unknown as Canvas;
-      state.project = project;
-      state.mode = action.payload.mode;
+      if (content) {
+        state.title = project.title;
+        state.canvas = content;
+        state.project = project;
+        state.mode = action.payload.mode;
+      }
     },
     setTemplate: (state, action: PayloadAction<{ template: TemplateResponse }>) => {
-      const { content, ...template } = action.payload.template;
+      const { content, file: _f, preview: _p, images: _i, ...template } = action.payload.template;
 
       Object.assign(state, initialState);
-      state.title = template.title;
-      state.canvas = content as unknown as Canvas;
-      state.template = template;
-      state.mode = 'view';
+      if (content) {
+        state.title = template.title;
+        state.canvas = content;
+        state.template = template;
+        state.mode = 'view';
+      }
     },
     setMode: (state, action: PayloadAction<Mode>) => {
       state.mode = action.payload;

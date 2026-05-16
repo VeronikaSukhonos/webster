@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Layer, Rect, Stage } from 'react-konva';
-import { /*Portal, */useImage } from 'react-konva-utils';
+import { useImage } from 'react-konva-utils';
 
 import type Konva from 'konva';
 
@@ -13,15 +13,19 @@ import { useAppSelector } from '@hooks/utilHooks';
 
 import './Editor.css';
 
-export const Editor = () => {
+interface EditorProps {
+  stageRef: React.RefObject<Konva.Stage | null>;
+}
+
+export const Editor = ({ stageRef }: EditorProps) => {
   const canvas = useAppSelector(selectEditor.canvas);
 
   const imagesCtx = useImages();
   const [backgroundImage] = useImage(
     imagesCtx.findImageItem(canvas.background.fillPatternImage ?? '')?.url ?? '',
+    'anonymous',
   );
 
-  const stageRef = useRef<Konva.Stage | null>(null);
   const actionsLayerRef = useRef<Konva.Layer | null>(null);
 
   return (

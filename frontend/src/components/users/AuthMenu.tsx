@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
+import type Konva from 'konva';
+
 import authApi from '@api/authApi';
 import projectsApi from '@api/projectsApi';
 
@@ -17,7 +19,13 @@ import { LogoutIcon, ProfileIcon, SettingsIcon } from '@assets/index';
 import { useImages } from '@hooks/useImages';
 import { useAppDispatch, useAppSelector, useAuth } from '@hooks/utilHooks';
 
-export const AuthMenu = () => {
+import { exportFile } from '@utils/editorUtils';
+
+export interface EditorHeaderProps {
+  stageRef?: React.RefObject<Konva.Stage | null>;
+}
+
+export const AuthMenu = ({ stageRef }: EditorHeaderProps) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
@@ -45,8 +53,8 @@ export const AuthMenu = () => {
       });
   };
 
-  const saveAndlogout = () => {
-    if (hasUnsavedChanges && auth && project && project.author.id === auth.id) {
+  const saveAndlogout = async () => {
+    if (hasUnsavedChanges && auth && project && project.id && project.author?.id === auth.id) {
       setIsLoading(true);
       dispatch(setMode('load'));
 
@@ -55,6 +63,14 @@ export const AuthMenu = () => {
           size: { width: canvas.background.width, height: canvas.background.height },
           content: canvas,
           images: imagesCtx.files,
+          ...(stageRef && {
+            preview: await exportFile({
+              stageRef,
+              filename: `preview-${project.id}.png`,
+              format: 'png',
+              height: 300,
+            }),
+          }),
           editDate: new Date().toISOString(),
         })
         .then(() => {

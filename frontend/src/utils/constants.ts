@@ -35,11 +35,11 @@ export const TEMPLATE_TYPES = [
 export const VISIBILITY_TYPES = [
   { value: 'me', label: 'Only me' },
   { value: 'everyone', label: 'Everyone with link' },
-];
+] as const;
 
 export const EXPORT_TYPES = [
   { value: 'png', label: 'PNG' },
   { value: 'jpg', label: 'JPG' },
   { value: 'pdf', label: 'PDF' },
   { value: 'webp', label: 'WebP' },
-];
+] as const;

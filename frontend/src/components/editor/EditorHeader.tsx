@@ -3,7 +3,7 @@ import { selectEditor } from '@store/editorSlice';
 import { MainButton } from '@components/MainButton';
 import { Popover } from '@components/Menu';
 import { HistoryButtons, buttonProps } from '@components/editor/HistoryButtons';
-import { AuthMenu } from '@components/users/AuthMenu';
+import { AuthMenu, type EditorHeaderProps } from '@components/users/AuthMenu';
 
 import { HomeIcon, InfoIcon, LoginIcon, ProjectIcon, ShareIcon } from '@assets/index';
 
@@ -11,7 +11,7 @@ import { useAppSelector, useAuth } from '@hooks/utilHooks';
 
 import './EditorHeader.css';
 
-export const EditorHeader = () => {
+export const EditorHeader = ({ stageRef }: EditorHeaderProps) => {
   const auth = useAuth();
 
   const title = useAppSelector(selectEditor.title);
@@ -59,7 +59,7 @@ export const EditorHeader = () => {
         {mode === 'edit' && <HistoryButtons />}
         {auth ? (
           <>
-            {project && auth.id === project.author.id && (
+            {project && auth.id === project.author?.id && (
               <Popover
                 button={
                   <MainButton {...buttonProps} aria-label="Share">
@@ -70,7 +70,7 @@ export const EditorHeader = () => {
                 TODO
               </Popover>
             )}
-            <AuthMenu />
+            <AuthMenu stageRef={stageRef} />
           </>
         ) : (
           <MainButton to="/login" {...buttonProps} aria-label="Log in">

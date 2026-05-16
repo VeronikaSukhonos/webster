@@ -8,6 +8,7 @@ interface CreateProjectRequest {
   title: string;
   size: Size;
   content?: Canvas;
+  uploads?: ImageItem[];
   images?: ImageItem[];
 }
 
@@ -19,7 +20,6 @@ interface UpdateProjectRequest extends Partial<CreateProjectRequest> {
   preview?: File;
   description?: string | null;
   isPublic?: boolean;
-  // imagesToDelete?: ImageItem[];
   editDate: string;
 }
 
@@ -74,14 +74,13 @@ class ProjectsApi {
     }
     if (params.content) fd.append('content', JSON.stringify(params.content));
     if (params.preview) fd.append('preview', params.preview);
-    if (params.images?.length)
-      for (const img of params.images) {
-        fd.append('images', img.file);
-        fd.append('imagesIds', img.id);
+    if (params.uploads?.length)
+      for (const img of params.uploads) {
+        fd.append('uploads', img.file);
+        fd.append('uploadIds', img.id);
       }
-    // TODO
-    // if (params.imagesToDeleteIds?.length)
-    //   for (const img of params.imagesToDeleteIds) fd.append('imagesToDeleteIds', img.id);
+    if (params.images?.length)
+      fd.append('imageIds', JSON.stringify(params.images.map((i: ImageItem) => i.id)));
     if (params.isPublic) fd.append('isPublic', params.isPublic.toString());
     if (params.editDate) fd.append('editDate', params.editDate);
 

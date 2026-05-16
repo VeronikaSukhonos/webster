@@ -1,7 +1,8 @@
 import { TEMPLATE_TYPES } from '@utils/constants';
 
+import type { Canvas } from '@mytypes/editorTypes';
+
 export type TemplateType = (typeof TEMPLATE_TYPES)[number]['value'];
-export type JsonContent = Record<string, unknown>;
 
 export interface UserResponse {
   id: number;
@@ -31,7 +32,7 @@ interface BaseContentResponse {
   width: number;
   height: number;
   file: string;
-  content?: JsonContent;
+  content?: Canvas;
   images?: ImageResponse[];
   createDate: string;
 }
