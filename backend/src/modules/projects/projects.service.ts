@@ -41,7 +41,7 @@ export class ProjectsService {
     private documentImagesService: DocumentImagesService,
   ) {}
 
-  async getAllPublic(query: ProjectQueryDto): Promise<QueryResponse> {
+  async getAllPublic(query: ProjectQueryDto, authId?: number): Promise<QueryResponse> {
     const { authorId, page, limit, search } = query;
     const queryBuilder = this.projectsRepository
       .createQueryBuilder('project')
@@ -65,7 +65,10 @@ export class ProjectsService {
       .getManyAndCount();
 
     return {
-      projects: plainToInstance(ProjectResponseDto, projects),
+      projects: plainToInstance(
+        ProjectResponseDto,
+        projects.map((project) => this.hideInaccessibleTemplate(project, authId)),
+      ),
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
       filters: [{ search: search ?? null }, { authorId: authorId ?? null }],
     };
@@ -110,7 +113,7 @@ export class ProjectsService {
     }
 
     return plainToInstance(ProjectResponseDto, {
-      ...project,
+      ...this.hideInaccessibleTemplate(project, authId),
       content: await this.readProjectDocument(project.file),
       images: await this.documentImagesService.getProjectImages(project.id),
     });
@@ -310,6 +313,14 @@ export class ProjectsService {
     if (title.length + suffix.length <= maxTitleLength) return `${title}${suffix}`;
 
     return `${title.substring(0, maxTitleLength - suffix.length)}${suffix}`;
+  }
+
+  private hideInaccessibleTemplate(project: Project, authId?: number): Project {
+    if (!project.template || project.template.isBuiltIn || project.authorId === authId) {
+      return project;
+    }
+
+    return { ...project, template: null, templateId: null };
   }
 
   private async writeProjectDocument(

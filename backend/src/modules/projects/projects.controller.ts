@@ -182,10 +182,13 @@ export class ProjectsController {
   @Public()
   @Get('public')
   @HttpCode(HttpStatus.OK)
-  async getAllPublic(@Query() query: ProjectQueryDto): Promise<ApiResponse> {
+  async getAllPublic(
+    @Query() query: ProjectQueryDto,
+    @User('id') authId?: number,
+  ): Promise<ApiResponse> {
     return {
       message: 'Fetched public projects successfully',
-      data: await this.projectsService.getAllPublic(query),
+      data: await this.projectsService.getAllPublic(query, authId),
     };
   }
 
