@@ -49,7 +49,7 @@ const PROJECT_PREVIEW_FILE_PIPE = new FileValidationPipe({
 const PROJECT_MULTIPART_CREATE_SCHEMA = {
   schema: {
     type: 'object',
-    required: ['title', 'content', 'width', 'height', 'preview'],
+    required: ['title', 'content', 'width', 'height'],
     properties: {
       title: { type: 'string', maxLength: 100, example: 'Instagram spring sale post' },
       description: {
@@ -67,7 +67,11 @@ const PROJECT_MULTIPART_CREATE_SCHEMA = {
         description: 'JSON string with project metadata/content',
         example: '{"version":1,"elements":[]}',
       },
-      preview: { type: 'string', format: 'binary', description: 'JPG preview image' },
+      preview: {
+        type: 'string',
+        format: 'binary',
+        description: 'Optional JPG preview image. Default preview is used when omitted.',
+      },
     },
   },
 };

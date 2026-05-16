@@ -26,6 +26,7 @@ import {
 } from '../../common/utils';
 import { ConfigService } from '@nestjs/config';
 import { CloudflareR2Service } from '../cloudflare-r2/cloudflare-r2.service';
+import { DEFAULT_PROJECT_PREVIEW } from '../../common/constants';
 
 @Injectable()
 export class ProjectsService {
@@ -125,7 +126,7 @@ export class ProjectsService {
         title: dto.title,
         description: dto.description ?? null,
         file: createJsonDocumentPath('projects'),
-        preview: dto.preview ?? '',
+        preview: dto.preview ?? DEFAULT_PROJECT_PREVIEW,
         width: dto.width,
         height: dto.height,
         isPublic: dto.isPublic ?? false,
@@ -136,7 +137,7 @@ export class ProjectsService {
     const file = await this.writeProjectDocument(project.id, dto.content);
     const preview = previewFile
       ? await this.uploadProjectPreview(project.id, previewFile)
-      : dto.preview;
+      : (dto.preview ?? DEFAULT_PROJECT_PREVIEW);
 
     await this.projectsRepository.update(project.id, { file, preview });
 
