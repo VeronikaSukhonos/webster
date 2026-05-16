@@ -15,6 +15,7 @@ import type { QueryResponse } from '../../common/types';
 import { createJsonDocumentPath, readJsonDocument, writeJsonDocument } from '../../common/utils';
 import { ConfigService } from '@nestjs/config';
 import { CloudflareR2Service } from '../cloudflare-r2/cloudflare-r2.service';
+import { DocumentImagesService } from '../document-images/document-images.service';
 
 @Injectable()
 export class TemplatesService {
@@ -25,6 +26,7 @@ export class TemplatesService {
     private projectsRepository: Repository<Project>,
     private configService: ConfigService,
     private cloudflareR2Service: CloudflareR2Service,
+    private documentImagesService: DocumentImagesService,
   ) {}
 
   async getAll(query: TemplateQueryDto, authId?: number): Promise<QueryResponse> {
@@ -83,6 +85,7 @@ export class TemplatesService {
 
     return plainToInstance(TemplateResponseDto, {
       ...template,
+      images: await this.documentImagesService.getTemplateImages(template.id),
       content:
         this.configService.get('EMAIL_API_AND_CLOUD_FILE_STORAGE') === 'true'
           ? await this.cloudflareR2Service.readJsonDocument(template.file)
@@ -111,6 +114,10 @@ export class TemplatesService {
         projectId: dto.projectId ?? null,
       }),
     );
+
+    if (dto.projectId) {
+      await this.documentImagesService.copyProjectImagesToTemplate(dto.projectId, template.id);
+    }
 
     return await this.getOne(template.id, authorId);
   }
@@ -147,6 +154,7 @@ export class TemplatesService {
         projectId: project.id,
       }),
     );
+    await this.documentImagesService.copyProjectImagesToTemplate(project.id, template.id);
 
     return await this.getOne(template.id, authorId);
   }

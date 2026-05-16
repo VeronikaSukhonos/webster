@@ -62,7 +62,7 @@ export const AuthMenu = ({ stageRef }: EditorHeaderProps) => {
         .updateProject(project.id, {
           size: { width: canvas.background.width, height: canvas.background.height },
           content: canvas,
-          images: imagesCtx.files,
+          images: imagesCtx.presentFiles,
           ...(stageRef && {
             preview: await exportFile({
               stageRef,

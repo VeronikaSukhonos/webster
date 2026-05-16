@@ -65,23 +65,27 @@ class ProjectsApi {
 
   private createFd(params: any) {
     const fd = new FormData();
+    const uploads =
+      params.uploads ??
+      params.images?.filter((img: ImageItem) => img.urlSource === 'local' && img.file);
 
     if (params.title) fd.append('title', params.title);
-    if (params.description) fd.append('description', params.description);
+    if (params.description !== undefined && params.description !== null)
+      fd.append('description', params.description);
     if (params.size) {
       fd.append('width', params.size.width.toString());
       fd.append('height', params.size.height.toString());
     }
     if (params.content) fd.append('content', JSON.stringify(params.content));
     if (params.preview) fd.append('preview', params.preview);
-    if (params.uploads?.length)
-      for (const img of params.uploads) {
+    if (uploads?.length)
+      for (const img of uploads) {
         fd.append('uploads', img.file);
         fd.append('uploadIds', img.id);
       }
-    if (params.images?.length)
+    if (params.images)
       fd.append('imageIds', JSON.stringify(params.images.map((i: ImageItem) => i.id)));
-    if (params.isPublic) fd.append('isPublic', params.isPublic.toString());
+    if (params.isPublic !== undefined) fd.append('isPublic', params.isPublic.toString());
     if (params.editDate) fd.append('editDate', params.editDate);
 
     return fd;

@@ -27,6 +27,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { CloudflareR2Service } from '../cloudflare-r2/cloudflare-r2.service';
 import { DEFAULT_PROJECT_PREVIEW } from '../../common/constants';
+import { DocumentImagesService } from '../document-images/document-images.service';
 
 @Injectable()
 export class ProjectsService {
@@ -37,6 +38,7 @@ export class ProjectsService {
     private templatesRepository: Repository<Template>,
     private configService: ConfigService,
     private cloudflareR2Service: CloudflareR2Service,
+    private documentImagesService: DocumentImagesService,
   ) {}
 
   async getAllPublic(query: ProjectQueryDto): Promise<QueryResponse> {
@@ -110,6 +112,7 @@ export class ProjectsService {
     return plainToInstance(ProjectResponseDto, {
       ...project,
       content: await this.readProjectDocument(project.file),
+      images: await this.documentImagesService.getProjectImages(project.id),
     });
   }
 
@@ -117,6 +120,7 @@ export class ProjectsService {
     authorId: number,
     dto: CreateProjectDto,
     previewFile?: Express.Multer.File,
+    uploads: Express.Multer.File[] = [],
   ): Promise<ProjectResponseDto> {
     await this.assertTemplateExists(dto.templateId, authorId);
 
@@ -140,6 +144,12 @@ export class ProjectsService {
       : (dto.preview ?? DEFAULT_PROJECT_PREVIEW);
 
     await this.projectsRepository.update(project.id, { file, preview });
+    await this.documentImagesService.syncProjectImages(
+      project.id,
+      uploads,
+      dto.uploadIds,
+      dto.imageIds,
+    );
 
     return await this.getOwnProject(project.id, authorId);
   }
@@ -169,6 +179,7 @@ export class ProjectsService {
     await this.projectsRepository.update(project.id, {
       file: await this.writeProjectDocument(project.id, content),
     });
+    await this.documentImagesService.copyTemplateImagesToProject(template.id, project.id);
 
     return await this.getOwnProject(project.id, authorId);
   }
@@ -197,6 +208,7 @@ export class ProjectsService {
     await this.projectsRepository.update(project.id, {
       file: await this.writeProjectDocument(project.id, content),
     });
+    await this.documentImagesService.copyProjectImagesToProject(sourceProject.id, project.id);
 
     return await this.getOwnProject(project.id, authorId);
   }
@@ -206,6 +218,7 @@ export class ProjectsService {
     authorId: number,
     dto: UpdateProjectDto,
     previewFile?: Express.Multer.File,
+    uploads: Express.Multer.File[] = [],
   ): Promise<ProjectResponseDto> {
     const project = await this.projectsRepository.findOneBy({ id });
 
@@ -234,6 +247,7 @@ export class ProjectsService {
       ...(dto.isPublic !== undefined && { isPublic: dto.isPublic }),
       ...(dto.templateId !== undefined && { templateId: dto.templateId }),
     });
+    await this.documentImagesService.syncProjectImages(id, uploads, dto.uploadIds, dto.imageIds);
 
     return await this.getOwnProject(id, authorId);
   }
@@ -259,6 +273,7 @@ export class ProjectsService {
     return plainToInstance(ProjectResponseDto, {
       ...project,
       content: await this.readProjectDocument(project.file),
+      images: await this.documentImagesService.getProjectImages(project.id),
     });
   }
 

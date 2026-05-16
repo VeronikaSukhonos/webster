@@ -28,7 +28,7 @@ export const ImagesContextProvider = ({ children }: { children: React.ReactNode 
 
   const addFiles = useCallback((newItems: File[]) => {
     if (!newItems) return;
-    setFiles((prev) => [...prev, ...newItems.map(createLocalImageItem)]);
+    setFiles((prev) => [...prev, ...newItems.map((file) => createLocalImageItem(file))]);
   }, []);
 
   const addLocalImageItems = useCallback((newItems: ImageItem[]) => {

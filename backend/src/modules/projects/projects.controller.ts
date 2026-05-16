@@ -10,7 +10,7 @@ import {
   Patch,
   Post,
   Query,
-  UploadedFile,
+  UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
 import {
@@ -28,7 +28,7 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ProjectsService } from './projects.service';
 import {
   CreateProjectDto,
@@ -37,14 +37,15 @@ import {
   UpdateProjectDto,
 } from './dtos';
 import { Public, User } from '../../common/decorators';
-import { FileValidationPipe, ParseIntWithMessagePipe } from '../../common/pipes';
+import { ParseIntWithMessagePipe } from '../../common/pipes';
 import type { ApiResponse } from '../../common/types';
 
-const PROJECT_PREVIEW_FILE_PIPE = new FileValidationPipe({
-  fileIsRequired: false,
-  fileType: /^image\/jpeg$/,
-  invalidFormatMessage: 'Invalid file format - only JPG (JPEG) is allowed',
-});
+interface ProjectMultipartFiles {
+  preview?: Express.Multer.File[];
+  uploads?: Express.Multer.File[];
+}
+
+const MAX_IMAGE_FILE_SIZE = 10 * 1024 * 1024;
 
 const PROJECT_MULTIPART_CREATE_SCHEMA = {
   schema: {
@@ -72,6 +73,22 @@ const PROJECT_MULTIPART_CREATE_SCHEMA = {
         format: 'binary',
         description: 'Optional JPG preview image. Default preview is used when omitted.',
       },
+      uploads: {
+        type: 'array',
+        items: { type: 'string', format: 'binary' },
+        description: 'Optional image files used in the project content',
+      },
+      uploadIds: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Ids of uploaded images in the same order as uploads',
+        example: ['2f5c4a63-7a51-4e9f-bc9c-16e1f1f9ac32'],
+      },
+      imageIds: {
+        type: 'string',
+        description: 'JSON array of image ids currently referenced by content',
+        example: '["2f5c4a63-7a51-4e9f-bc9c-16e1f1f9ac32"]',
+      },
     },
   },
 };
@@ -93,6 +110,22 @@ const PROJECT_MULTIPART_UPDATE_SCHEMA = {
         example: '{"version":1,"elements":[]}',
       },
       preview: { type: 'string', format: 'binary', description: 'JPG preview image' },
+      uploads: {
+        type: 'array',
+        items: { type: 'string', format: 'binary' },
+        description: 'Optional new image files used in the project content',
+      },
+      uploadIds: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Ids of uploaded images in the same order as uploads',
+        example: ['2f5c4a63-7a51-4e9f-bc9c-16e1f1f9ac32'],
+      },
+      imageIds: {
+        type: 'string',
+        description: 'JSON array of image ids currently referenced by content',
+        example: '["2f5c4a63-7a51-4e9f-bc9c-16e1f1f9ac32"]',
+      },
     },
   },
 };
@@ -187,6 +220,7 @@ export class ProjectsController {
           file: 'projects/design.json',
           content: { version: 1, elements: [] },
           preview: 'projects/preview.png',
+          images: [{ id: '2f5c4a63-7a51-4e9f-bc9c-16e1f1f9ac32', url: '/files/images/image.jpg' }],
           width: 1080,
           height: 1350,
           isPublic: true,
@@ -230,6 +264,7 @@ export class ProjectsController {
           file: 'projects/design.json',
           content: { version: 1, elements: [] },
           preview: 'projects/preview.png',
+          images: [{ id: '2f5c4a63-7a51-4e9f-bc9c-16e1f1f9ac32', url: '/files/images/image.jpg' }],
           width: 1080,
           height: 1350,
           isPublic: false,
@@ -255,16 +290,23 @@ export class ProjectsController {
   @ApiForbiddenResponse({ description: 'Template belongs to another user' })
   @ApiNotFoundResponse({ description: 'Template is not found' })
   @Post()
-  @UseInterceptors(FileInterceptor('preview'))
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'preview', maxCount: 1 },
+      { name: 'uploads', maxCount: 50 },
+    ]),
+  )
   async createOne(
     @User('id') authId: number,
     @Body() dto: CreateProjectDto,
-    @UploadedFile(PROJECT_PREVIEW_FILE_PIPE)
-    preview?: Express.Multer.File,
+    @UploadedFiles()
+    files?: ProjectMultipartFiles,
   ): Promise<ApiResponse> {
+    const { preview, uploads } = this.validateProjectFiles(files);
+
     return {
       message: 'Created project successfully',
-      data: { project: await this.projectsService.createOne(authId, dto, preview) },
+      data: { project: await this.projectsService.createOne(authId, dto, preview, uploads) },
     };
   }
 
@@ -285,6 +327,7 @@ export class ProjectsController {
           file: 'projects/35d8fb8a536d97e4a811aa1f.json',
           content: { version: 1, elements: [] },
           preview: 'templates/preview.jpg',
+          images: [{ id: '2f5c4a63-7a51-4e9f-bc9c-16e1f1f9ac32', url: '/files/images/image.jpg' }],
           width: 1080,
           height: 1350,
           isPublic: false,
@@ -329,6 +372,7 @@ export class ProjectsController {
           file: 'projects/35d8fb8a536d97e4a811aa1f.json',
           content: { version: 1, elements: [] },
           preview: 'projects/preview.png',
+          images: [{ id: '2f5c4a63-7a51-4e9f-bc9c-16e1f1f9ac32', url: '/files/images/image.jpg' }],
           width: 1080,
           height: 1350,
           isPublic: true,
@@ -371,6 +415,7 @@ export class ProjectsController {
           file: 'projects/design.json',
           content: { version: 1, elements: [] },
           preview: 'projects/preview.png',
+          images: [{ id: '2f5c4a63-7a51-4e9f-bc9c-16e1f1f9ac32', url: '/files/images/image.jpg' }],
           width: 1080,
           height: 1350,
           isPublic: true,
@@ -398,21 +443,28 @@ export class ProjectsController {
   @ApiNotFoundResponse({ description: 'Project or template is not found' })
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(FileInterceptor('preview'))
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'preview', maxCount: 1 },
+      { name: 'uploads', maxCount: 50 },
+    ]),
+  )
   async updateOne(
     @Param('id', new ParseIntWithMessagePipe('Project is not found', HttpStatus.NOT_FOUND))
     id: number,
     @User('id') authId: number,
     @Body()
     dto: UpdateProjectDto,
-    @UploadedFile(PROJECT_PREVIEW_FILE_PIPE)
-    preview?: Express.Multer.File,
+    @UploadedFiles()
+    files?: ProjectMultipartFiles,
   ): Promise<ApiResponse> {
-    this.assertProjectUpdateHasPayload(dto, preview);
+    const { preview, uploads } = this.validateProjectFiles(files);
+
+    this.assertProjectUpdateHasPayload(dto, preview, uploads);
 
     return {
       message: 'Updated project successfully',
-      data: { project: await this.projectsService.updateOne(id, authId, dto, preview) },
+      data: { project: await this.projectsService.updateOne(id, authId, dto, preview, uploads) },
     };
   }
 
@@ -442,6 +494,7 @@ export class ProjectsController {
   private assertProjectUpdateHasPayload(
     dto: UpdateProjectDto,
     preview?: Express.Multer.File,
+    uploads: Express.Multer.File[] = [],
   ): void {
     const hasBodyUpdate = [
       dto.title,
@@ -452,12 +505,53 @@ export class ProjectsController {
       dto.height,
       dto.isPublic,
       dto.templateId,
+      dto.uploadIds,
+      dto.imageIds,
     ].some((value) => value !== undefined);
 
-    if (!hasBodyUpdate && !preview) {
+    if (!hasBodyUpdate && !preview && uploads.length === 0) {
       throw new BadRequestException(
-        'At least one parameter must be provided: title, description, content, preview, width, height, isPublic, templateId',
+        'At least one parameter must be provided: title, description, content, preview, uploads, uploadIds, imageIds, width, height, isPublic, templateId',
       );
+    }
+  }
+
+  private validateProjectFiles(files?: ProjectMultipartFiles): {
+    preview?: Express.Multer.File;
+    uploads: Express.Multer.File[];
+  } {
+    const preview = files?.preview?.[0];
+    const uploads = files?.uploads ?? [];
+
+    if (preview) {
+      this.validateImageFile(
+        preview,
+        /^image\/jpeg$/,
+        'Invalid file format - only JPG (JPEG) is allowed',
+      );
+    }
+
+    uploads.forEach((upload) =>
+      this.validateImageFile(
+        upload,
+        /^image\/(png|jpeg)$/,
+        'Invalid file format - only JPG (JPEG) and PNG are allowed',
+      ),
+    );
+
+    return { preview, uploads };
+  }
+
+  private validateImageFile(
+    file: Express.Multer.File,
+    fileType: RegExp,
+    invalidFormatMessage: string,
+  ): void {
+    if (file.size > MAX_IMAGE_FILE_SIZE) {
+      throw new BadRequestException('Invalid file size - max 10MB');
+    }
+    if (!fileType.test(file.mimetype)) {
+      throw new BadRequestException(invalidFormatMessage);
     }
   }
 }

@@ -11,7 +11,7 @@ export const createLocalImageItem = (file: File, storeFile: boolean = false): Im
   id: crypto.randomUUID(),
   url: URL.createObjectURL(file),
   urlSource: 'local',
-  ...(storeFile && file),
+  ...(storeFile && { file }),
   deleted: false,
 });
 

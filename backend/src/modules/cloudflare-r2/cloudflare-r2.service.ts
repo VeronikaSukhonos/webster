@@ -36,7 +36,7 @@ export class CloudflareR2Service {
 
   async uploadImageFile(
     file: Express.Multer.File,
-    filetype: 'avatars' | 'projects',
+    filetype: 'avatars' | 'projects' | 'images',
     filename: string,
     extension?: string,
   ): Promise<string> {

@@ -1,7 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  ArrayUnique,
   IsBoolean,
   IsInt,
+  IsArray,
   IsNotEmpty,
   IsNotEmptyObject,
   IsObject,
@@ -25,6 +27,26 @@ function parseNullableNumberInput(value: unknown): unknown {
   if (value === '' || value === 'null') return null;
   if (typeof value === 'string') return Number(value);
   return value;
+}
+
+function parseStringArrayInput(value: unknown): unknown {
+  if (value === undefined) return undefined;
+  if (Array.isArray(value)) return value;
+  if (typeof value !== 'string') return value;
+
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) return [];
+
+  try {
+    const parsed: unknown = JSON.parse(trimmedValue);
+
+    if (Array.isArray(parsed)) return parsed;
+  } catch {
+    return [value];
+  }
+
+  return [value];
 }
 
 export class CreateProjectDto {
@@ -87,4 +109,32 @@ export class CreateProjectDto {
   @Transform(({ value }) => parseNullableNumberInput(value))
   @IsInt({ message: 'templateId must be an integer' })
   readonly templateId?: number | null;
+
+  @ApiProperty({
+    required: false,
+    type: [String],
+    description: 'Ids of uploaded image files in the same order as uploads',
+    example: ['2f5c4a63-7a51-4e9f-bc9c-16e1f1f9ac32'],
+  })
+  @IsOptional()
+  @Transform(({ value }) => parseStringArrayInput(value))
+  @IsArray({ message: 'uploadIds must be an array' })
+  @ArrayUnique({ message: 'uploadIds must contain unique values' })
+  @MaxLength(100, { each: true, message: 'uploadIds values must be at most 100 characters' })
+  @IsString({ each: true, message: 'uploadIds values must be strings' })
+  readonly uploadIds?: string[];
+
+  @ApiProperty({
+    required: false,
+    type: [String],
+    description: 'Ids of image assets currently referenced by the JSON content',
+    example: ['2f5c4a63-7a51-4e9f-bc9c-16e1f1f9ac32'],
+  })
+  @IsOptional()
+  @Transform(({ value }) => parseStringArrayInput(value))
+  @IsArray({ message: 'imageIds must be an array' })
+  @ArrayUnique({ message: 'imageIds must contain unique values' })
+  @MaxLength(100, { each: true, message: 'imageIds values must be at most 100 characters' })
+  @IsString({ each: true, message: 'imageIds values must be strings' })
+  readonly imageIds?: string[];
 }

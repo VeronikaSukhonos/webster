@@ -3,7 +3,7 @@ import path from 'path';
 
 export async function uploadFileToPath(
   file: Express.Multer.File,
-  filetype: 'avatars' | 'projects',
+  filetype: 'avatars' | 'projects' | 'images',
   filename: string,
   extension?: string,
 ): Promise<string> {

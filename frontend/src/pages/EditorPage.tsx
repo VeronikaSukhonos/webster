@@ -83,7 +83,7 @@ const EditorPage = () => {
       toast(err.message);
       return false;
     }
-  }, [project, canvas, history]);
+  }, [project, canvas, history, imagesCtx.presentFiles]);
 
   useEffect(() => {
     dispatch(setHasUnsavedChanges(hasUnsavedChanges));

@@ -142,6 +142,7 @@ export const CreateProjectForm = ({
           .createProjectFromTemplate(template.id, { title: params.title })
           .then(({ data: res }) => {
             dispatch(setProject({ project: res.data.project, mode: 'edit' }));
+            imagesCtx.replaceImageItems(res.data.project.images, true);
             redirect(res.data.project.id);
           })
           .catch(handleError);
@@ -155,6 +156,7 @@ export const CreateProjectForm = ({
                 mode: 'edit',
               }),
             );
+            imagesCtx.replaceImageItems(res.data.template.images, true);
             redirect();
           })
           .catch(handleError);
