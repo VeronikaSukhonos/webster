@@ -79,8 +79,8 @@ docker compose down
 
 ## Project's services deployed on Render
 
-- [`http://localhost:5173` (will be updated after deploy completed)](http://localhost:5173) - **app URL**
-- [`http://localhost:3000` (will be updated after deploy completed)](http://localhost:3000) - **API URL**
+- [`https://sketcherry.onrender.com`](https://sketcherry.onrender.com) - **app URL**
+- [`https://sketcherry-api.onrender.com/api`](https://sketcherry-api.onrender.com/api) - **API URL**
 
 ## Team
 
@@ -100,5 +100,5 @@ General project documentation can be found [here](./docs/) and contains:
 Also, the backend exposes a **Swagger Ul** page accessible via:
 
 - [`http://localhost:3000/api/docs`](http://localhost:3000/api/docs) (development built)
-- [`http://localhost:8080/api/docs`](http://localhost:3000/api/docs) (production built)
-- [`http://localhost:3000/api/docs`](http://localhost:3000/api/docs) (Render deploy)
+- [`http://localhost:8080/api/docs`](http://localhost:8080/api/docs) (production built)
+- [`https://sketcherry-api.onrender.com/api/docs`](https://sketcherry-api.onrender.com/api/docs) (Render deploy)
