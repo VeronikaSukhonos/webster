@@ -22,7 +22,7 @@ export const Editor = ({ stageRef }: EditorProps) => {
 
   const imagesCtx = useImages();
   const [backgroundImage] = useImage(
-    imagesCtx.findImageItem(canvas.background.fillPatternImage ?? '')?.url ?? '',
+    imagesCtx?.findImageItem(canvas.background.fillPatternImage ?? '')?.url ?? '',
     'anonymous',
   );
 
