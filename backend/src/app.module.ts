@@ -60,6 +60,55 @@ async function ensurePostgresDatabaseExists(): Promise<void> {
   }
 }
 
+async function ensureDocumentFileColumnsHaveValues(): Promise<void> {
+  const config = AppDataSource.options as PostgresConnectionOptions;
+  const sslOptions: object =
+    process.env.DB_NEED_SSL_SETTINGS === 'true' ? { ssl: { rejectUnauthorized: false } } : {};
+  const dataSource = new DataSource({
+    type: 'postgres',
+    host: config.host,
+    port: config.port,
+    username: config.username,
+    password: config.password,
+    database: config.database,
+    ...sslOptions,
+  });
+
+  await dataSource.initialize();
+
+  try {
+    await backfillFileColumn(dataSource, 'projects', 'projects');
+    await backfillFileColumn(dataSource, 'templates', 'templates');
+  } finally {
+    await dataSource.destroy();
+  }
+}
+
+async function backfillFileColumn(
+  dataSource: DataSource,
+  tableName: 'projects' | 'templates',
+  folder: 'projects' | 'templates',
+): Promise<void> {
+  const columns: unknown = await dataSource.query(
+    `
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = $1
+        AND column_name = 'file'
+      LIMIT 1
+    `,
+    [tableName],
+  );
+
+  if (!Array.isArray(columns) || columns.length === 0) return;
+
+  await dataSource.query(
+    `UPDATE "${tableName}" SET "file" = $1 || "id" || '.json' WHERE "file" IS NULL`,
+    [`${folder}/`],
+  );
+}
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -69,6 +118,7 @@ async function ensurePostgresDatabaseExists(): Promise<void> {
     TypeOrmModule.forRootAsync({
       useFactory: async () => {
         await ensurePostgresDatabaseExists();
+        await ensureDocumentFileColumnsHaveValues();
 
         return AppDataSource.options;
       },
