@@ -23,15 +23,20 @@ export const createServerImageItem = (file: ImageResponse): ImageItem => ({
 });
 
 export const initCanvas = (size: Size, image?: ImageItem) => {
+  const backgroundId = crypto.randomUUID();
   const background: Background = {
-    id: crypto.randomUUID(),
+    id: backgroundId,
     type: 'background',
     width: size.width,
     height: size.height,
     ...(image ? { fillPatternImage: image.id } : { fill: 'transparent' }),
   };
 
-  return { background, layers: [] } as Canvas;
+  return {
+    background,
+    layers: [],
+    images: { ...(image && { [image.id]: [backgroundId] }) },
+  } as Canvas;
 };
 
 export const getInitCanvasSize = (img: HTMLImageElement) => {

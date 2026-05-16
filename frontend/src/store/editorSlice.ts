@@ -4,17 +4,15 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 import { DEFAULT_CANVAS_SIZE } from '@utils/constants';
 import { initCanvas } from '@utils/editorUtils';
 
-import { type Canvas } from '@mytypes/editorTypes';
+import { type Background, type Canvas } from '@mytypes/editorTypes';
 import type { ProjectResponse, TemplateResponse } from '@mytypes/responseTypes';
 
 import type { RootState } from './store';
 
-interface Project extends Partial<
-  Omit<ProjectResponse, 'content' | 'file' | 'preview' | 'images'>
-> {
+export interface Project extends Partial<Omit<ProjectResponse, 'content' | 'file' | 'images'>> {
   title: string;
 }
-interface Template extends Omit<TemplateResponse, 'content' | 'file' | 'preview' | 'images'> {}
+export interface Template extends Omit<TemplateResponse, 'content' | 'file' | 'images'> {}
 
 interface History {
   canvas: Canvas;
@@ -34,7 +32,6 @@ interface RightSheet {
 }
 
 interface EditorState {
-  title: string;
   canvas: Canvas;
   history: History[];
   historyTarget: number;
@@ -47,7 +44,6 @@ interface EditorState {
 }
 
 const initialState: EditorState = {
-  title: 'Untitled',
   canvas: initCanvas({ width: DEFAULT_CANVAS_SIZE, height: DEFAULT_CANVAS_SIZE }),
   history: [],
   historyTarget: 0,
@@ -63,11 +59,14 @@ const editorSlice = createSlice({
   name: 'editor',
   initialState,
   reducers: {
-    setTitle: (state, action: PayloadAction<string>) => {
-      state.title = action.payload;
-    },
     setCanvas: (state, action: PayloadAction<Canvas>) => {
       state.canvas = action.payload;
+    },
+    updateCanvasBackground: (state, action: PayloadAction<Background>) => {
+      state.canvas.background = action.payload;
+    },
+    setHistory: (state, action: PayloadAction<History[]>) => {
+      state.history = action.payload;
     },
     setProject: (
       state,
@@ -76,22 +75,20 @@ const editorSlice = createSlice({
         mode: Mode;
       }>,
     ) => {
-      const { content, file: _f, preview: _p, images: _i, ...project } = action.payload.project;
+      const { content, file: _f, images: _i, ...project } = action.payload.project;
 
       Object.assign(state, initialState);
       if (content) {
-        state.title = project.title;
         state.canvas = content;
         state.project = project;
         state.mode = action.payload.mode;
       }
     },
     setTemplate: (state, action: PayloadAction<{ template: TemplateResponse }>) => {
-      const { content, file: _f, preview: _p, images: _i, ...template } = action.payload.template;
+      const { content, file: _f, images: _i, ...template } = action.payload.template;
 
       Object.assign(state, initialState);
       if (content) {
-        state.title = template.title;
         state.canvas = content;
         state.template = template;
         state.mode = 'view';
@@ -116,8 +113,9 @@ const editorSlice = createSlice({
 });
 
 export const {
-  setTitle,
   setCanvas,
+  updateCanvasBackground,
+  setHistory,
   setProject,
   setTemplate,
   setMode,
@@ -128,7 +126,6 @@ export const {
 } = editorSlice.actions;
 
 export const selectEditor = {
-  title: (state: RootState) => state.editor.title,
   canvas: (state: RootState) => state.editor.canvas,
   history: (state: RootState) => state.editor.history,
   historyTarget: (state: RootState) => state.editor.historyTarget,

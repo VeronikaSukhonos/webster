@@ -38,14 +38,6 @@
   text-align: center;
 }
 
-.editor-header nav .content-title span {
-  width: 300px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: all ease-in-out 0.3s;
-}
-
 @media (max-width: 750px) {
   .editor-header nav {
     gap: 10px;

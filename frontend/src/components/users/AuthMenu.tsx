@@ -62,7 +62,7 @@ export const AuthMenu = ({ stageRef }: EditorHeaderProps) => {
         .updateProject(project.id, {
           size: { width: canvas.background.width, height: canvas.background.height },
           content: canvas,
-          images: imagesCtx.presentFiles,
+          images: imagesCtx?.presentFiles,
           ...(stageRef && {
             preview: await exportFile({
               stageRef,
@@ -75,7 +75,7 @@ export const AuthMenu = ({ stageRef }: EditorHeaderProps) => {
         })
         .then(() => {
           dispatch(clearEditor());
-          imagesCtx.clearFiles();
+          imagesCtx?.clearFiles();
           logout();
         })
         .catch((err) => {

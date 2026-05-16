@@ -16,6 +16,7 @@ export interface BaseStyle {
   fill: string; // color
   stroke: string; // color
   strokeWidth: number; // 0 and more
+  dash: [dash: number, gap: number];
 
   opacity: number; // 0 to 1
   visible: boolean;
@@ -38,6 +39,7 @@ export const CanvasElementTypes = {
   Star: 'star',
   Line: 'line',
   Arrow: 'arrow',
+  BrokenLine: 'brokenline',
   Tooltip: 'tooltip',
   Path: 'path', // heart
   Text: 'text',
@@ -62,7 +64,7 @@ export interface Background extends Pick<BaseCanvasElement, 'id' | 'type' | 'sel
 
 export interface Rectangle extends BaseCanvasElement, Size {
   type: typeof CanvasElementTypes.Rectangle;
-  cornerRadius: number[]; // 0 and more
+  cornerRadius: [tl: number, tr: number, bl: number, br: number]; // 0 and more
 }
 
 export interface Ellipse extends BaseCanvasElement {
@@ -86,13 +88,34 @@ export interface Star extends BaseCanvasElement {
 
 export interface Line extends BaseCanvasElement {
   type: typeof CanvasElementTypes.Line;
-  points: number[]; // 4 numbers
+  points: [startX: number, startY: number, endX: number, endY: number];
 }
 
 export interface Arrow extends Omit<Line, 'type'> {
   type: typeof CanvasElementTypes.Arrow;
   pointerLength: number; // 0 and more
   pointerWidth: number; // 0 and more
+}
+
+export const LineCapTypes = {
+  Round: 'round',
+  Butt: 'butt',
+} as const;
+
+export type LineCapType = typeof LineCapTypes;
+
+export const LineJoinTypes = {
+  Round: 'round',
+  Miter: 'miter',
+} as const;
+
+export type LineJoinType = typeof LineJoinTypes;
+
+export interface BrokenLine extends BaseCanvasElement {
+  type: typeof CanvasElementTypes.Line;
+  points: number[];
+  tension: number; // 0 to 1
+  closed: boolean;
 }
 
 export const DirectionTypes = {
@@ -124,22 +147,47 @@ export const AlignmentTypes = {
 
 export type AlignmentType = typeof AlignmentTypes;
 
-export interface Text extends BaseCanvasElement {
+export interface Text extends BaseCanvasElement, Size {
   type: typeof CanvasElementTypes.Text;
   text: string;
   fontSize: number; // 1 and more
   fontFamily: string;
-  width: number; // 0 and more
   padding: number; // 0 and more
   align: AlignmentType[keyof AlignmentType];
 }
 
-export interface BaseDraw extends Omit<Line, 'type'> {
+export const BrushTypes = {
+  Pencil: 'pencil',
+  Marker: 'marker',
+} as const;
+
+export type BrushType = typeof BrushTypes;
+
+export interface BaseDraw extends BaseCanvasElement {
   type: typeof CanvasElementTypes.Draw;
-  // brushType: 'pencil' | 'marker' | 'eraser' TODO
+  points: number[];
+  brushType: BrushType[keyof BrushType];
+  lineCap: string;
+  lineJoin: typeof LineJoinTypes.Round;
 }
 
-// TODO image, group
+export interface Pencil extends BaseDraw {
+  brushType: typeof BrushTypes.Pencil;
+}
+
+export interface Marker extends BaseDraw {
+  brushType: typeof BrushTypes.Marker;
+}
+
+export interface Image extends Omit<Rectangle, 'type'> {
+  type: typeof CanvasElementTypes.Image;
+  image: string;
+}
+
+export interface Group extends BaseCanvasElement, Size {
+  type: typeof CanvasElementTypes.Group;
+  children: CanvasElement[];
+}
 
 export type CanvasElement =
   | Background
@@ -148,16 +196,14 @@ export type CanvasElement =
   | Polygon
   | Star
   | Line
+  | BrokenLine
   | Arrow
   | Tooltip
   | Path
   | Text
-  | BaseDraw;
-
-export interface Canvas {
-  background: Background;
-  layers: CanvasElement[];
-}
+  | BaseDraw
+  | Image
+  | Group;
 
 export interface ImageItem {
   id: string;
@@ -165,4 +211,10 @@ export interface ImageItem {
   urlSource: 'local' | 'server';
   file?: File;
   deleted: boolean;
+}
+
+export interface Canvas {
+  background: Background;
+  layers: CanvasElement[];
+  images: { [imageId: string]: string[] };
 }

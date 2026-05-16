@@ -5,6 +5,6 @@ import { ImagesContext } from '@contexts/ImagesContext';
 export const useImages = () => {
   const ctx = useContext(ImagesContext);
 
-  if (!ctx) throw new Error('useImages must be used inside ImagesContextProvider');
+  if (!ctx) console.log('ImagesContext is temporarily unavailable');
   return ctx;
 };

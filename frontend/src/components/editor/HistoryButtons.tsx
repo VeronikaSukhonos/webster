@@ -10,7 +10,9 @@ export const buttonProps = {
 };
 
 export const HistoryButtons = () => {
-  const openHistory = () => {};
+  const openHistory = () => {
+    // todo
+  };
 
   const undo = () => {};
 

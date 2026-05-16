@@ -10,6 +10,7 @@ import templatesApi from '@api/templatesApi';
 import {
   selectEditor,
   setHasUnsavedChanges,
+  setHistory,
   setMode,
   setProject,
   setTemplate,
@@ -52,6 +53,8 @@ const EditorPage = () => {
   const lastSavedHistoryRef = useRef(history);
   const hasUnsavedChanges = lastSavedHistoryRef.current !== history;
 
+  const template = useAppSelector(selectEditor.template);
+
   const shouldBlock = useCallback<BlockerFunction>(() => {
     if (!auth) return history.length > 0;
     if (isAuthor) return hasUnsavedChanges || isSaving;
@@ -66,7 +69,7 @@ const EditorPage = () => {
       await projectsApi.updateProject(project.id, {
         size: { width: canvas.background.width, height: canvas.background.height },
         content: canvas,
-        images: imagesCtx.presentFiles,
+        images: imagesCtx?.presentFiles,
         preview: await exportFile({
           stageRef,
           filename: `preview-${project.id}.jpg`,
@@ -83,7 +86,7 @@ const EditorPage = () => {
       toast(err.message);
       return false;
     }
-  }, [project, canvas, history, imagesCtx.presentFiles]);
+  }, [project, canvas, history, imagesCtx?.presentFiles]);
 
   useEffect(() => {
     dispatch(setHasUnsavedChanges(hasUnsavedChanges));
@@ -118,12 +121,12 @@ const EditorPage = () => {
               mode: res.data.project.author.id === auth?.id ? 'edit' : 'view',
             }),
           );
-          imagesCtx.replaceImageItems(res.data.project.images, true);
+          imagesCtx?.replaceImageItems(res.data.project.images, true);
         } else if (tId) {
           const { data: res } = await templatesApi.getTemplate(tId);
           if (!last) return;
           dispatch(setTemplate(res.data.template));
-          imagesCtx.replaceImageItems(res.data.template.images, true);
+          imagesCtx?.replaceImageItems(res.data.template.images, true);
         }
         if (last) setIsLoading(false);
       } catch (err) {
@@ -141,6 +144,7 @@ const EditorPage = () => {
 
   useEffect(() => {
     lastSavedHistoryRef.current = history;
+    if (project?.preview?.includes('default')) dispatch(setHistory([]));
   }, [project?.id]);
 
   useEffect(() => {
@@ -193,7 +197,7 @@ const EditorPage = () => {
     };
   }, [history, isAuthor, hasUnsavedChanges, isSaving]);
 
-  if (isLoading) return <Load />;
+  if (isLoading || (!project && !template)) return <Load />;
   return (
     <>
       <EditorHeader stageRef={stageRef} />

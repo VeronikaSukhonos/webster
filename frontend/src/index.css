@@ -227,6 +227,30 @@ textarea,
   text-align: center;
 }
 
+.t-separator .item + .item::before {
+  content: '•';
+  color: var(--accent-font-color);
+  font-size: 1rem;
+  line-height: 0.9;
+  padding-right: 6px;
+}
+
+.t-cut-200,
+.t-cut-300 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all ease-in-out 0.3s;
+}
+
+.t-cut-200 {
+  max-width: 200px;
+}
+
+.t-cut-300 {
+  max-width: 300px;
+}
+
 .app-name {
   color: var(--dark-blue);
   font-weight: bold;
@@ -245,11 +269,25 @@ textarea,
 .content-title,
 .f-title {
   font-size: 1.8rem;
-  font-weight: 500;
+}
+
+.content-title.mini {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.content-title.mini svg {
+  height: 18px;
+  width: 18px;
+  flex-shrink: 0;
 }
 
 .link {
   width: max-content;
+}
+
+.link.blue {
+  color: var(--dark-blue);
 }
 
 .link svg {

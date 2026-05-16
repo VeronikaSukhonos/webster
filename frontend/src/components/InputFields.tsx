@@ -465,6 +465,7 @@ export const ImageField = ({
                 <div key={img.id} className="uploaded-image-container">
                   <img src={img.url} className="uploaded-image" />
                   <button
+                    type="button"
                     className="uploaded-image-delete"
                     onClick={() => onDelete({ target: { name, value: img.id } })}
                   >

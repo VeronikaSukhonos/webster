@@ -65,17 +65,20 @@ export const DropdownMenu = <T extends object>({
   );
 };
 
-interface PopoverProps extends Omit<RACPopoverProps, 'children'> {
+interface PopoverProps extends Omit<RACPopoverProps, 'children' | 'className'> {
   button: React.ReactElement<typeof MainButton>;
   children: React.ReactNode;
+  className?: string;
 }
 
-export const Popover = ({ button, children, ...props }: PopoverProps) => {
+export const Popover = ({ button, children, className, ...props }: PopoverProps) => {
   return (
     <RACDialogTrigger>
       {button}
       <RACPopover className="popover" {...props}>
-        {children}
+        <div className={className} style={{ maxWidth: '314px' }}>
+          {children}
+        </div>
       </RACPopover>
     </RACDialogTrigger>
   );

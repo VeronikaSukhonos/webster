@@ -115,12 +115,12 @@ const App = () => {
   useEffect(() => {
     if (prevPath.current === '/editor' && location.pathname !== '/editor') {
       dispatch(clearEditor());
-      imagesCtx.clearFiles();
+      imagesCtx?.clearFiles();
     }
     prevPath.current = location.pathname;
   }, [location.pathname]);
 
-  if (isLoading) return <Load />;
+  if (isLoading || !imagesCtx) return <Load />;
   if (feedback.status === 'fail' && !feedback.message.toLowerCase().includes('log in'))
     return <ErrorLayout reason={feedback.message} />;
 

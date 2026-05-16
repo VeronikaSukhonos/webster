@@ -38,6 +38,7 @@ interface BaseContentResponse {
 }
 
 export interface ProjectResponse extends BaseContentResponse {
+  description: string;
   editDate: string;
   isPublic: boolean;
   template: Pick<TemplateResponse, 'id' | 'title'> | null;

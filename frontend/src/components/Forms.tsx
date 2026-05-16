@@ -142,7 +142,7 @@ export const CreateProjectForm = ({
           .createProjectFromTemplate(template.id, { title: params.title })
           .then(({ data: res }) => {
             dispatch(setProject({ project: res.data.project, mode: 'edit' }));
-            imagesCtx.replaceImageItems(res.data.project.images, true);
+            imagesCtx?.replaceImageItems(res.data.project.images, true);
             redirect(res.data.project.id);
           })
           .catch(handleError);
@@ -156,7 +156,7 @@ export const CreateProjectForm = ({
                 mode: 'edit',
               }),
             );
-            imagesCtx.replaceImageItems(res.data.template.images, true);
+            imagesCtx?.replaceImageItems(res.data.template.images, true);
             redirect();
           })
           .catch(handleError);
@@ -175,14 +175,14 @@ export const CreateProjectForm = ({
             .createProject({ title: params.title, size, content, uploads: params.image })
             .then(({ data: res }) => {
               dispatch(setProject({ project: res.data.project, mode: 'edit' }));
-              imagesCtx.replaceImageItems(res.data.project.images, true);
+              imagesCtx?.replaceImageItems(res.data.project.images, true);
               clearImages();
               redirect(res.data.project.id);
             })
             .catch(handleError);
         } else {
           dispatch(setProject({ project: { title: params.title, content }, mode: 'edit' }));
-          imagesCtx.addLocalImageItems(params.image);
+          imagesCtx?.addLocalImageItems(params.image);
           redirect();
         }
       };
