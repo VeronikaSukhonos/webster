@@ -68,6 +68,11 @@ const PROJECT_MULTIPART_CREATE_SCHEMA = {
         description: 'JSON string with project metadata/content',
         example: '{"version":1,"elements":[]}',
       },
+      previewPath: {
+        type: 'string',
+        description: 'Optional existing preview path. Use preview for file upload.',
+        example: 'projects/preview.jpg',
+      },
       preview: {
         type: 'string',
         format: 'binary',
@@ -108,6 +113,11 @@ const PROJECT_MULTIPART_UPDATE_SCHEMA = {
         type: 'string',
         description: 'JSON string with project metadata/content',
         example: '{"version":1,"elements":[]}',
+      },
+      previewPath: {
+        type: 'string',
+        description: 'Optional existing preview path. Use preview for file upload.',
+        example: 'projects/preview.jpg',
       },
       preview: { type: 'string', format: 'binary', description: 'JPG preview image' },
       uploads: {
@@ -500,7 +510,7 @@ export class ProjectsController {
       dto.title,
       dto.description,
       dto.content,
-      dto.preview,
+      dto.previewPath,
       dto.width,
       dto.height,
       dto.isPublic,

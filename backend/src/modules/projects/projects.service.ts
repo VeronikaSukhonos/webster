@@ -130,7 +130,7 @@ export class ProjectsService {
         title: dto.title,
         description: dto.description ?? null,
         file: createJsonDocumentPath('projects'),
-        preview: dto.preview ?? DEFAULT_PROJECT_PREVIEW,
+        preview: dto.previewPath ?? DEFAULT_PROJECT_PREVIEW,
         width: dto.width,
         height: dto.height,
         isPublic: dto.isPublic ?? false,
@@ -141,7 +141,7 @@ export class ProjectsService {
     const file = await this.writeProjectDocument(project.id, dto.content);
     const preview = previewFile
       ? await this.uploadProjectPreview(project.id, previewFile)
-      : (dto.preview ?? DEFAULT_PROJECT_PREVIEW);
+      : (dto.previewPath ?? DEFAULT_PROJECT_PREVIEW);
 
     await this.projectsRepository.update(project.id, { file, preview });
     await this.documentImagesService.syncProjectImages(
@@ -231,7 +231,7 @@ export class ProjectsService {
     let file = project.file;
     const preview = previewFile
       ? await this.uploadProjectPreview(project.id, previewFile)
-      : dto.preview;
+      : dto.previewPath;
 
     if (dto.content !== undefined) {
       file = await this.writeProjectDocument(project.id, dto.content);

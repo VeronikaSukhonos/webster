@@ -76,13 +76,17 @@ export class CreateProjectDto {
   @IsNotEmptyObject({}, { message: 'content cannot be empty' })
   readonly content!: JsonDocument;
 
-  @ApiProperty({ required: false, example: 'projects/preview.png' })
+  @ApiProperty({
+    required: false,
+    example: 'projects/preview.png',
+    description: 'Existing preview path. Multipart preview files must be sent as "preview".',
+  })
   @IsOptional()
-  @MaxLength(150, { message: 'preview must be at most 150 characters' })
+  @MaxLength(150, { message: 'previewPath must be at most 150 characters' })
   @IsString()
-  @IsNotEmpty({ message: 'preview cannot be empty' })
+  @IsNotEmpty({ message: 'previewPath cannot be empty' })
   @SanitizeString('any')
-  readonly preview?: string;
+  readonly previewPath?: string;
 
   @ApiProperty({ example: 1080, minimum: 40, maximum: 4000 })
   @Type(() => Number)
