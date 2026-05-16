@@ -29,10 +29,10 @@ export class Project {
   @Column({ type: 'varchar', nullable: true, length: 300 })
   description!: string | null;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: 'varchar', length: 150 })
   file!: string;
 
-  @Column({ type: 'varchar', length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 150, nullable: true })
   preview!: string;
 
   @Column({ type: 'integer', default: 1080 })

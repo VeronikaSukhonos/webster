@@ -19,10 +19,13 @@ import { Template } from '../templates/template.entity';
 import type { QueryResponse } from '../../common/types';
 import {
   createJsonDocumentPath,
+  JsonDocument,
   readJsonDocument,
   uploadFileToPath,
   writeJsonDocument,
 } from '../../common/utils';
+import { ConfigService } from '@nestjs/config';
+import { CloudflareR2Service } from '../cloudflare-r2/cloudflare-r2.service';
 
 @Injectable()
 export class ProjectsService {
@@ -31,6 +34,8 @@ export class ProjectsService {
     private projectsRepository: Repository<Project>,
     @InjectRepository(Template)
     private templatesRepository: Repository<Template>,
+    private configService: ConfigService,
+    private cloudflareR2Service: CloudflareR2Service,
   ) {}
 
   async getAllPublic(query: ProjectQueryDto): Promise<QueryResponse> {
@@ -103,7 +108,7 @@ export class ProjectsService {
 
     return plainToInstance(ProjectResponseDto, {
       ...project,
-      content: await readJsonDocument(project.file),
+      content: await this.readProjectDocument(project.file),
     });
   }
 
@@ -144,7 +149,7 @@ export class ProjectsService {
     dto: CreateProjectFromTemplateDto,
   ): Promise<ProjectResponseDto> {
     const template = await this.getAccessibleTemplate(templateId, authorId);
-    const content = await readJsonDocument(template.file);
+    const content = await this.readProjectDocument(template.file);
 
     const project = await this.projectsRepository.save(
       this.projectsRepository.create({
@@ -172,7 +177,7 @@ export class ProjectsService {
 
     if (!sourceProject) throw new NotFoundException('Project is not found');
 
-    const content = await readJsonDocument(sourceProject.file);
+    const content = await this.readProjectDocument(sourceProject.file);
 
     const project = await this.projectsRepository.save(
       this.projectsRepository.create({
@@ -252,7 +257,7 @@ export class ProjectsService {
 
     return plainToInstance(ProjectResponseDto, {
       ...project,
-      content: await readJsonDocument(project.file),
+      content: await this.readProjectDocument(project.file),
     });
   }
 
@@ -297,15 +302,30 @@ export class ProjectsService {
   ): Promise<string> {
     const file = createJsonDocumentPath('projects', projectId);
 
-    await writeJsonDocument(file, content);
+    if (this.configService.get('EMAIL_API_AND_CLOUD_FILE_STORAGE') === 'true')
+      await this.cloudflareR2Service.writeJsonDocument(file, content);
+    else await writeJsonDocument(file, content);
 
     return file;
+  }
+
+  private async readProjectDocument(file: string): Promise<JsonDocument> {
+    return this.configService.get('EMAIL_API_AND_CLOUD_FILE_STORAGE') === 'true'
+      ? await this.cloudflareR2Service.readJsonDocument(file)
+      : await readJsonDocument(file);
   }
 
   private async uploadProjectPreview(
     projectId: number,
     preview: Express.Multer.File,
   ): Promise<string> {
-    return await uploadFileToPath(preview, 'projects', `project-${projectId}`, '.jpg');
+    return this.configService.get('EMAIL_API_AND_CLOUD_FILE_STORAGE') === 'true'
+      ? await this.cloudflareR2Service.uploadImageFile(
+          preview,
+          'projects',
+          `project-${projectId}`,
+          '.jpg',
+        )
+      : await uploadFileToPath(preview, 'projects', `project-${projectId}`, '.jpg');
   }
 }

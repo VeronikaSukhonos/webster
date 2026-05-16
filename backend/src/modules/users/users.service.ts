@@ -23,6 +23,8 @@ import {
 import { AuthResponseDto } from '../auth/dtos';
 import { uploadFileToPath } from '../../common/utils';
 import { DEFAULT_USER_AVATAR, FILEPATH_PREFIX } from '../../common/constants';
+import { CloudflareR2Service } from '../cloudflare-r2/cloudflare-r2.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UsersService {
@@ -31,6 +33,8 @@ export class UsersService {
     private usersRepository: Repository<User>,
     private tokenService: TokenService,
     private emailService: EmailService,
+    private configService: ConfigService,
+    private cloudflareR2Service: CloudflareR2Service,
   ) {}
 
   async getOne(
@@ -151,7 +155,9 @@ export class UsersService {
 
     return await this.deleteOneAvatarAndSave(
       user,
-      await uploadFileToPath(avatar, 'avatars', `avatar-${user.id}`),
+      this.configService.get('EMAIL_API_AND_CLOUD_FILE_STORAGE') === 'true'
+        ? await this.cloudflareR2Service.uploadImageFile(avatar, 'avatars', `avatar-${user.id}`)
+        : await uploadFileToPath(avatar, 'avatars', `avatar-${user.id}`),
     );
   }
 
@@ -172,10 +178,15 @@ export class UsersService {
   ): Promise<string> {
     if (user.avatar.startsWith(FILEPATH_PREFIX)) {
       if (user.avatar !== DEFAULT_USER_AVATAR)
-        await rm(
-          path.join('files', 'avatars', user.avatar.substring(user.avatar.lastIndexOf('/') + 1)),
-          { force: true },
-        );
+        if (this.configService.get('EMAIL_API_AND_CLOUD_FILE_STORAGE') === 'true')
+          await this.cloudflareR2Service.deleteFile(
+            `files/avatars/${user.avatar.substring(user.avatar.lastIndexOf('/') + 1)}`,
+          );
+        else
+          await rm(
+            path.join('files', 'avatars', user.avatar.substring(user.avatar.lastIndexOf('/') + 1)),
+            { force: true },
+          );
     }
     await this.usersRepository.update(user.id, { avatar: filepath });
 

@@ -38,7 +38,7 @@ export class CreateTemplateDto {
   readonly content!: JsonDocument;
 
   @ApiProperty({ example: 'templates/preview.png' })
-  @MaxLength(100, { message: 'preview must be at most 100 characters' })
+  @MaxLength(150, { message: 'preview must be at most 150 characters' })
   @IsString()
   @IsNotEmpty({ message: 'preview cannot be empty' })
   @SanitizeString('any')

@@ -13,6 +13,8 @@ import {
 } from './dtos';
 import type { QueryResponse } from '../../common/types';
 import { createJsonDocumentPath, readJsonDocument, writeJsonDocument } from '../../common/utils';
+import { ConfigService } from '@nestjs/config';
+import { CloudflareR2Service } from '../cloudflare-r2/cloudflare-r2.service';
 
 @Injectable()
 export class TemplatesService {
@@ -21,6 +23,8 @@ export class TemplatesService {
     private templatesRepository: Repository<Template>,
     @InjectRepository(Project)
     private projectsRepository: Repository<Project>,
+    private configService: ConfigService,
+    private cloudflareR2Service: CloudflareR2Service,
   ) {}
 
   async getAll(query: TemplateQueryDto, authId?: number): Promise<QueryResponse> {
@@ -79,7 +83,10 @@ export class TemplatesService {
 
     return plainToInstance(TemplateResponseDto, {
       ...template,
-      content: await readJsonDocument(template.file),
+      content:
+        this.configService.get('EMAIL_API_AND_CLOUD_FILE_STORAGE') === 'true'
+          ? await this.cloudflareR2Service.readJsonDocument(template.file)
+          : await readJsonDocument(template.file),
     });
   }
 
@@ -87,7 +94,9 @@ export class TemplatesService {
     await this.assertProjectBelongsToAuthor(dto.projectId, authorId);
 
     const file = createJsonDocumentPath('templates');
-    await writeJsonDocument(file, dto.content);
+    if (this.configService.get('EMAIL_API_AND_CLOUD_FILE_STORAGE') === 'true')
+      await this.cloudflareR2Service.writeJsonDocument(file, dto.content);
+    else await writeJsonDocument(file, dto.content);
 
     const template = await this.templatesRepository.save(
       this.templatesRepository.create({
@@ -115,10 +124,15 @@ export class TemplatesService {
 
     if (!project) throw new NotFoundException('Project is not found');
 
-    const content = await readJsonDocument(project.file);
+    const content =
+      this.configService.get('EMAIL_API_AND_CLOUD_FILE_STORAGE') === 'true'
+        ? await this.cloudflareR2Service.readJsonDocument(project.file)
+        : await readJsonDocument(project.file);
     const file = createJsonDocumentPath('templates');
 
-    await writeJsonDocument(file, content);
+    if (this.configService.get('EMAIL_API_AND_CLOUD_FILE_STORAGE') === 'true')
+      await this.cloudflareR2Service.writeJsonDocument(file, content);
+    else await writeJsonDocument(file, content);
 
     const template = await this.templatesRepository.save(
       this.templatesRepository.create({

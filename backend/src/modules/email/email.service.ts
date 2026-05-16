@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
+import axios from 'axios';
 import path from 'path';
 
 export interface Recipient {
@@ -16,10 +17,15 @@ export class EmailService {
   ) {}
 
   private async sendEmail(recipient: Recipient, subject: string, content: string): Promise<void> {
-    await this.mailerService.sendMail({
-      to: recipient.email,
-      subject: 'SketCherry: ' + subject,
-      html: `
+    const to = recipient.email;
+    subject = 'SketCherry: ' + subject;
+    const logoSrc =
+      this.configService.get('NODE_ENV') === 'production'
+        ? (this.configService.get('CLOUDFLARE_R2_BUCKET_URL') ??
+            this.configService.get<string>('VITE_API_URL')?.replace(/\/api$/, '')) +
+          '/files/logo.png'
+        : 'cid:logo';
+    const html = `
 <!doctype html>
 <html lang="en">
   <head>
@@ -80,20 +86,36 @@ export class EmailService {
         Best regards,<br />SketCherry
       </div>
       <a href="${this.configService.get('APP_URL')}"
-        ><img src="cid:logo" style="width: 50px; margin: auto" alt="SketCherry"
+        ><img src="${logoSrc}" style="width: 50px; margin: auto" alt="SketCherry"
       /></a>
     </div>
   </body>
 </html>
-  `,
-      attachments: [
+  `;
+    if (this.configService.get('EMAIL_API_AND_CLOUD_FILE_STORAGE') === 'true')
+      await axios.post(
+        'https://mailserver.automationlounge.com/api/v1/messages/send',
+        { to, subject, html },
         {
-          filename: 'logo.png',
-          path: path.join('files', 'logo.png'),
-          cid: 'logo',
+          headers: {
+            Authorization: `Bearer ${this.configService.get('PROMAILER_API_KEY')}`,
+            'Content-Type': 'application/json',
+          },
         },
-      ],
-    });
+      );
+    else
+      await this.mailerService.sendMail({
+        to,
+        subject,
+        html,
+        attachments: [
+          {
+            filename: 'logo.png',
+            path: path.join('files', 'logo.png'),
+            cid: 'logo',
+          },
+        ],
+      });
   }
 
   async sendEmailConfirmation(recipient: Recipient, token: string) {

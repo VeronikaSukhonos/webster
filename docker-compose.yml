@@ -3,8 +3,7 @@ services:
     container_name: backend-dev
     build:
       context: .
-      dockerfile: backend/Dockerfile.backend
-      target: dev
+      dockerfile: backend/Dockerfile.development
     restart: unless-stopped
     deploy:
       resources:
@@ -28,8 +27,7 @@ services:
     container_name: app-dev
     build:
       context: .
-      dockerfile: frontend/Dockerfile.frontend
-      target: dev
+      dockerfile: frontend/Dockerfile.development
     restart: unless-stopped
     ports:
       - "5173:5173"
@@ -46,8 +44,7 @@ services:
     container_name: backend-prod
     build:
       context: .
-      dockerfile: backend/Dockerfile.backend
-      target: prod
+      dockerfile: backend/Dockerfile.production
     restart: unless-stopped
     deploy:
       resources:
@@ -68,10 +65,10 @@ services:
     container_name: app-prod
     build:
       context: .
-      dockerfile: frontend/Dockerfile.frontend
-      target: prod
+      dockerfile: frontend/Dockerfile.production
       args:
         - VITE_API_URL=http://localhost:8080/api
+        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
     restart: unless-stopped
     ports:
       - "8000:80"

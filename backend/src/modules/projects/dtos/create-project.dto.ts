@@ -56,7 +56,7 @@ export class CreateProjectDto {
 
   @ApiProperty({ required: false, example: 'projects/preview.png' })
   @IsOptional()
-  @MaxLength(100, { message: 'preview must be at most 100 characters' })
+  @MaxLength(150, { message: 'preview must be at most 150 characters' })
   @IsString()
   @IsNotEmpty({ message: 'preview cannot be empty' })
   @SanitizeString('any')

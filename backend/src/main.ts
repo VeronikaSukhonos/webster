@@ -60,7 +60,7 @@ async function bootstrap() {
     jsonDocumentUrl: 'api/docs/json',
   });
 
-  await app.listen(process.env.API_PORT ?? 3000);
+  await app.listen(process.env.API_PORT ?? 3000, '0.0.0.0');
   console.log(`API is running on: ${await app.getUrl()}/api`);
 }
 

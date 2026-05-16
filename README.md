@@ -32,6 +32,10 @@ cd webster
 
 Create `.env` file with the variables specified in `.env.example` file.
 
+You can get `VITE_GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in [**Google Cloud console**](https://console.cloud.google.com/).
+
+If you want to send emails via API and use cloud storage for files, you need to get [**Promailer API key**](https://www.promailer.xyz) and have [**Cloudflare R2 Object Storage**](https://www.cloudflare.com/products/r2/), where you must create dedicated bucket and copy `files` directory from [`backend`](./backend/) to it.
+
 ### Build the project
 
 Launch Docker, and, in the same directory where `docker-compose.yml` file is located, run the command:
@@ -40,9 +44,12 @@ Launch Docker, and, in the same directory where `docker-compose.yml` file is loc
 docker compose build <app-dev/app-prod>
 ```
 
-Specify `app-dev` to run the development build and `app-prod` to run the production build.
+Specify `app-dev` to run the development build, where you can change files both in `backend` and `frontend` directories (except Docker-related files), and servers will be restarted automatically.
 
-In the development build, you can change files both in `backend` and `frontend` directories (except Docker-related files), and servers will be restarted automatically.
+Specify `app-prod` to run the production build, but before that you must change some lines in `nginx.conf`:
+
+- line 9 must look like `server_name localhost;`
+- line 18 must look like `proxy_pass http://localhost:8080/;`
 
 ### Run the app
 
@@ -70,6 +77,11 @@ When you are done, tear the app down by using the command:
 docker compose down
 ```
 
+## Project's services deployed on Render
+
+- [`http://localhost:5173` (will be updated after deploy completed)](http://localhost:5173) - **app URL**
+- [`http://localhost:3000` (will be updated after deploy completed)](http://localhost:3000) - **API URL**
+
 ## Team
 
 - [**Polina Rezchyk**](https://github.com/BekkaMushko)
@@ -85,4 +97,8 @@ General project documentation can be found [here](./docs/) and contains:
 - useful diagrams describing the work of the application
 - screenshots of features
 
-Also, the backend exposes a **Swagger Ul** page accessible via [`http://localhost:3000/api/docs`](http://localhost:3000/api/docs).
+Also, the backend exposes a **Swagger Ul** page accessible via:
+
+- [`http://localhost:3000/api/docs`](http://localhost:3000/api/docs) (development built)
+- [`http://localhost:8080/api/docs`](http://localhost:3000/api/docs) (production built)
+- [`http://localhost:3000/api/docs`](http://localhost:3000/api/docs) (Render deploy)

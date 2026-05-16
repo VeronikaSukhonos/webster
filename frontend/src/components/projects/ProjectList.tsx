@@ -13,5 +13,5 @@ export const ProjectList = ({
   projectsFeedback,
 }: ProjectListProps) => {
   // component should take all available space vertically so that pagination would be pushed down
-  return <div>ProjectList</div>;
+  return <div>ProjectList {JSON.stringify(projects)} {areProjectsLoading} {JSON.stringify(projectsFeedback)}</div>;
 };

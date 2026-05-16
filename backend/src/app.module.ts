@@ -11,23 +11,18 @@ import { ProjectsModule } from './modules/projects/projects.module';
 import { TemplatesModule } from './modules/templates/templates.module';
 import { SocialAccountsModule } from './modules/social-accounts/social-accounts.module';
 import { LoggerMiddleware } from './common/middlewares';
-
-function getPostgresConfig() {
-  return {
-    host: process.env.POSTGRES_HOST ?? 'localhost',
-    port: parseInt(process.env.POSTGRES_PORT as string) || 5432,
-    username: process.env.POSTGRES_USER ?? 'user',
-    password: process.env.POSTGRES_PASSWORD ?? 'securepass',
-    database: process.env.POSTGRES_DB ?? 'sketcherry',
-  };
-}
+import { AppDataSource } from './db/data-source';
+import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions.js';
 
 async function ensurePostgresDatabaseExists(): Promise<void> {
-  const config = getPostgresConfig();
+  const config = AppDataSource.options as PostgresConnectionOptions;
 
-  if (!/^[A-Za-z_][A-Za-z0-9_$]*$/.test(config.database)) {
+  if (!config.database || !/^[A-Za-z_][A-Za-z0-9_$]*$/.test(config.database)) {
     throw new Error(`Invalid POSTGRES_DB value: ${config.database}`);
   }
+
+  const sslOptions: object =
+    process.env.DB_NEED_SSL_SETTINGS === 'true' ? { ssl: { rejectUnauthorized: false } } : {};
 
   const maintenanceDataSource = new DataSource({
     type: 'postgres',
@@ -36,6 +31,7 @@ async function ensurePostgresDatabaseExists(): Promise<void> {
     username: config.username,
     password: config.password,
     database: process.env.POSTGRES_MAINTENANCE_DB ?? 'postgres',
+    ...sslOptions,
   });
 
   await maintenanceDataSource.initialize();
@@ -74,19 +70,14 @@ async function ensurePostgresDatabaseExists(): Promise<void> {
       useFactory: async () => {
         await ensurePostgresDatabaseExists();
 
-        return {
-          type: 'postgres',
-          ...getPostgresConfig(),
-          entities: [path.join(__dirname, '**', '*.entity{.ts,.js}')],
-          synchronize: true,
-        };
+        return AppDataSource.options;
       },
     }),
     MailerModule.forRoot({
       transport: {
         host: process.env.EMAIL_HOST ?? 'smtp.gmail.com',
         port: parseInt(process.env.EMAIL_PORT as string) ?? 465,
-        secure: true,
+        secure: (parseInt(process.env.EMAIL_PORT as string) ?? 465) === 465,
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASSWORD,

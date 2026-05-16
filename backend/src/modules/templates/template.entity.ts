@@ -26,10 +26,10 @@ export class Template {
   @Column({ type: 'varchar', length: 100 })
   title!: string;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: 'varchar', length: 150 })
   file!: string;
 
-  @Column({ type: 'varchar', length: 100, default: '' })
+  @Column({ type: 'varchar', length: 150, default: '' })
   preview!: string;
 
   @Column({ type: 'integer', default: 1080 })

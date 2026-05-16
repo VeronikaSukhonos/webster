@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Layer, Rect, Stage } from 'react-konva';
-import { Portal, useImage } from 'react-konva-utils';
+import { /*Portal, */useImage } from 'react-konva-utils';
 
 import type Konva from 'konva';
 

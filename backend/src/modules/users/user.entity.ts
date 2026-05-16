@@ -15,7 +15,7 @@ export class User {
   @Column({ type: 'varchar', unique: true, length: 25 })
   username!: string;
 
-  @Column({ type: 'varchar', default: DEFAULT_USER_AVATAR, length: 100 })
+  @Column({ type: 'varchar', default: DEFAULT_USER_AVATAR, length: 150 })
   avatar!: string;
 
   @Column({ type: 'varchar', nullable: true, length: 150 })
