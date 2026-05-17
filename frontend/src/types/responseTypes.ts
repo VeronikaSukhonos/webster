@@ -46,4 +46,5 @@ export interface ProjectResponse extends BaseContentResponse {
 
 export interface TemplateResponse extends BaseContentResponse {
   type: TemplateType;
+  isBuiltIn: boolean;
 }

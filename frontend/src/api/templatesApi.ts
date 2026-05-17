@@ -21,6 +21,10 @@ class TemplatesApi {
   }) {
     return await api.get(`/templates/${createQuery(query)}`);
   }
+  
+  async getRecentTemplates() {
+    return await api.get(`/templates/recent`);
+  }
 
   async getTemplate(id: number) {
     return await api.get(`/templates/${id}`);

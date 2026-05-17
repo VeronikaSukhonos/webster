@@ -1,0 +1,15 @@
+.carousel-container {
+  width: 100%;
+}
+
+.carousel-item {
+  display: flex;
+  justify-content: center;
+  padding: 25px;
+}
+
+.carousel-button-group {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}

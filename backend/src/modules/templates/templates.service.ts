@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Template } from './template.entity';
 import { Project } from '../projects/project.entity';
 import {
@@ -69,6 +69,23 @@ export class TemplatesService {
       templates: plainToInstance(TemplateResponseDto, templates),
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
       filters: [{ search: search ?? null }, { type: type ?? null }, { source }],
+    };
+  }
+  
+  async getRecent(authId?: number): Promise<QueryResponse> {
+    const templateIds = Array.from(new Set((await this.projectsRepository
+      .createQueryBuilder('project')
+      .innerJoinAndSelect('project.template', 'template')
+      .where('project.authorId = :authorId', {authorId: authId})
+      .select(['project.id', 'project.templateId', 'project.editDate'])
+      .orderBy('project.editDate', 'DESC')
+      .take(10)
+      .getMany()).map(obj => obj.templateId))).filter(id => id !== null);
+    const templates = [];
+    for (let i = 0; i < templateIds.length; i += 1)
+      templates.push(await this.templatesRepository.findOneBy({id: templateIds[i]}));
+    return {
+      templates: plainToInstance(TemplateResponseDto, templates),
     };
   }
 

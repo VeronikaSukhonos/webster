@@ -89,6 +89,43 @@ export class TemplatesController {
       data: await this.templatesService.getAll(query, authId),
     };
   }
+  
+  @ApiOperation({ summary: 'Last used templates fetch' })
+  @ApiOkResponse({
+    description: 'Fetched templates successfully',
+    example: {
+      statusCode: 200,
+      message: 'Fetched templates successfully',
+      data: {
+        templates: [
+          {
+            id: 1,
+            authorId: 1,
+            title: 'Minimal birthday invitation',
+            file: 'templates/template.json',
+            preview: 'templates/preview.png',
+            width: 1080,
+            height: 1350,
+            createDate: '2026-04-28T18:17:06.813Z',
+            type: 'invitation',
+            isBuiltIn: true,
+            projectId: null,
+            author: { id: 1, username: 'user' },
+          },
+        ],
+      },
+    },
+  })
+  @Get('recent')
+  @HttpCode(HttpStatus.OK)
+  async getRecent(
+    @User('id') authId?: number,
+  ): Promise<ApiResponse> {
+    return {
+      message: 'Fetched templates successfully',
+      data: await this.templatesService.getRecent(authId),
+    };
+  }
 
   @ApiOperation({ summary: 'Template fetch' })
   @ApiParam({ name: 'id', description: 'Template id', example: 1 })

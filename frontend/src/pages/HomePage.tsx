@@ -1,23 +1,62 @@
+import { useEffect, useState } from 'react';
 import { setModal } from '@store/uiSlice';
 
+import ProjectsApi from '@api/projectsApi';
+import TemplatesApi from '@api/templatesApi';
+
 import { MainButton } from '@components/MainButton';
+import ProjectCarousel from '@components/projects/ProjectCarousel';
 
 import { PlusIcon, TemplateIcon } from '@assets/index';
 
-import { useAppDispatch, useAuth } from '@hooks/utilHooks';
+import { useAppDispatch, useAuth, useFeedback } from '@hooks/utilHooks';
 
-import type { AuthUser } from '@mytypes/responseTypes';
+import type { ProjectResponse, TemplateResponse } from '@mytypes/responseTypes';
 
-const HomePageAuth = ({ auth }: { auth: AuthUser }) => {
-  // TODO
-  console.log(auth);
+const HomePageAuth = () => {
+  const [areProjectsLoading, setAreProjectsLoading] = useState(false);
+  const [projectsFeedback, setProjectsFeedback] = useFeedback();
+  const [projects, setProjects] = useState<ProjectResponse[]>([]);
+  const [areTemplatesLoading, setAreTemplatesLoading] = useState(false);
+  const [templatesFeedback, setTemplatesFeedback] = useFeedback();
+  const [templates, setTemplates] = useState<TemplateResponse[]>([]);
+  
+  useEffect(() => {
+    setAreProjectsLoading(true);
+    ProjectsApi.getOwnProjects()
+      .then(({ data: res }) => {
+        setAreProjectsLoading(false);
+        setProjectsFeedback(res.message, "ok");
+        setProjects(res.data.projects);
+      })
+      .catch((err) => {
+        setAreProjectsLoading(false);
+        setProjectsFeedback(err.message, "fail");
+        setProjects([]);
+      });
+  }, []);
+  
+  useEffect(() => {
+    setAreTemplatesLoading(true);
+    TemplatesApi.getRecentTemplates()
+      .then(({ data: res }) => {
+        setAreTemplatesLoading(false);
+        setTemplatesFeedback(res.message, "ok");
+        setTemplates(res.data.templates);
+      })
+      .catch((err) => {
+        setAreTemplatesLoading(false);
+        setTemplatesFeedback(err.message, "fail");
+        setTemplates([]);
+      });
+  }, []);
 
   return (
     <>
       <h2 className="content-title t-art t-center">Recent Templates</h2>
-      {/* TODO */}
+      <ProjectCarousel templates={templates} areProjectsLoading={areTemplatesLoading} projectsFeedback={templatesFeedback} noDataFeedback={"You have not used any templates yet"} />
       <h2 className="content-title t-art t-center">Recent Projects</h2>
-      {/* TODO */}
+      <ProjectCarousel projects={projects} areProjectsLoading={areProjectsLoading} projectsFeedback={projectsFeedback} noDataFeedback={"You do not have any projects yet"} />
     </>
   );
 };
@@ -74,7 +113,7 @@ const HomePage = () => {
         <br />
         Right now!
       </h1>
-      {auth ? <HomePageAuth auth={auth} /> : <HomePageGuest />}
+      {auth ? <HomePageAuth /> : <HomePageGuest />}
     </div>
   );
 };
