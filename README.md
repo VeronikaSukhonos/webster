@@ -15,7 +15,7 @@ TODO
 
 ## Technology Stack
 
-All you need preinstalled is [Docker](https://www.docker.com/) (and we recommend to have [Node.js](https://nodejs.org/en)).
+All you need preinstalled is [**Docker**](https://www.docker.com/) (and we recommend to have [**Node.js**](https://nodejs.org/en)).
 
 - Backend: Nest.js, PostgreSQL, TypeORM, Swagger, JWT, Google APIs, Nodemailer, Multer
 - Frontend: React, Vite, Redux Toolkit, CSS, Konva, Zod, Axios, React Aria
@@ -30,23 +30,23 @@ git clone https://github.com/VeronikaSukhonos/webster.git
 cd webster
 ```
 
-Create `.env` file with the variables specified in `.env.example` file.
+Create `.env` file with the variables specified in [`.env.example`](./.env.example) file.
 
 You can get `VITE_GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in [**Google Cloud console**](https://console.cloud.google.com/).
 
-If you want to send emails via API and use cloud storage for files, you need to get [**Promailer API key**](https://www.promailer.xyz) and have [**Cloudflare R2 Object Storage**](https://www.cloudflare.com/products/r2/), where you must create dedicated bucket and copy `files` directory from [`backend`](./backend/) to it.
+If you want to send emails via API and use a cloud storage for files, you need to get [**Promailer API key**](https://www.promailer.xyz) and have [**Cloudflare R2 Object Storage**](https://www.cloudflare.com/products/r2/), where you must create a dedicated bucket and copy `files` directory from the [`backend`](./backend/) to it.
 
 ### Build the project
 
-Launch Docker, and, in the same directory where `docker-compose.yml` file is located, run the command:
+Launch Docker, and, in the same directory where [`docker-compose.yml`](./docker-compose.yml) file is located, run the command:
 
 ```
 docker compose build <app-dev/app-prod>
 ```
 
-Specify `app-dev` to run the development build, where you can change files both in `backend` and `frontend` directories (except Docker-related files), and servers will be restarted automatically.
+Specify `app-dev` to run the development build, where you can change files both in [`backend`](./backend/) and [`frontend`](./frontend/) directories (except Docker-related files), and servers will be restarted automatically.
 
-Specify `app-prod` to run the production build, but before that you must change some lines in `nginx.conf`:
+Specify `app-prod` to run the production build, but before that you must change some lines in [`nginx.conf`](./nginx.conf):
 
 - line 9 must look like `server_name localhost;`
 - line 18 must look like `proxy_pass http://localhost:8080/;`
@@ -61,13 +61,13 @@ docker compose up <app-dev/app-prod>
 
 **API server** will run at:
 
-- [`http://localhost:3000`](http://localhost:3000) in the development build
-- [`http://localhost:8080`](http://localhost:8080) in the production build
+- [`http://localhost:3000`](http://localhost:3000) (development build)
+- [`http://localhost:8080`](http://localhost:8080) (production build)
 
 **Web application** will run at:
 
-- [`http://localhost:5173`](http://localhost:5173) in the development build
-- [`http://localhost:8000`](http://localhost:8000) in the production build
+- [`http://localhost:5173`](http://localhost:5173) (development build)
+- [`http://localhost:8000`](http://localhost:8000) (production build)
 
 ### Stop the app
 
@@ -77,10 +77,12 @@ When you are done, tear the app down by using the command:
 docker compose down
 ```
 
-## Project's services deployed on Render
+## Deployment on Render
 
-- [`https://sketcherry.onrender.com`](https://sketcherry.onrender.com) - **app URL**
-- [`https://sketcherry-api.onrender.com/api`](https://sketcherry-api.onrender.com/api) - **API URL**
+The project is also deployed on [**Render**](https://render.com/):
+
+- [`https://sketcherry.onrender.com`](https://sketcherry.onrender.com) (web app)
+- [`https://sketcherry-api.onrender.com/api`](https://sketcherry-api.onrender.com/api) (API)
 
 ## Team
 
@@ -99,6 +101,6 @@ General project documentation can be found [here](./docs/) and contains:
 
 Also, the backend exposes a **Swagger Ul** page accessible via:
 
-- [`http://localhost:3000/api/docs`](http://localhost:3000/api/docs) (development built)
-- [`http://localhost:8080/api/docs`](http://localhost:8080/api/docs) (production built)
-- [`https://sketcherry-api.onrender.com/api/docs`](https://sketcherry-api.onrender.com/api/docs) (Render deploy)
+- [`http://localhost:3000/api/docs`](http://localhost:3000/api/docs) (development build)
+- [`http://localhost:8080/api/docs`](http://localhost:8080/api/docs) (production build)
+- [`https://sketcherry-api.onrender.com/api/docs`](https://sketcherry-api.onrender.com/api/docs) (Render deployment)
