@@ -91,7 +91,7 @@ export const ProjectPreview = ({ project, template }: ProjectPreviewProps) => {
                 <span>View</span>
               </div>
             </MenuItem>}
-            { auth && (auth.id === project?.author.id || auth.id === template?.authorId) && <MenuItem>
+            { auth && (auth.id === project?.author.id || auth.id === template?.author?.id) && <MenuItem>
               <div className="m-row" onClick={() => dispatch(setModal({ type: project ? 'projectSettings' : 'templateSettings' }))}>
                 <EditIcon />
                 <span>Edit settings</span>
@@ -115,7 +115,7 @@ export const ProjectPreview = ({ project, template }: ProjectPreviewProps) => {
                 <span>Make template</span>
               </div>
             </MenuItem>}
-            {auth && ((project && auth.id === project.author.id) || (template && auth.id === template.authorId)) && <MenuItem>
+            {auth && ((project && auth.id === project.author.id) || (template && auth.id === template.author?.id)) && <MenuItem>
               <div className="m-row" onClick={project ? deleteProject : deleteTemplate}>
                 <DeleteIcon />
                 <span>Delete</span>
