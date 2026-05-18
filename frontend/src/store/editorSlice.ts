@@ -4,21 +4,32 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 import { DEFAULT_CANVAS_SIZE } from '@utils/constants';
 import { initCanvas } from '@utils/editorUtils';
 
-import { type Canvas, type Mode, Modes, type Size, type Tool, Tools } from '@mytypes/editorTypes';
+import {
+  type Action,
+  Actions,
+  type Canvas,
+  type CanvasElement,
+  type Mode,
+  Modes,
+  type Size,
+  type Tool,
+  Tools,
+} from '@mytypes/editorTypes';
 import type { ProjectResponse, TemplateResponse } from '@mytypes/responseTypes';
 
 import type { RootState } from './store';
 
 interface History {
-  canvas: Canvas;
-  target: string;
-  action: 'add' | 'change' | 'delele';
+  id: string;
+  from?: CanvasElement;
+  to?: CanvasElement;
+  action: Action;
 }
 
-interface Project extends Partial<Omit<ProjectResponse, 'content' | 'file' | 'images'>> {
+export interface Project extends Partial<Omit<ProjectResponse, 'content' | 'file' | 'images'>> {
   title: string;
 }
-interface Template extends Omit<TemplateResponse, 'content' | 'file' | 'images'> {}
+export interface Template extends Omit<TemplateResponse, 'content' | 'file' | 'images'> {}
 
 // interface LeftSheet {
 //   type: 'shapes' | 'images' | 'layers';
@@ -33,7 +44,7 @@ interface EditorState {
   canvas: Canvas;
   tool: Tool;
   history: History[];
-  // historyTarget: number;
+  historyTarget: number;
   project: Project | null;
   template: Template | null;
   mode: Mode;
@@ -44,9 +55,9 @@ interface EditorState {
 
 const initialState: EditorState = {
   canvas: initCanvas({ width: DEFAULT_CANVAS_SIZE, height: DEFAULT_CANVAS_SIZE }),
-  tool: Tools.Grab,
+  tool: Tools.Select,
   history: [],
-  // historyTarget: 0,
+  historyTarget: -1, // last
   project: null,
   template: null,
   mode: Modes.Edit,
@@ -64,6 +75,7 @@ const editorSlice = createSlice({
     },
     setCanvasSize: (state, action: PayloadAction<Size>) => {
       const { width, height } = action.payload;
+      const from = structuredClone({ ...state.canvas.background });
 
       state.canvas.background.width = width;
       state.canvas.background.height = height;
@@ -71,10 +83,16 @@ const editorSlice = createSlice({
         state.project.width = width;
         state.project.height = height;
       }
+      state.history = [
+        ...state.history,
+        {
+          id: from.id,
+          from,
+          to: state.canvas.background,
+          action: Actions.Resize,
+        },
+      ];
     },
-    // updateCanvasBackground: (state, action: PayloadAction<Background>) => {
-    //   state.canvas.background = action.payload;
-    // },
     setHistory: (state, action: PayloadAction<History[]>) => {
       state.history = action.payload;
     },
@@ -125,7 +143,6 @@ const editorSlice = createSlice({
 export const {
   setTool,
   setCanvasSize,
-  // updateCanvasBackground,
   setHistory,
   setProject,
   setTemplate,
@@ -140,7 +157,7 @@ export const selectEditor = {
   canvas: (state: RootState) => state.editor.canvas,
   tool: (state: RootState) => state.editor.tool,
   history: (state: RootState) => state.editor.history,
-  // historyTarget: (state: RootState) => state.editor.historyTarget,
+  historyTarget: (state: RootState) => state.editor.historyTarget,
   project: (state: RootState) => state.editor.project,
   template: (state: RootState) => state.editor.template,
   mode: (state: RootState) => state.editor.mode,

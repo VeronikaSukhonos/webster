@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { setModal } from '@store/uiSlice';
 
-import ProjectsApi from '@api/projectsApi';
-import TemplatesApi from '@api/templatesApi';
+import projectsApi from '@api/projectsApi';
+import templatesApi from '@api/templatesApi';
+
+import { setModal } from '@store/uiSlice';
 
 import { MainButton } from '@components/MainButton';
 import ProjectCarousel from '@components/projects/ProjectCarousel';
@@ -20,33 +21,35 @@ const HomePageAuth = () => {
   const [areTemplatesLoading, setAreTemplatesLoading] = useState(false);
   const [templatesFeedback, setTemplatesFeedback] = useFeedback();
   const [templates, setTemplates] = useState<TemplateResponse[]>([]);
-  
+
   useEffect(() => {
     setAreProjectsLoading(true);
-    ProjectsApi.getOwnProjects()
+    projectsApi
+      .getOwnProjects()
       .then(({ data: res }) => {
         setAreProjectsLoading(false);
-        setProjectsFeedback(res.message, "ok");
+        setProjectsFeedback(res.message, 'ok');
         setProjects(res.data.projects);
       })
       .catch((err) => {
         setAreProjectsLoading(false);
-        setProjectsFeedback(err.message, "fail");
+        setProjectsFeedback(err.message, 'fail');
         setProjects([]);
       });
   }, []);
-  
+
   useEffect(() => {
     setAreTemplatesLoading(true);
-    TemplatesApi.getRecentTemplates()
+    templatesApi
+      .getRecentTemplates()
       .then(({ data: res }) => {
         setAreTemplatesLoading(false);
-        setTemplatesFeedback(res.message, "ok");
+        setTemplatesFeedback(res.message, 'ok');
         setTemplates(res.data.templates);
       })
       .catch((err) => {
         setAreTemplatesLoading(false);
-        setTemplatesFeedback(err.message, "fail");
+        setTemplatesFeedback(err.message, 'fail');
         setTemplates([]);
       });
   }, []);
@@ -54,9 +57,19 @@ const HomePageAuth = () => {
   return (
     <>
       <h2 className="content-title t-art t-center">Recent Templates</h2>
-      <ProjectCarousel templates={templates} areProjectsLoading={areTemplatesLoading} projectsFeedback={templatesFeedback} noDataFeedback={"You have not used any templates yet"} />
+      <ProjectCarousel
+        templates={templates}
+        areProjectsLoading={areTemplatesLoading}
+        projectsFeedback={templatesFeedback}
+        noDataFeedback={'You have not used any templates yet'}
+      />
       <h2 className="content-title t-art t-center">Recent Projects</h2>
-      <ProjectCarousel projects={projects} areProjectsLoading={areProjectsLoading} projectsFeedback={projectsFeedback} noDataFeedback={"You do not have any projects yet"} />
+      <ProjectCarousel
+        projects={projects}
+        areProjectsLoading={areProjectsLoading}
+        projectsFeedback={projectsFeedback}
+        noDataFeedback={'You do not have any projects yet'}
+      />
     </>
   );
 };

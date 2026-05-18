@@ -41,11 +41,11 @@ export const CanvasElements = {
   Star: 'star',
   Line: 'line',
   Arrow: 'arrow',
-  BrokenLine: 'brokenline',
+  BrokenLine: 'broken line',
   Tooltip: 'tooltip',
   Path: 'path', // heart
   Text: 'text',
-  Draw: 'draw',
+  Drawing: 'drawing',
   Image: 'image',
   Group: 'group',
 } as const;
@@ -56,6 +56,7 @@ export interface BaseCanvasElement extends CanvasElementPlacement, BaseStyle {
   id: string;
   type: CanvasElementType;
   selected?: boolean;
+  order: number;
 }
 
 export interface Background extends Pick<BaseCanvasElement, 'id' | 'type' | 'selected'>, Size {
@@ -166,7 +167,7 @@ export const BrushTypes = {
 export type BrushType = (typeof BrushTypes)[keyof typeof BrushTypes];
 
 export interface BaseDraw extends BaseCanvasElement {
-  type: typeof CanvasElements.Draw;
+  type: typeof CanvasElements.Drawing;
   points: number[];
   brushType: BrushType;
   lineCap: LineCap;
@@ -240,3 +241,16 @@ export const Modes = {
 } as const;
 
 export type Mode = (typeof Modes)[keyof typeof Modes];
+
+export const Actions = {
+  Add: 'Added',
+  Move: 'Moved',
+  Resize: 'Resized',
+  Fill: 'Changed fill of',
+  Stroke: 'Changed stroke of',
+  Shadow: 'Changed shadow of',
+  Font: 'Changed font of',
+  Delete: 'Deleted',
+} as const;
+
+export type Action = (typeof Actions)[keyof typeof Actions];
