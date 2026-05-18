@@ -24,7 +24,7 @@ import { useAppDispatch, useAuth } from '@hooks/utilHooks';
 import { MAX_CANVAS_SIZE, MIN_CANVAS_SIZE, SIZE_TYPES } from '@utils/constants';
 import { createLocalImageItem, getInitCanvasSize, initCanvas } from '@utils/editorUtils';
 
-import type { Size } from '@mytypes/editorTypes';
+import { Modes, type Size } from '@mytypes/editorTypes';
 import { type CreateProjectParams, createProjectParams } from '@mytypes/formParams';
 import type { ProjectResponse, TemplateResponse } from '@mytypes/responseTypes';
 
@@ -126,12 +126,22 @@ export const CreateProjectForm = ({
         projectsApi
           .createProject({ title: params.title, size: params.size as Size, content })
           .then(({ data: res }) => {
-            dispatch(setProject({ project: res.data.project, mode: 'edit' }));
+            dispatch(setProject({ project: res.data.project, mode: Modes.Edit }));
             redirect(res.data.project.id);
           })
           .catch(handleError);
       } else {
-        dispatch(setProject({ project: { title: params.title, content }, mode: 'edit' }));
+        dispatch(
+          setProject({
+            project: {
+              title: params.title,
+              content,
+              width: params.size.width as number,
+              height: params.size.height as number,
+            },
+            mode: Modes.Edit,
+          }),
+        );
         redirect();
       }
     } else if (createProject.params.type === 'template' && template) {
@@ -141,7 +151,7 @@ export const CreateProjectForm = ({
         projectsApi
           .createProjectFromTemplate(template.id, { title: params.title })
           .then(({ data: res }) => {
-            dispatch(setProject({ project: res.data.project, mode: 'edit' }));
+            dispatch(setProject({ project: res.data.project, mode: Modes.Edit }));
             imagesCtx?.replaceImageItems(res.data.project.images, true);
             redirect(res.data.project.id);
           })
@@ -152,8 +162,13 @@ export const CreateProjectForm = ({
           .then(({ data: res }) => {
             dispatch(
               setProject({
-                project: { title: params.title, content: res.data.template.content },
-                mode: 'edit',
+                project: {
+                  title: params.title,
+                  content: res.data.template.content,
+                  width: template.width,
+                  height: template.height,
+                },
+                mode: Modes.Edit,
               }),
             );
             imagesCtx?.replaceImageItems(res.data.template.images, true);
@@ -174,14 +189,19 @@ export const CreateProjectForm = ({
           projectsApi
             .createProject({ title: params.title, size, content, uploads: params.image })
             .then(({ data: res }) => {
-              dispatch(setProject({ project: res.data.project, mode: 'edit' }));
+              dispatch(setProject({ project: res.data.project, mode: Modes.Edit }));
               imagesCtx?.replaceImageItems(res.data.project.images, true);
               clearImages();
               redirect(res.data.project.id);
             })
             .catch(handleError);
         } else {
-          dispatch(setProject({ project: { title: params.title, content }, mode: 'edit' }));
+          dispatch(
+            setProject({
+              project: { title: params.title, content, width: size.width, height: size.height },
+              mode: Modes.Edit,
+            }),
+          );
           imagesCtx?.addLocalImageItems(params.image);
           redirect();
         }

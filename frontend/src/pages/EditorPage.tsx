@@ -8,6 +8,7 @@ import projectsApi from '@api/projectsApi';
 import templatesApi from '@api/templatesApi';
 
 import {
+  clearEditor,
   selectEditor,
   setHasUnsavedChanges,
   setHistory,
@@ -27,6 +28,8 @@ import { useAppDispatch, useAppSelector, useAuth } from '@hooks/utilHooks';
 import { AUTOSAVE_DELAY } from '@utils/constants';
 import { exportFile } from '@utils/editorUtils';
 
+import { Modes } from '@mytypes/editorTypes';
+
 const EditorPage = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -43,17 +46,19 @@ const EditorPage = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   const canvas = useAppSelector(selectEditor.canvas);
-  const stageRef = useRef<Konva.Stage | null>(null);
   const project = useAppSelector(selectEditor.project);
-  const isAuthor = !!auth && !!project && project.author?.id === auth.id;
+  const template = useAppSelector(selectEditor.template);
+  const mode = useAppSelector(selectEditor.mode);
 
+  const isAuthor = !!auth && !!project && project.author?.id === auth.id;
   const history = useAppSelector(selectEditor.history);
   const dbHistory = useDebounce(history, AUTOSAVE_DELAY);
   const [isSaving, setIsSaving] = useState(false);
   const lastSavedHistoryRef = useRef(history);
   const hasUnsavedChanges = lastSavedHistoryRef.current !== history;
 
-  const template = useAppSelector(selectEditor.template);
+  const stageRef = useRef<Konva.Stage | null>(null);
+  const backgroundRef = useRef<Konva.Rect | null>(null);
 
   const shouldBlock = useCallback<BlockerFunction>(() => {
     if (!auth) return history.length > 0;
@@ -72,6 +77,7 @@ const EditorPage = () => {
         images: imagesCtx?.presentFiles,
         preview: await exportFile({
           stageRef,
+          backgroundRef,
           filename: `preview-${project.id}.jpg`,
           format: 'jpg',
           height: 300,
@@ -104,7 +110,7 @@ const EditorPage = () => {
       setSearchParams({});
       return;
     }
-    if (pId === project?.id) {
+    if (pId === project?.id && project?.author?.id === auth?.id) {
       setIsLoading(false);
       return;
     }
@@ -118,29 +124,34 @@ const EditorPage = () => {
           dispatch(
             setProject({
               project: res.data.project,
-              mode: res.data.project.author.id === auth?.id ? 'edit' : 'view',
+              mode: res.data.project.author.id === auth?.id ? Modes.Edit : Modes.View,
             }),
           );
           imagesCtx?.replaceImageItems(res.data.project.images, true);
+          setIsLoading(false);
         } else if (tId) {
           const { data: res } = await templatesApi.getTemplate(tId);
           if (!last) return;
           dispatch(setTemplate(res.data.template));
           imagesCtx?.replaceImageItems(res.data.template.images, true);
+          setIsLoading(false);
         }
-        if (last) setIsLoading(false);
       } catch (err) {
         if (!last) return;
-        toast((err as any).message);
+        if (project || template) {
+          dispatch(clearEditor());
+          imagesCtx?.clearFiles();
+        } else {
+          toast((err as any).message);
+        }
         setSearchParams({});
-        setIsLoading(false);
       }
     })();
 
     return () => {
       last = false;
     };
-  }, [projectId, templateId]);
+  }, [projectId, templateId, auth?.id]);
 
   useEffect(() => {
     lastSavedHistoryRef.current = history;
@@ -163,12 +174,12 @@ const EditorPage = () => {
       else blocker.reset();
     } else {
       (async () => {
-        dispatch(setMode('load'));
+        dispatch(setMode(Modes.Load));
         if (await saveProject()) {
           blocker.proceed();
           return;
         }
-        dispatch(setMode('edit'));
+        dispatch(setMode(Modes.Edit));
 
         const confirmLeave = window.confirm(
           'We could not save your last changes. Do you really want to leave?',
@@ -198,12 +209,29 @@ const EditorPage = () => {
   }, [history, isAuthor, hasUnsavedChanges, isSaving]);
 
   if (isLoading || (!project && !template)) return <Load />;
+
   return (
     <>
-      <EditorHeader stageRef={stageRef} />
+      <EditorHeader stageRef={stageRef} backgroundRef={backgroundRef} />
       <main className="full-screen">
-        <Editor stageRef={stageRef} />
+        <Editor stageRef={stageRef} backgroundRef={backgroundRef} />
       </main>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'var(--transparent-black)',
+          height: '100vh',
+          width: '100vw',
+          position: 'fixed',
+          ...(mode === Modes.Load
+            ? { opacity: 1, zIndex: 1000 }
+            : { opacity: 0, zIndex: -1, pointerEvents: 'none' }),
+          transition: 'all ease-in-out 0.2s',
+        }}
+      >
+        <Load spinner />
+      </div>
     </>
   );
 };

@@ -1,11 +1,13 @@
+import type Konva from 'konva';
+
 export interface Size {
   width: number; // 0 and more
   height: number; // 0 and more
 }
 
 export interface Placement {
-  x: number; // 0 to width of canvas
-  y: number; // 0 to height of canvas
+  x: number; // any
+  y: number; // any
 }
 
 export interface CanvasElementPlacement extends Placement {
@@ -22,7 +24,7 @@ export interface BaseStyle {
   visible: boolean;
 
   shadowColor: string; // color
-  shadowOffset: Placement; // any number
+  shadowOffset: Placement; // any
   shadowBlur: number; // 0 and more
   shadowOpacity: number; // 0 to 1
 
@@ -31,7 +33,7 @@ export interface BaseStyle {
   scaleY: number; // 1 or -1 for vertical flip // to change size of path
 }
 
-export const CanvasElementTypes = {
+export const CanvasElements = {
   Background: 'background',
   Rectangle: 'rectangle',
   Ellipse: 'ellipse', // + circle
@@ -48,112 +50,112 @@ export const CanvasElementTypes = {
   Group: 'group',
 } as const;
 
-export type CanvasElementType = typeof CanvasElementTypes;
+export type CanvasElementType = (typeof CanvasElements)[keyof typeof CanvasElements];
 
 export interface BaseCanvasElement extends CanvasElementPlacement, BaseStyle {
   id: string;
-  type: CanvasElementType[keyof CanvasElementType];
+  type: CanvasElementType;
   selected?: boolean;
 }
 
 export interface Background extends Pick<BaseCanvasElement, 'id' | 'type' | 'selected'>, Size {
-  type: typeof CanvasElementTypes.Background;
+  type: typeof CanvasElements.Background;
   fill?: string;
-  fillPatternImage?: string;
+  image?: string;
 }
 
 export interface Rectangle extends BaseCanvasElement, Size {
-  type: typeof CanvasElementTypes.Rectangle;
+  type: typeof CanvasElements.Rectangle;
   cornerRadius: [tl: number, tr: number, bl: number, br: number]; // 0 and more
 }
 
 export interface Ellipse extends BaseCanvasElement {
-  type: typeof CanvasElementTypes.Ellipse;
+  type: typeof CanvasElements.Ellipse;
   radiusX: number; // 0 and more
   radiusY: number; // 0 and more
 }
 
 export interface Polygon extends BaseCanvasElement {
-  type: typeof CanvasElementTypes.Polygon;
+  type: typeof CanvasElements.Polygon;
   sides: number; // 3 and more
   radius: number; // 0 and more
 }
 
 export interface Star extends BaseCanvasElement {
-  type: typeof CanvasElementTypes.Star;
+  type: typeof CanvasElements.Star;
   numPoints: number; // 2 and more
   innerRadius: number; // 0 and more
   outerRadius: number; // 0 and more
 }
 
 export interface Line extends BaseCanvasElement {
-  type: typeof CanvasElementTypes.Line;
+  type: typeof CanvasElements.Line;
   points: [startX: number, startY: number, endX: number, endY: number];
 }
 
 export interface Arrow extends Omit<Line, 'type'> {
-  type: typeof CanvasElementTypes.Arrow;
+  type: typeof CanvasElements.Arrow;
   pointerLength: number; // 0 and more
   pointerWidth: number; // 0 and more
 }
 
-export const LineCapTypes = {
+export const LineCaps = {
   Round: 'round',
   Butt: 'butt',
 } as const;
 
-export type LineCapType = typeof LineCapTypes;
+export type LineCap = (typeof LineCaps)[keyof typeof LineCaps];
 
-export const LineJoinTypes = {
+export const LineJoins = {
   Round: 'round',
   Miter: 'miter',
 } as const;
 
-export type LineJoinType = typeof LineJoinTypes;
+export type LineJoin = (typeof LineJoins)[keyof typeof LineJoins];
 
 export interface BrokenLine extends BaseCanvasElement {
-  type: typeof CanvasElementTypes.Line;
+  type: typeof CanvasElements.Line;
   points: number[];
   tension: number; // 0 to 1
   closed: boolean;
 }
 
-export const DirectionTypes = {
+export const Directions = {
   Up: 'up',
   Down: 'down',
   Left: 'left',
   Right: 'right',
 } as const;
 
-export type DirectionType = typeof DirectionTypes;
+export type Direction = (typeof Directions)[keyof typeof Directions];
 
 export interface Tooltip extends BaseCanvasElement {
-  type: typeof CanvasElementTypes.Tooltip;
-  pointerDirection: DirectionType[keyof DirectionType];
+  type: typeof CanvasElements.Tooltip;
+  pointerDirection: Direction;
   pointerWidth: number;
   pointerHeight: number;
 }
 
 export interface Path extends BaseCanvasElement {
-  type: typeof CanvasElementTypes.Path;
+  type: typeof CanvasElements.Path;
   data: string;
 }
 
-export const AlignmentTypes = {
+export const Alignments = {
   Left: 'left',
   Center: 'center',
   Right: 'right',
 } as const;
 
-export type AlignmentType = typeof AlignmentTypes;
+export type Alignment = (typeof Alignments)[keyof typeof Alignments];
 
 export interface Text extends BaseCanvasElement, Size {
-  type: typeof CanvasElementTypes.Text;
+  type: typeof CanvasElements.Text;
   text: string;
   fontSize: number; // 1 and more
   fontFamily: string;
   padding: number; // 0 and more
-  align: AlignmentType[keyof AlignmentType];
+  align: Alignment;
 }
 
 export const BrushTypes = {
@@ -161,14 +163,14 @@ export const BrushTypes = {
   Marker: 'marker',
 } as const;
 
-export type BrushType = typeof BrushTypes;
+export type BrushType = (typeof BrushTypes)[keyof typeof BrushTypes];
 
 export interface BaseDraw extends BaseCanvasElement {
-  type: typeof CanvasElementTypes.Draw;
+  type: typeof CanvasElements.Draw;
   points: number[];
-  brushType: BrushType[keyof BrushType];
-  lineCap: string;
-  lineJoin: typeof LineJoinTypes.Round;
+  brushType: BrushType;
+  lineCap: LineCap;
+  lineJoin: typeof LineJoins.Round;
 }
 
 export interface Pencil extends BaseDraw {
@@ -180,12 +182,12 @@ export interface Marker extends BaseDraw {
 }
 
 export interface Image extends Omit<Rectangle, 'type'> {
-  type: typeof CanvasElementTypes.Image;
-  image: string;
+  type: typeof CanvasElements.Image;
+  image: Image;
 }
 
 export interface Group extends BaseCanvasElement, Size {
-  type: typeof CanvasElementTypes.Group;
+  type: typeof CanvasElements.Group;
   children: CanvasElement[];
 }
 
@@ -218,3 +220,23 @@ export interface Canvas {
   layers: CanvasElement[];
   images: { [imageId: string]: string[] };
 }
+
+export interface CanvasProps {
+  stageRef: React.RefObject<Konva.Stage | null>;
+  backgroundRef: React.RefObject<Konva.Rect | null>;
+}
+
+export const Tools = {
+  Select: 'select',
+  Grab: 'grab',
+} as const;
+
+export type Tool = (typeof Tools)[keyof typeof Tools];
+
+export const Modes = {
+  Edit: 'edit',
+  View: 'view',
+  Load: 'load',
+} as const;
+
+export type Mode = (typeof Modes)[keyof typeof Modes];

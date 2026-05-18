@@ -2,13 +2,11 @@ import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
-import type Konva from 'konva';
-
 import authApi from '@api/authApi';
 import projectsApi from '@api/projectsApi';
 
 import { setAuthUser } from '@store/authSlice';
-import { clearEditor, selectEditor, setMode } from '@store/editorSlice';
+import { selectEditor, setMode } from '@store/editorSlice';
 import { selectUi } from '@store/uiSlice';
 
 import { MainButton } from '@components/MainButton';
@@ -21,11 +19,9 @@ import { useAppDispatch, useAppSelector, useAuth } from '@hooks/utilHooks';
 
 import { exportFile } from '@utils/editorUtils';
 
-export interface EditorHeaderProps {
-  stageRef?: React.RefObject<Konva.Stage | null>;
-}
+import { type CanvasProps, Modes } from '@mytypes/editorTypes';
 
-export const AuthMenu = ({ stageRef }: EditorHeaderProps) => {
+export const AuthMenu = ({ stageRef, backgroundRef }: Partial<CanvasProps>) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
@@ -38,14 +34,14 @@ export const AuthMenu = ({ stageRef }: EditorHeaderProps) => {
   const canvas = useAppSelector(selectEditor.canvas);
   const project = useAppSelector(selectEditor.project);
 
-  const logout = () => {
+  const logout = (nav: boolean = false) => {
     setIsLoading(true);
     authApi
       .logout()
       .then(() => {
         dispatch(setAuthUser(null));
         setIsLoading(false);
-        navigate('/login');
+        if (nav) navigate('/login');
       })
       .catch((err) => {
         setIsLoading(false);
@@ -54,37 +50,41 @@ export const AuthMenu = ({ stageRef }: EditorHeaderProps) => {
   };
 
   const saveAndlogout = async () => {
-    if (hasUnsavedChanges && auth && project && project.id && project.author?.id === auth.id) {
-      setIsLoading(true);
-      dispatch(setMode('load'));
+    if (auth && project && project.id && project.author?.id === auth.id) {
+      if (hasUnsavedChanges) {
+        setIsLoading(true);
+        dispatch(setMode(Modes.Load));
 
-      projectsApi
-        .updateProject(project.id, {
-          size: { width: canvas.background.width, height: canvas.background.height },
-          content: canvas,
-          images: imagesCtx?.presentFiles,
-          ...(stageRef && {
-            preview: await exportFile({
-              stageRef,
-              filename: `preview-${project.id}.jpg`,
-              format: 'jpg',
-              height: 300,
-            }),
-          }),
-          editDate: new Date().toISOString(),
-        })
-        .then(() => {
-          dispatch(clearEditor());
-          imagesCtx?.clearFiles();
-          logout();
-        })
-        .catch((err) => {
-          dispatch(setMode('edit'));
-          setIsLoading(false);
-          toast(err.message);
-        });
+        projectsApi
+          .updateProject(project.id, {
+            size: { width: canvas.background.width, height: canvas.background.height },
+            content: canvas,
+            images: imagesCtx?.presentFiles,
+            ...(stageRef &&
+              backgroundRef && {
+                preview: await exportFile({
+                  stageRef,
+                  backgroundRef,
+                  filename: `preview-${project.id}.jpg`,
+                  format: 'jpg',
+                  height: 300,
+                }),
+              }),
+            editDate: new Date().toISOString(),
+          })
+          .then(() => {
+            logout();
+          })
+          .catch((err) => {
+            dispatch(setMode(Modes.Edit));
+            setIsLoading(false);
+            toast(err.message);
+          });
+      } else {
+        logout();
+      }
     } else {
-      logout();
+      logout(true);
     }
   };
 

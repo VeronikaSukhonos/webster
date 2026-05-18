@@ -126,7 +126,7 @@ const UserProfilePage = () => {
       <div className="col mini-gap t-center">
         <h1 className="profile-login">{user?.username}</h1>
         {userId === auth?.id && <p className="profile-email">{auth?.email}</p>}
-        {user?.about && <p className="profile-about">{user.about}</p>}
+        {user?.about && <p className="t-ital">{user.about}</p>}
       </div>
       <h2 className="content-title t-art t-center">
         {auth && auth.id === userId ? '' : 'Public'} Projects

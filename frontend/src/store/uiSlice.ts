@@ -15,8 +15,8 @@ interface Modal {
     | 'deleteProject'
     | 'deleteTemplate'
     | 'exportProject';
-  project?: Omit<ProjectResponse, 'file'>;
-  template?: Omit<TemplateResponse, 'file'>;
+  project?: Omit<ProjectResponse, 'content' | 'file' | 'images'>;
+  template?: Omit<TemplateResponse, 'content' | 'file' | 'images'>;
 }
 
 interface UiState {

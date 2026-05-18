@@ -11,6 +11,9 @@ export const MIN_CANVAS_SIZE = 40;
 export const MAX_CANVAS_SIZE = 4000;
 export const DEFAULT_CANVAS_SIZE = 1080;
 export const DEFAULT_SHAPE_COLOR = '#eaeaea';
+export const MIN_SCALE = 0.1;
+export const MAX_SCALE = 5;
+export const SCALE_FACTOR = 1.05;
 export const SUPPORTED_UPLOADS = ['image/png', 'image/jpeg'];
 
 export const SIZE_TYPES = [

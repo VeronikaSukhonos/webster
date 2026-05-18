@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { DropZone as RACDropZone } from 'react-aria-components/DropZone';
 import { FileTrigger as RACFileTrigger } from 'react-aria-components/FileTrigger';
 import {
@@ -18,6 +18,7 @@ import {
   EyeCloseIcon,
   EyeOpenIcon,
   LockIcon,
+  MinusIcon,
   PlusIcon,
   UnlockIcon,
   UploadIcon,
@@ -25,7 +26,7 @@ import {
 
 import { MAX_FILE_SIZE, SUPPORTED_UPLOADS } from '@utils/constants';
 
-import type { ImageItem, Size } from '@mytypes/editorTypes';
+import { type Alignment, Alignments, type ImageItem, type Size } from '@mytypes/editorTypes';
 import type { FakeEvent } from '@mytypes/utilTypes';
 
 import './InputFields.css';
@@ -33,8 +34,11 @@ import './InputFields.css';
 export interface FieldWrapperProps {
   children: React.ReactNode;
   className?: string;
+  noStyle?: boolean;
   noBackground?: boolean;
-  multipleInputs?: boolean;
+  align?: Alignment;
+  mini?: boolean;
+  style?: React.CSSProperties;
   label?: string;
   labelFor?: string;
   required?: boolean;
@@ -44,8 +48,11 @@ export interface FieldWrapperProps {
 export const FieldWrapper = ({
   children,
   className,
+  noStyle = false,
   noBackground = false,
-  multipleInputs = false,
+  align = Alignments.Left,
+  mini = false,
+  style,
   label,
   labelFor,
   required = false,
@@ -66,9 +73,13 @@ export const FieldWrapper = ({
 
       <div
         className={clsx(
-          noBackground || multipleInputs ? 'row no-wide' : 'field-container',
+          noStyle || noBackground ? clsx('row no-wide', mini && 'no-gap') : 'field-container',
+          noStyle && 'no-style-field-container',
           className,
+          align,
+          mini && 'mini',
         )}
+        style={style}
       >
         {children}
       </div>
@@ -78,7 +89,10 @@ export const FieldWrapper = ({
   );
 };
 
-interface BaseInputProps extends Pick<FieldWrapperProps, 'label' | 'required' | 'error'> {
+interface BaseInputProps extends Pick<
+  FieldWrapperProps,
+  'label' | 'required' | 'error' | 'className' | 'noStyle' | 'align' | 'mini' | 'style'
+> {
   name: string;
   id?: string;
   disabled?: boolean;
@@ -173,6 +187,7 @@ interface NumberFieldProps extends Omit<BaseInputProps, 'autoComplete'> {
   min?: number;
   max?: number;
   step?: number;
+  format?: 'percent' | 'decimal';
   buttons?: boolean;
 }
 
@@ -186,6 +201,7 @@ export const NumberField = ({
   min,
   max,
   step,
+  format = 'decimal',
   buttons = false,
   ...wrapperProps
 }: NumberFieldProps) => {
@@ -198,14 +214,28 @@ export const NumberField = ({
     minValue: min,
     maxValue: max,
     step,
+    formatOptions: { style: format },
   };
 
   return (
     <FieldWrapper labelFor={id ?? name} {...wrapperProps}>
-      <RACNumberField value={value || NaN} {...props} aria-label={props.id}>
-        {buttons && <MainButton slot="decrement">-</MainButton>}
+      <RACNumberField
+        value={value || NaN}
+        {...props}
+        aria-label={props.id}
+        className="row mini-gap ver-center"
+      >
+        {buttons && (
+          <MainButton noStyle className="icon-button left" slot="decrement">
+            <MinusIcon />
+          </MainButton>
+        )}
         <RACInput />
-        {buttons && <MainButton slot="increment">+</MainButton>}
+        {buttons && (
+          <MainButton noStyle className="icon-button" slot="increment">
+            <PlusIcon />
+          </MainButton>
+        )}
       </RACNumberField>
     </FieldWrapper>
   );
@@ -251,7 +281,6 @@ export const SizeField = ({
     min,
     max,
     step,
-    required: wrapperProps.required,
   };
 
   useEffect(() => {
@@ -279,20 +308,25 @@ export const SizeField = ({
   }, [value.height]);
 
   return (
-    <FieldWrapper {...wrapperProps} noBackground multipleInputs>
+    <FieldWrapper {...wrapperProps} noBackground>
       <NumberField
         name="width"
         value={value.width}
         {...props}
         {...(innerLabels && { label: 'Width' })}
         {...(innerPlaceholders && { placeholder: 'width' })}
+        {...wrapperProps}
       />
+      <div className="size-field-lock" style={{ fontWeight: 'bold' }}>
+        x
+      </div>
       <NumberField
         name="height"
         value={value.height}
         {...props}
         {...(innerLabels && { label: 'Height' })}
         {...(innerPlaceholders && { placeholder: 'height' })}
+        {...wrapperProps}
       />
       <div className="size-field-lock">
         <div className="no-wrap" style={{ fontWeight: 'bold' }}>

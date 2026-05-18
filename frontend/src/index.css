@@ -11,7 +11,7 @@
   --dark-gray: #cbcdd6;
   --white: #fff;
   --black: #0f1314;
-  --transparent-black: #34173419;
+  --transparent-black: #34173422;
   --attention-red: #8b0033;
   --success-green: #00614c;
 
@@ -92,6 +92,12 @@ main:not(.full-screen) {
   padding: 20px;
 }
 
+main.full-screen {
+  overflow: hidden;
+  max-height: calc(100vh - 41px);
+  max-width: 100vw;
+}
+
 a {
   color: var(--main-font-color);
   font-weight: 700;
@@ -161,13 +167,17 @@ textarea,
   align-items: center;
 }
 
-.row:not(.mini-gap),
-.col:not(.mini-gap) {
+.row:not(.mini-gap):not(.no-gap),
+.col:not(.mini-gap):not(.no-gap) {
   gap: 20px;
 }
 
 .mini-gap {
   gap: 5px;
+}
+
+.no-gap {
+  gap: 0;
 }
 
 .grow {
@@ -225,6 +235,10 @@ textarea,
 
 .t-center {
   text-align: center;
+}
+
+.t-ital {
+  font-style: italic;
 }
 
 .t-separator .item + .item::before {

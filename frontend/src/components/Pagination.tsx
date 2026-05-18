@@ -93,7 +93,7 @@ export const Pagination = ({ totalPages: tp, disabled = false }: PaginationProps
         </div>
       );
     }
-  }, [page, tp]);
+  }, [page, tp, disabled]);
 
   if (tp < 2) return;
 

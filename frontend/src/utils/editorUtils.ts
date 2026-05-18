@@ -1,8 +1,6 @@
-import type Konva from 'konva';
-
 import { ERROR_TYPES, EXPORT_TYPES, MAX_CANVAS_SIZE, MIN_CANVAS_SIZE } from '@utils/constants';
 
-import type { Background, Canvas, ImageItem, Size } from '@mytypes/editorTypes';
+import type { Background, Canvas, CanvasProps, ImageItem, Size } from '@mytypes/editorTypes';
 import type { ImageResponse } from '@mytypes/responseTypes';
 
 export type ExportType = (typeof EXPORT_TYPES)[number]['value'];
@@ -29,7 +27,7 @@ export const initCanvas = (size: Size, image?: ImageItem) => {
     type: 'background',
     width: size.width,
     height: size.height,
-    ...(image ? { fillPatternImage: image.id } : { fill: 'transparent' }),
+    ...(image ? { image: image.id } : { fill: 'transparent' }),
   };
 
   return {
@@ -57,8 +55,7 @@ export const getInitCanvasSize = (img: HTMLImageElement) => {
   return { width: Math.round(width), height: Math.round(height) };
 };
 
-interface ExportFileProps {
-  stageRef: React.RefObject<Konva.Stage | null>;
+interface ExportFileProps extends CanvasProps {
   filename: string;
   format: ExportType;
   width?: number;
@@ -67,23 +64,38 @@ interface ExportFileProps {
 
 export const exportFile = async ({
   stageRef,
+  backgroundRef,
   filename,
   format = 'png',
   width,
   height,
 }: ExportFileProps) => {
   const stage = stageRef.current;
+  const back = backgroundRef.current;
   let scale = 1;
 
-  if (!stage || !filename) return;
-  if (width) scale = width / stage.width();
-  else if (height) scale = height / stage.height();
+  if (!stage || !back || !filename) return;
+  if (width) scale = width / back.width();
+  else if (height) scale = height / back.height();
 
-  const canvas = stage.toCanvas({ pixelRatio: scale });
+  const excluded = stage.find('.excluded');
+
+  excluded.forEach((n) => n.hide());
+
+  const { x, y } = back.getAbsolutePosition();
+  const canvas = stage.toCanvas({
+    x,
+    y,
+    width: back.width() * stage.scaleX(),
+    height: back.height() * stage.scaleX(),
+    pixelRatio: scale,
+  });
   const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(ERROR_TYPES.SWW))), mimeType);
   });
+
+  excluded.forEach((n) => n.show());
 
   return new File([blob], filename, {
     type: mimeType,

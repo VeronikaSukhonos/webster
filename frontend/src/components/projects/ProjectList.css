@@ -21,3 +21,13 @@
     grid-template-columns: repeat(1, 1fr);
   }
 }
+
+.carousel-container {
+  width: 100%;
+}
+
+.carousel-item {
+  display: flex;
+  justify-content: center;
+  padding: 25px;
+}

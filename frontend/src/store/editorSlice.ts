@@ -4,15 +4,10 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 import { DEFAULT_CANVAS_SIZE } from '@utils/constants';
 import { initCanvas } from '@utils/editorUtils';
 
-import { type Background, type Canvas } from '@mytypes/editorTypes';
+import { type Canvas, type Mode, Modes, type Size, type Tool, Tools } from '@mytypes/editorTypes';
 import type { ProjectResponse, TemplateResponse } from '@mytypes/responseTypes';
 
 import type { RootState } from './store';
-
-export interface Project extends Partial<Omit<ProjectResponse, 'content' | 'file' | 'images'>> {
-  title: string;
-}
-export interface Template extends Omit<TemplateResponse, 'content' | 'file' | 'images'> {}
 
 interface History {
   canvas: Canvas;
@@ -20,51 +15,66 @@ interface History {
   action: 'add' | 'change' | 'delele';
 }
 
-type Mode = 'edit' | 'view' | 'load';
-
-interface LeftSheet {
-  type: 'shapes' | 'images' | 'layers';
+interface Project extends Partial<Omit<ProjectResponse, 'content' | 'file' | 'images'>> {
+  title: string;
 }
+interface Template extends Omit<TemplateResponse, 'content' | 'file' | 'images'> {}
 
-interface RightSheet {
-  type: 'element' | 'history';
-  target?: string;
-}
+// interface LeftSheet {
+//   type: 'shapes' | 'images' | 'layers';
+// }
+
+// interface RightSheet {
+//   type: 'element' | 'history';
+//   target?: string;
+// }
 
 interface EditorState {
   canvas: Canvas;
+  tool: Tool;
   history: History[];
-  historyTarget: number;
+  // historyTarget: number;
   project: Project | null;
   template: Template | null;
   mode: Mode;
   hasUnsavedChanges: boolean;
-  leftSheet: LeftSheet | null;
-  rightSheet: RightSheet | null;
+  // leftSheet: LeftSheet | null;
+  // rightSheet: RightSheet | null;
 }
 
 const initialState: EditorState = {
   canvas: initCanvas({ width: DEFAULT_CANVAS_SIZE, height: DEFAULT_CANVAS_SIZE }),
+  tool: Tools.Grab,
   history: [],
-  historyTarget: 0,
+  // historyTarget: 0,
   project: null,
   template: null,
-  mode: 'edit',
+  mode: Modes.Edit,
   hasUnsavedChanges: false,
-  leftSheet: null,
-  rightSheet: null,
+  // leftSheet: null,
+  // rightSheet: null,
 };
 
 const editorSlice = createSlice({
   name: 'editor',
   initialState,
   reducers: {
-    setCanvas: (state, action: PayloadAction<Canvas>) => {
-      state.canvas = action.payload;
+    setTool: (state, action: PayloadAction<Tool>) => {
+      state.tool = action.payload;
     },
-    updateCanvasBackground: (state, action: PayloadAction<Background>) => {
-      state.canvas.background = action.payload;
+    setCanvasSize: (state, action: PayloadAction<Size>) => {
+      const { width, height } = action.payload;
+
+      state.canvas.background.width = width;
+      state.canvas.background.height = height;
+      if (state.project) {
+        state.project.width = width;
+        state.project.height = height;
+      }
     },
+    // updateCanvasBackground: (state, action: PayloadAction<Background>) => {
+    //   state.canvas.background = action.payload;
+    // },
     setHistory: (state, action: PayloadAction<History[]>) => {
       state.history = action.payload;
     },
@@ -91,7 +101,7 @@ const editorSlice = createSlice({
       if (content) {
         state.canvas = content;
         state.template = template;
-        state.mode = 'view';
+        state.mode = Modes.View;
       }
     },
     setMode: (state, action: PayloadAction<Mode>) => {
@@ -100,12 +110,12 @@ const editorSlice = createSlice({
     setHasUnsavedChanges: (state, action: PayloadAction<boolean>) => {
       state.hasUnsavedChanges = action.payload;
     },
-    setLeftSheet: (state, action: PayloadAction<LeftSheet | null>) => {
-      state.leftSheet = action.payload ?? null;
-    },
-    setRightSheet: (state, action: PayloadAction<RightSheet | null>) => {
-      state.rightSheet = action.payload ?? null;
-    },
+    // setLeftSheet: (state, action: PayloadAction<LeftSheet | null>) => {
+    //   state.leftSheet = action.payload ?? null;
+    // },
+    // setRightSheet: (state, action: PayloadAction<RightSheet | null>) => {
+    //   state.rightSheet = action.payload ?? null;
+    // },
     clearEditor: (state) => {
       Object.assign(state, initialState);
     },
@@ -113,28 +123,30 @@ const editorSlice = createSlice({
 });
 
 export const {
-  setCanvas,
-  updateCanvasBackground,
+  setTool,
+  setCanvasSize,
+  // updateCanvasBackground,
   setHistory,
   setProject,
   setTemplate,
   setMode,
   setHasUnsavedChanges,
-  setLeftSheet,
-  setRightSheet,
+  // setLeftSheet,
+  // setRightSheet,
   clearEditor,
 } = editorSlice.actions;
 
 export const selectEditor = {
   canvas: (state: RootState) => state.editor.canvas,
+  tool: (state: RootState) => state.editor.tool,
   history: (state: RootState) => state.editor.history,
-  historyTarget: (state: RootState) => state.editor.historyTarget,
+  // historyTarget: (state: RootState) => state.editor.historyTarget,
   project: (state: RootState) => state.editor.project,
   template: (state: RootState) => state.editor.template,
   mode: (state: RootState) => state.editor.mode,
   hasUnsavedChanges: (state: RootState) => state.editor.hasUnsavedChanges,
-  leftSheet: (state: RootState) => state.editor.leftSheet,
-  rightSheet: (state: RootState) => state.editor.rightSheet,
+  // leftSheet: (state: RootState) => state.editor.leftSheet,
+  // rightSheet: (state: RootState) => state.editor.rightSheet,
 };
 
 export default editorSlice.reducer;

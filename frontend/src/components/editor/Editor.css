@@ -1,17 +1,48 @@
 .work-area {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
   background: var(--dark-gray);
   height: 100%;
   width: 100%;
-  flex-grow: 1;
+  overflow: hidden;
   position: relative;
 }
 
-.stage-wrapper {
+.tool-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  background: var(--main-bg-color);
+  border: var(--main-border);
+  border-radius: 10px;
   box-shadow: var(--shadow);
-  height: max-content;
-  width: max-content;
+  padding: 4px;
+  height: 40px;
+}
+
+.tool-container.mini {
+  height: 32px;
+}
+
+.tool-container.mini svg {
+  height: 22px;
+  width: 22px;
+}
+
+.tool-container.mini.square {
+  width: 32px;
+}
+
+.bottom-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0 10px;
+  width: 100%;
+  position: fixed;
+  bottom: 10px;
+  transition: all ease-in-out 0.3s;
 }

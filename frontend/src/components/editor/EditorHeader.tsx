@@ -7,7 +7,7 @@ import { Popover } from '@components/Menu';
 import { ProjectMenu, TemplateMenu } from '@components/editor/EditorMenu';
 import { HistoryButtons, buttonProps } from '@components/editor/HistoryButtons';
 import { ShareMenu } from '@components/editor/ShareMenu';
-import { AuthMenu, type EditorHeaderProps } from '@components/users/AuthMenu';
+import { AuthMenu } from '@components/users/AuthMenu';
 
 import { HomeIcon, InfoIcon, LoginIcon, ProjectIcon, PublicIcon, ShareIcon } from '@assets/index';
 
@@ -15,9 +15,11 @@ import { useAppSelector, useAuth } from '@hooks/utilHooks';
 
 import { formatDate } from '@utils/formatDate';
 
+import { type CanvasProps, Modes } from '@mytypes/editorTypes';
+
 import './EditorHeader.css';
 
-export const EditorHeader = ({ stageRef }: EditorHeaderProps) => {
+export const EditorHeader = ({ stageRef, backgroundRef }: CanvasProps) => {
   const auth = useAuth();
 
   const project = useAppSelector(selectEditor.project);
@@ -114,7 +116,7 @@ export const EditorHeader = ({ stageRef }: EditorHeaderProps) => {
           <span className="t-cut-300">{project?.title}</span>
         </h1>
 
-        {mode !== 'view' && <HistoryButtons />}
+        {mode !== Modes.View && <HistoryButtons />}
         {auth ? (
           <>
             {project && auth.id === project.author?.id && (
@@ -128,7 +130,7 @@ export const EditorHeader = ({ stageRef }: EditorHeaderProps) => {
                 <ShareMenu />
               </Popover>
             )}
-            <AuthMenu stageRef={stageRef} />
+            <AuthMenu stageRef={stageRef} backgroundRef={backgroundRef} />
           </>
         ) : (
           <MainButton to="/login" {...buttonProps} aria-label="Log in">
