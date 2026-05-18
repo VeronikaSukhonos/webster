@@ -22,6 +22,13 @@ import { parseTime } from '../../common/utils';
 @Injectable()
 export class AuthService {
   private readonly oauthClient: Auth.OAuth2Client;
+  private readonly refreshConfig: {
+    maxAge: number;
+    httpOnly: boolean;
+    sameSite?: 'none';
+    secure?: boolean;
+    path: string;
+  };
 
   constructor(
     private usersService: UsersService,
@@ -34,6 +41,13 @@ export class AuthService {
       this.configService.get('GOOGLE_CLIENT_SECRET'),
       this.configService.get('APP_URL'),
     );
+    this.refreshConfig = {
+      maxAge: parseTime(this.configService.get('REFRESH_TOKEN_TTL') ?? '7d'),
+      httpOnly: true,
+      sameSite: 'none',
+      secure: true,
+      path: '/api/auth/refresh',
+    };
   }
 
   async register(dto: RegisterDto): Promise<{ user: AuthResponseDto }> {
@@ -173,7 +187,7 @@ export class AuthService {
 
   async logout(authId: number, res: Response): Promise<void> {
     await this.usersService.updateOneSensitive(authId, { refreshToken: null });
-    res.clearCookie('refreshToken', { httpOnly: true, path: '/api/auth/refresh' });
+    res.clearCookie('refreshToken', this.refreshConfig);
   }
 
   async requestEmailConfirmation(email: string): Promise<void> {
@@ -245,11 +259,7 @@ export class AuthService {
     const refreshToken = await this.tokenService.createToken(user, 'REFRESH');
 
     await this.usersService.updateOneSensitive(user.id, { refreshToken });
-    res.cookie('refreshToken', refreshToken, {
-      maxAge: parseTime(this.configService.get('REFRESH_TOKEN_TTL') ?? '7d'),
-      httpOnly: true,
-      path: '/api/auth/refresh',
-    });
+    res.cookie('refreshToken', refreshToken, this.refreshConfig);
 
     return await this.tokenService.createToken(user, 'ACCESS');
   }
