@@ -50,9 +50,9 @@ const SIZE_TYPE_OPTIONS = SIZE_TYPES.map((opt) => ({
   value: { width: opt.width, height: opt.height },
   label:
     opt.width && opt.height ? (
-      <SelectLabel label={opt.width + ' x ' + opt.height} more={opt.proportion} />
+      <SelectLabel more={opt.proportion}>{opt.width + ' x ' + opt.height}</SelectLabel>
     ) : (
-      <SelectLabel label="Custom" />
+      <SelectLabel>Custom</SelectLabel>
     ),
 }));
 
@@ -217,7 +217,9 @@ export const CreateProjectForm = ({
         <div className="field">
           <span className="field-label">From Template</span>
           <div className="field-container selected" style={{ fontWeight: 800, padding: '0 10px' }}>
-            <SelectLabel label={template.title} more={template.width + ' x ' + template.height} />
+            <SelectLabel more={template.width + ' x ' + template.height}>
+              {template.title}
+            </SelectLabel>
           </div>
         </div>
       ) : (

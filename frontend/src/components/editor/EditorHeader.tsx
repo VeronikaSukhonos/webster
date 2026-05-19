@@ -13,7 +13,7 @@ import { HomeIcon, InfoIcon, LoginIcon, ProjectIcon, PublicIcon, ShareIcon } fro
 
 import { useAppSelector, useAuth } from '@hooks/utilHooks';
 
-import { formatDate } from '@utils/formatDate';
+import { formatDate } from '@utils/utils';
 
 import { type CanvasProps, Modes } from '@mytypes/editorTypes';
 

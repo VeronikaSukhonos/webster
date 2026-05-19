@@ -1,4 +1,4 @@
-import { createQuery } from '@utils/createQuery';
+import { createQuery } from '@utils/utils';
 
 import type { TemplateType } from '@mytypes/responseTypes';
 
@@ -21,9 +21,9 @@ class TemplatesApi {
   }) {
     return await api.get(`/templates/${createQuery(query)}`);
   }
-  
-  async getRecentTemplates() {
-    return await api.get(`/templates/recent`);
+
+  async getRecentTemplates(query?: { page?: number; limit?: number }) {
+    return await api.get(`/templates/recent/${createQuery(query)}`);
   }
 
   async getTemplate(id: number) {

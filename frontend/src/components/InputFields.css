@@ -227,6 +227,10 @@
   color: var(--dark-blue);
 }
 
+.selected .select-label svg path {
+  fill: var(--dark-blue);
+}
+
 .select-label-more {
   color: var(--black);
   font-size: 0.85rem;

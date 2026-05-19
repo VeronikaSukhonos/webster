@@ -162,6 +162,7 @@ export interface Text extends BaseCanvasElement, Size {
 export const BrushTypes = {
   Pencil: 'pencil',
   Marker: 'marker',
+  Brush: 'brush',
 } as const;
 
 export type BrushType = (typeof BrushTypes)[keyof typeof BrushTypes];
@@ -227,13 +228,6 @@ export interface CanvasProps {
   backgroundRef: React.RefObject<Konva.Rect | null>;
 }
 
-export const Tools = {
-  Select: 'select',
-  Grab: 'grab',
-} as const;
-
-export type Tool = (typeof Tools)[keyof typeof Tools];
-
 export const Modes = {
   Edit: 'edit',
   View: 'view',
@@ -243,14 +237,31 @@ export const Modes = {
 export type Mode = (typeof Modes)[keyof typeof Modes];
 
 export const Actions = {
-  Add: 'Added',
-  Move: 'Moved',
-  Resize: 'Resized',
-  Fill: 'Changed fill of',
-  Stroke: 'Changed stroke of',
-  Shadow: 'Changed shadow of',
-  Font: 'Changed font of',
-  Delete: 'Deleted',
+  Add: 'added',
+  Move: 'moved',
+  Resize: 'resized',
+  Fill: 'changed fill of',
+  Stroke: 'changed stroke of',
+  Shadow: 'changed shadow of',
+  Font: 'changed font of',
+  Delete: 'deleted',
 } as const;
 
 export type Action = (typeof Actions)[keyof typeof Actions];
+
+export const Tools = {
+  Select: 'select',
+  Grab: 'grab',
+  Text: 'text',
+  ...BrushTypes,
+} as const;
+
+export type Tool = (typeof Tools)[keyof typeof Tools];
+
+export const LeftSheets = {
+  Shapes: 'shapes',
+  Images: 'images',
+  Layers: 'layers',
+} as const;
+
+export type LeftSheetType = (typeof LeftSheets)[keyof typeof LeftSheets];

@@ -34,6 +34,31 @@
   width: 32px;
 }
 
+.tool-container .main-button .own-color path,
+.tool-container .no-style-button .own-color path {
+  fill: var(--main-font-color);
+  transition: fill ease-in-out 0.2s;
+}
+
+.tool-container .main-button .active path,
+.tool-container .no-style-button .active path {
+  fill: var(--accent-font-color);
+}
+
+.main-toolbar {
+  align-self: center;
+  width: max-content;
+  position: absolute;
+  top: 10px;
+  z-index: 100;
+}
+
+.ver-hr {
+  border-left: var(--main-border);
+  height: 32px;
+  margin: 0 7px;
+}
+
 .bottom-toolbar {
   display: flex;
   justify-content: space-between;
@@ -42,7 +67,8 @@
   gap: 10px;
   padding: 0 10px;
   width: 100%;
-  position: fixed;
+  position: absolute;
   bottom: 10px;
+  z-index: 100;
   transition: all ease-in-out 0.3s;
 }

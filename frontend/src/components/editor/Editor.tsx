@@ -2,9 +2,10 @@ import { useRef } from 'react';
 import { Group, Image, Layer, Rect, Stage } from 'react-konva';
 import { useImage } from 'react-konva-utils';
 
+import clsx from 'clsx';
 import type Konva from 'konva';
 
-import { selectEditor, setCanvasSize } from '@store/editorSlice';
+import { selectEditor, setCanvasSize, setLeftSheet } from '@store/editorSlice';
 
 import { NumberField, SizeField } from '@components/InputFields';
 import { MainButton } from '@components/MainButton';
@@ -20,7 +21,7 @@ import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
 import { MAX_CANVAS_SIZE, MAX_SCALE, MIN_CANVAS_SIZE, MIN_SCALE } from '@utils/constants';
 import { shortcuts } from '@utils/shortcuts';
 
-import { type CanvasProps, Modes, Tools } from '@mytypes/editorTypes';
+import { type CanvasProps, LeftSheets, Modes, Tools } from '@mytypes/editorTypes';
 
 import './Editor.css';
 
@@ -29,6 +30,7 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
 
   const canvas = useAppSelector(selectEditor.canvas);
   const tool = useAppSelector(selectEditor.tool);
+  const leftSheet = useAppSelector(selectEditor.leftSheet);
   const mode = useAppSelector(selectEditor.mode);
   const project = useAppSelector(selectEditor.project);
 
@@ -90,11 +92,12 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
           <MainButton
             noStyle
             className="tool-container mini square"
-            onClick={() => {
-              /*TODO */
-            }}
+            tooltipId={LeftSheets.Layers}
+            onClick={() => dispatch(setLeftSheet(LeftSheets.Layers))}
           >
-            <LayerIcon />
+            <LayerIcon
+              className={clsx('own-color', leftSheet?.type === LeftSheets.Layers && 'active')}
+            />
           </MainButton>
           <div className="tool-container mini" style={{ maxWidth: '125px' }}>
             <NumberField
@@ -129,7 +132,7 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
             </div>
             <Popover
               button={
-                <MainButton noStyle className="tool-container mini square">
+                <MainButton noStyle className="tool-container mini square" tooltipId="help">
                   <QuestionIcon />
                 </MainButton>
               }

@@ -1,4 +1,4 @@
-import { createQuery } from '@utils/createQuery';
+import { createQuery } from '@utils/utils';
 
 import type { Canvas, ImageItem, Size } from '@mytypes/editorTypes';
 

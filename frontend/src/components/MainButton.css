@@ -38,7 +38,7 @@
 }
 
 .main-button svg path {
-  transition: all ease-in-out 0.5s;
+  transition: all ease-in-out 0.1s;
 }
 
 .main-button:hover:not(:disabled) .live-icon,
@@ -70,6 +70,13 @@
   background: none;
   border: none;
   color: var(--purple);
+  padding: 7px;
+}
+
+.main-button.transparent:not(.mini) svg {
+  height: 22px;
+  width: 22px;
+  padding-bottom: 1px;
 }
 
 .main-button.white svg:not(.own-color) path,
@@ -133,13 +140,13 @@
   }
 }
 
-.main-button + .btn-tooltip {
-  border-radius: 10px;
-  font-size: 0.85rem;
+.btn-tooltip {
+  border-radius: 10px !important;
+  font-size: 0.85rem !important;
 }
 
-.main-button + .btn-tooltip * {
-  padding: 3px 6px;
+.btn-tooltip * {
+  padding: 3px 6px !important;
 }
 
 @media (max-width: 400px) {

@@ -12,6 +12,8 @@ import { PlusIcon, TemplateIcon } from '@assets/index';
 
 import { useAppDispatch, useAuth, useFeedback } from '@hooks/utilHooks';
 
+import { DEFAULT_PROJECT_LIST_LIMIT } from '@utils/constants';
+
 import type { ProjectResponse, TemplateResponse } from '@mytypes/responseTypes';
 
 const HomePageAuth = () => {
@@ -25,7 +27,7 @@ const HomePageAuth = () => {
   useEffect(() => {
     setAreProjectsLoading(true);
     projectsApi
-      .getOwnProjects()
+      .getOwnProjects({ limit: DEFAULT_PROJECT_LIST_LIMIT })
       .then(({ data: res }) => {
         setAreProjectsLoading(false);
         setProjectsFeedback(res.message, 'ok');
@@ -41,7 +43,7 @@ const HomePageAuth = () => {
   useEffect(() => {
     setAreTemplatesLoading(true);
     templatesApi
-      .getRecentTemplates()
+      .getRecentTemplates({ limit: DEFAULT_PROJECT_LIST_LIMIT })
       .then(({ data: res }) => {
         setAreTemplatesLoading(false);
         setTemplatesFeedback(res.message, 'ok');

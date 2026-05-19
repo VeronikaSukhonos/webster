@@ -226,13 +226,23 @@ export const NumberField = ({
         className="row mini-gap ver-center"
       >
         {buttons && (
-          <MainButton noStyle className="icon-button left" slot="decrement">
+          <MainButton
+            noStyle
+            className="icon-button left"
+            slot="decrement"
+            disabled={!!(value && min && value <= min)}
+          >
             <MinusIcon />
           </MainButton>
         )}
         <RACInput />
         {buttons && (
-          <MainButton noStyle className="icon-button" slot="increment">
+          <MainButton
+            noStyle
+            className="icon-button"
+            slot="increment"
+            disabled={!!(value && max && value >= max)}
+          >
             <PlusIcon />
           </MainButton>
         )}
@@ -338,11 +348,7 @@ export const SizeField = ({
           className="icon-button"
           aria-label="Password Display"
         >
-          {isLocked ? (
-            <LockIcon className="own-color" />
-          ) : (
-            <UnlockIcon className="own-color not-active" />
-          )}
+          {isLocked ? <LockIcon /> : <UnlockIcon className="not-active" />}
         </MainButton>
       </div>
     </FieldWrapper>
@@ -350,14 +356,16 @@ export const SizeField = ({
 };
 
 interface SelectLabelProps {
-  label: React.ReactNode;
+  children: React.ReactNode;
   more?: React.ReactNode;
 }
 
-export const SelectLabel = ({ label, more }: SelectLabelProps) => {
+export const SelectLabel = ({ children, more }: SelectLabelProps) => {
   return (
     <div className="select-label">
-      <div>{label}</div>
+      <div className="row no-gap ver-center no-wide" style={{ gap: '10px' }}>
+        {children}
+      </div>
       {more && <div className="select-label-more">{more}</div>}
     </div>
   );
@@ -375,6 +383,7 @@ export interface SelectProps extends Omit<BaseInputProps, 'id' | 'placeholder' |
   value?: SelectOptionValue;
   onChange: (value: FakeEvent) => void;
   options: SelectOption[];
+  onlyChevron?: boolean;
 }
 
 export const SelectField = ({
@@ -383,6 +392,7 @@ export const SelectField = ({
   onChange,
   disabled = false,
   options = [],
+  onlyChevron = false,
   ...wrapperProps
 }: SelectProps) => {
   const [isSelectOpen, setIsSelectOpen] = useState(false);
@@ -401,12 +411,14 @@ export const SelectField = ({
           <MainButton
             disabled={disabled}
             color="white"
-            wide
+            {...(onlyChevron ? { noStyle: true } : { wide: true })}
             style={{ paddingTop: '3px', color: 'var(--dark-blue)' }}
             ref={ref}
           >
-            {s.label}
-            <ChevronIcon className={clsx('select-icon', isSelectOpen && 'open')} />
+            {!onlyChevron && s.label}
+            <ChevronIcon
+              className={clsx('select-icon', isSelectOpen && 'open', onlyChevron && 'mini')}
+            />
           </MainButton>
         }
         onOpenChange={(open) => setIsSelectOpen(open)}
@@ -421,7 +433,7 @@ export const SelectField = ({
               key={optV}
               isDisabled={opt.disabled}
               onAction={() => onChange({ target: { name, value: opt.value } })}
-              style={{ width }}
+              style={onlyChevron ? {} : { width }}
             >
               {opt.label}
             </MenuItem>

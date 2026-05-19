@@ -29,5 +29,5 @@
 .carousel-item {
   display: flex;
   justify-content: center;
-  padding: 25px;
+  padding: 20px 0 5px 0;
 }

@@ -8,6 +8,8 @@ import { Tooltip } from 'react-tooltip';
 
 import clsx from 'clsx';
 
+import { capitalize } from '@utils/utils';
+
 import './MainButton.css';
 
 interface MainButtonProps extends Omit<RACButtonProps, 'children' | 'className' | 'onClick'> {
@@ -82,7 +84,7 @@ export const MainButton = ({
   return (
     <>
       {button}
-      {tooltip && tooltipId && (
+      {tooltipId && (
         <Tooltip
           className="btn-tooltip"
           anchorSelect={`.${tooltipId}`}
@@ -90,7 +92,7 @@ export const MainButton = ({
           delayShow={1000}
           delayHide={100}
         >
-          {tooltip}
+          {tooltip || capitalize(tooltipId)}
         </Tooltip>
       )}
     </>

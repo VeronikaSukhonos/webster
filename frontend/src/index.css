@@ -28,7 +28,7 @@
   );
   --main-border: 1px solid var(--white);
   --active-border: 1px solid var(--light-blue);
-  --shadow: 0 4px 30px 5px var(--transparent-black);
+  --shadow: 0 1px 30px 1px var(--transparent-black);
   --attention-color: var(--attention-red);
   --success-color: var(--success-green);
 }
