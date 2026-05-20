@@ -1,9 +1,11 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class DropSocialAccountsAndLimitDocumentImageUrl1779295816000 implements MigrationInterface {
+export class DropSocialAccountsAndLimitDocumentImageUrl1779299467621 implements MigrationInterface {
+  name = 'DropSocialAccountsAndLimitDocumentImageUrl1779299467621';
+
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `ALTER TABLE "document_images" ALTER COLUMN "url" TYPE character varying(500)`,
+      `ALTER TABLE "document_images" ALTER COLUMN "url" TYPE character varying(500) USING "url"::character varying(500)`,
     );
     await queryRunner.query(`DROP TABLE IF EXISTS "user_social_accounts"`);
     await queryRunner.query(`DROP TYPE IF EXISTS "public"."user_social_accounts_provider_enum"`);
