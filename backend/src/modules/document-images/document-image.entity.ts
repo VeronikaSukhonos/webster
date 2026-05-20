@@ -38,7 +38,7 @@ export class DocumentImage {
   @JoinColumn({ name: 'templateId' })
   template!: Template | null;
 
-  @Column({ type: 'text' })
+  @Column({ type: 'varchar', length: 500 })
   url!: string;
 
   @Column({ type: 'timestamp', nullable: true })

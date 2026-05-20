@@ -9,7 +9,6 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { TemplatesModule } from './modules/templates/templates.module';
-import { SocialAccountsModule } from './modules/social-accounts/social-accounts.module';
 import { LoggerMiddleware } from './common/middlewares';
 import { AppDataSource } from './db/data-source';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions.js';
@@ -143,7 +142,6 @@ async function backfillFileColumn(
     }),
     AuthModule,
     UsersModule,
-    SocialAccountsModule,
     ProjectsModule,
     TemplatesModule,
   ],

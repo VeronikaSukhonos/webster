@@ -2,7 +2,6 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } f
 import { DEFAULT_USER_AVATAR } from '../../common/constants';
 import { Project } from '../projects/project.entity';
 import { Template } from '../templates/template.entity';
-import { UserSocialAccount } from '../social-accounts/social-account.entity';
 
 @Entity({ name: 'users' })
 export class User {
@@ -50,7 +49,4 @@ export class User {
 
   @OneToMany(() => Template, (template) => template.author)
   templates!: Template[];
-
-  @OneToMany(() => UserSocialAccount, (socialAccount) => socialAccount.user)
-  socialAccounts!: UserSocialAccount[];
 }
