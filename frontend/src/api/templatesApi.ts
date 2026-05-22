@@ -22,8 +22,8 @@ class TemplatesApi {
     return await api.get(`/templates/${createQuery(query)}`);
   }
 
-  async getRecentTemplates(query?: { page?: number; limit?: number }) {
-    return await api.get(`/templates/recent/${createQuery(query)}`);
+  async getRecentTemplates() {
+    return await api.get(`/templates/recent`);
   }
 
   async getTemplate(id: number) {

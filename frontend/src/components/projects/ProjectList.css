@@ -3,11 +3,11 @@
   grid-template-columns: repeat(5, 1fr);
   justify-items: center;
   align-items: flex-start;
-  gap: 30px;
+  gap: 20px;
   padding: 15px 0;
   width: max-content;
   flex-grow: 1;
-  max-width: 100%;
+  max-width: 1500px;
 }
 
 @media screen and (max-width: 1300px) {
@@ -29,5 +29,5 @@
 .carousel-item {
   display: flex;
   justify-content: center;
-  padding: 20px 0 5px 0;
+  padding: 25px;
 }

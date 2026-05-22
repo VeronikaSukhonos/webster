@@ -1,33 +1,44 @@
 import { useEffect, useState } from 'react';
 
-import projectsApi from '@api/projectsApi';
-import templatesApi from '@api/templatesApi';
+import ProjectsApi from '@api/projectsApi';
+import TemplatesApi from '@api/templatesApi';
 
-import { setModal } from '@store/uiSlice';
+import {
+  selectUi,
+  setModal,
+  setProjectToDelete,
+  setProjectToDuplicate,
+  setProjectToUpdate,
+  setTemplateToDelete,
+  setTemplateToUpdate,
+} from '@store/uiSlice';
 
 import { MainButton } from '@components/MainButton';
 import ProjectCarousel from '@components/projects/ProjectCarousel';
 
 import { PlusIcon, TemplateIcon } from '@assets/index';
 
-import { useAppDispatch, useAuth, useFeedback } from '@hooks/utilHooks';
-
-import { DEFAULT_PROJECT_LIST_LIMIT } from '@utils/constants';
+import { useAppDispatch, useAppSelector, useAuth, useFeedback } from '@hooks/utilHooks';
 
 import type { ProjectResponse, TemplateResponse } from '@mytypes/responseTypes';
 
 const HomePageAuth = () => {
+  const dispatch = useAppDispatch();
   const [areProjectsLoading, setAreProjectsLoading] = useState(false);
   const [projectsFeedback, setProjectsFeedback] = useFeedback();
   const [projects, setProjects] = useState<ProjectResponse[]>([]);
   const [areTemplatesLoading, setAreTemplatesLoading] = useState(false);
   const [templatesFeedback, setTemplatesFeedback] = useFeedback();
   const [templates, setTemplates] = useState<TemplateResponse[]>([]);
+  const projectToUpdate = useAppSelector(selectUi.projectToUpdate);
+  const projectToDuplicate = useAppSelector(selectUi.projectToDuplicate);
+  const projectToDelete = useAppSelector(selectUi.projectToDelete);
+  const templateToUpdate = useAppSelector(selectUi.templateToUpdate);
+  const templateToDelete = useAppSelector(selectUi.templateToDelete);
 
   useEffect(() => {
     setAreProjectsLoading(true);
-    projectsApi
-      .getOwnProjects({ limit: DEFAULT_PROJECT_LIST_LIMIT })
+    ProjectsApi.getOwnProjects()
       .then(({ data: res }) => {
         setAreProjectsLoading(false);
         setProjectsFeedback(res.message, 'ok');
@@ -42,8 +53,7 @@ const HomePageAuth = () => {
 
   useEffect(() => {
     setAreTemplatesLoading(true);
-    templatesApi
-      .getRecentTemplates({ limit: DEFAULT_PROJECT_LIST_LIMIT })
+    TemplatesApi.getRecentTemplates()
       .then(({ data: res }) => {
         setAreTemplatesLoading(false);
         setTemplatesFeedback(res.message, 'ok');
@@ -54,6 +64,63 @@ const HomePageAuth = () => {
         setTemplatesFeedback(err.message, 'fail');
         setTemplates([]);
       });
+  }, []);
+  useEffect(() => {
+    if (projectToUpdate || projectToDuplicate || projectToDelete) {
+      setAreProjectsLoading(true);
+      ProjectsApi.getOwnProjects()
+        .then(({ data: res }) => {
+          setAreProjectsLoading(false);
+          setProjectsFeedback(res.message, 'ok');
+          setProjects(res.data.projects);
+        })
+        .catch((err) => {
+          setAreProjectsLoading(false);
+          setProjectsFeedback(err.message, 'fail');
+          setProjects([]);
+        });
+    }
+  }, [projectToUpdate, projectToDuplicate, projectToDelete]);
+  useEffect(() => {
+    return () => {
+      dispatch(setProjectToUpdate(null));
+    };
+  }, []);
+  useEffect(() => {
+    return () => {
+      dispatch(setProjectToDuplicate(null));
+    };
+  }, []);
+  useEffect(() => {
+    return () => {
+      dispatch(setProjectToDelete(null));
+    };
+  }, []);
+  useEffect(() => {
+    if (templateToUpdate || templateToDelete) {
+      setAreTemplatesLoading(true);
+      TemplatesApi.getRecentTemplates()
+        .then(({ data: res }) => {
+          setAreTemplatesLoading(false);
+          setTemplatesFeedback(res.message, 'ok');
+          setTemplates(res.data.templates);
+        })
+        .catch((err) => {
+          setAreTemplatesLoading(false);
+          setTemplatesFeedback(err.message, 'fail');
+          setTemplates([]);
+        });
+    }
+  }, [templateToUpdate, templateToDelete]);
+  useEffect(() => {
+    return () => {
+      dispatch(setTemplateToUpdate(null));
+    };
+  }, []);
+  useEffect(() => {
+    return () => {
+      dispatch(setTemplateToDelete(null));
+    };
   }, []);
 
   return (

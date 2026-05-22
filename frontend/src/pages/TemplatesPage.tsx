@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 
 import TemplatesApi from '@api/templatesApi';
 
+import { selectUi, setTemplateToDelete, setTemplateToUpdate } from '@store/uiSlice';
+
 import { SelectField, SelectLabel, TextField } from '@components/InputFields';
 import { MainButton } from '@components/MainButton';
 import { Pagination } from '@components/Pagination';
@@ -9,7 +11,14 @@ import { ProjectList } from '@components/projects/ProjectList';
 
 import { SearchIcon } from '@assets/index';
 
-import { useAuth, useFeedback, usePage, useTotal } from '@hooks/utilHooks';
+import {
+  useAppDispatch,
+  useAppSelector,
+  useAuth,
+  useFeedback,
+  usePage,
+  useTotal,
+} from '@hooks/utilHooks';
 
 import { DEFAULT_PROJECT_LIST_LIMIT, TEMPLATE_TYPES } from '@utils/constants';
 
@@ -17,15 +26,17 @@ import type { TemplateResponse } from '@mytypes/responseTypes';
 
 const TemplatesPage = () => {
   const auth = useAuth();
+  const dispatch = useAppDispatch();
   const [areTemplatesLoading, setAreTemplatesLoading] = useState(false);
   const [templatesFeedback, setTemplatesFeedback] = useFeedback();
   const [templates, setTemplates] = useState<TemplateResponse[]>([]);
-  const { getPage } = usePage();
+  const { searchParams, getPage } = usePage();
   const [search, setSearch] = useState(undefined);
   const [templateType, setTemplateType] = useState(undefined);
   const [source, setSource] = useState('all');
   const { total, setTotal } = useTotal();
-  const pagination = { page: getPage(), limit: DEFAULT_PROJECT_LIST_LIMIT };
+  const templateToUpdate = useAppSelector(selectUi.templateToUpdate);
+  const templateToDelete = useAppSelector(selectUi.templateToDelete);
   const templateTypes = [
     {
       value: 'all',
@@ -40,6 +51,7 @@ const TemplatesPage = () => {
   }
   const searchTemplates = async function (e: React.SubmitEvent) {
     e.preventDefault();
+    const pagination = { page: getPage(), limit: DEFAULT_PROJECT_LIST_LIMIT };
     setAreTemplatesLoading(true);
     TemplatesApi.getTemplates({
       page: pagination.page,
@@ -62,8 +74,15 @@ const TemplatesPage = () => {
       });
   };
   useEffect(() => {
+    const pagination = { page: getPage(), limit: DEFAULT_PROJECT_LIST_LIMIT };
     setAreTemplatesLoading(true);
-    TemplatesApi.getTemplates(pagination)
+    TemplatesApi.getTemplates({
+      page: pagination.page,
+      limit: pagination.limit,
+      search: search,
+      type: templateType === 'all' ? undefined : templateType,
+      source: source as 'custom' | 'all' | 'built-in' | undefined,
+    })
       .then(({ data: res }) => {
         setAreTemplatesLoading(false);
         setTemplatesFeedback(res.message, 'ok');
@@ -76,6 +95,41 @@ const TemplatesPage = () => {
         setTemplates([]);
         setTotal();
       });
+  }, [searchParams]);
+  useEffect(() => {
+    if (templateToUpdate || templateToDelete) {
+      const pagination = { page: getPage(), limit: DEFAULT_PROJECT_LIST_LIMIT };
+      setAreTemplatesLoading(true);
+      TemplatesApi.getTemplates({
+        page: pagination.page,
+        limit: pagination.limit,
+        search: search,
+        type: templateType === 'all' ? undefined : templateType,
+        source: source as 'custom' | 'all' | 'built-in' | undefined,
+      })
+        .then(({ data: res }) => {
+          setAreTemplatesLoading(false);
+          setTemplatesFeedback(res.message, 'ok');
+          setTemplates(res.data.templates);
+          setTotal(res.data.pagination.total, res.data.pagination.limit);
+        })
+        .catch((err) => {
+          setAreTemplatesLoading(false);
+          setTemplatesFeedback(err.message, 'fail');
+          setTemplates([]);
+          setTotal();
+        });
+    }
+  }, [templateToUpdate, templateToDelete, searchParams]);
+  useEffect(() => {
+    return () => {
+      dispatch(setTemplateToUpdate(null));
+    };
+  }, []);
+  useEffect(() => {
+    return () => {
+      dispatch(setTemplateToDelete(null));
+    };
   }, []);
   return (
     <div style={{ alignItems: 'center', display: 'flex', flexDirection: 'column' }}>

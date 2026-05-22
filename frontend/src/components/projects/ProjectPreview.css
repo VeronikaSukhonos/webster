@@ -42,6 +42,20 @@
   top: 10px;
 }
 
+.project-preview-menu,
+.size {
+  opacity: 0;
+  transition:
+    transform 0.2s,
+    opacity 0.2s;
+}
+
+.project-preview:hover .project-preview-menu,
+.project-preview:hover .size,
+.project-preview-menu:hover {
+  opacity: 1;
+}
+
 .size {
   -webkit-text-stroke: 1px #000;
   color: #fff;

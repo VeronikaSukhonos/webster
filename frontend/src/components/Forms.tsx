@@ -1,10 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 import projectsApi from '@api/projectsApi';
 import templatesApi from '@api/templatesApi';
 
 import { setProject } from '@store/editorSlice';
+import {
+  setProjectToDelete,
+  setProjectToUpdate,
+  setTemplateToDelete,
+  setTemplateToUpdate,
+} from '@store/uiSlice';
 
 import { Feedback } from '@components/Feedback';
 import {
@@ -17,15 +24,31 @@ import {
 import { MainButton } from '@components/MainButton';
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from '@components/Tabs';
 
+import { LinkIcon } from '@assets/index';
+
 import { useForm } from '@hooks/useForm';
 import { useImages } from '@hooks/useImages';
 import { useAppDispatch, useAuth } from '@hooks/utilHooks';
 
-import { MAX_CANVAS_SIZE, MIN_CANVAS_SIZE, SIZE_TYPES } from '@utils/constants';
+import {
+  MAX_CANVAS_SIZE,
+  MIN_CANVAS_SIZE,
+  SIZE_TYPES,
+  TEMPLATE_TYPES,
+  VISIBILITY_TYPES,
+} from '@utils/constants';
 import { createLocalImageItem, getInitCanvasSize, initCanvas } from '@utils/editorUtils';
 
 import { Modes, type Size } from '@mytypes/editorTypes';
-import { type CreateProjectParams, createProjectParams } from '@mytypes/formParams';
+import {
+  type CreateProjectParams,
+  type ProjectSettingsParams,
+  type TemplateParams,
+  createProjectParams,
+  deleteParams,
+  projectSettingsParams,
+  templateParams,
+} from '@mytypes/formParams';
 import type { ProjectResponse, TemplateResponse } from '@mytypes/responseTypes';
 
 interface FormProps {
@@ -46,6 +69,8 @@ interface CreateProjectFormProps extends FormTemplateProps {
   setOnOpenChange: React.Dispatch<React.SetStateAction<(() => void) | undefined>>;
 }
 
+interface FormDeleteProps extends FormProjectProps, FormTemplateProps {}
+
 const SIZE_TYPE_OPTIONS = SIZE_TYPES.map((opt) => ({
   value: { width: opt.width, height: opt.height },
   label:
@@ -54,6 +79,24 @@ const SIZE_TYPE_OPTIONS = SIZE_TYPES.map((opt) => ({
     ) : (
       <SelectLabel>Custom</SelectLabel>
     ),
+}));
+
+const TEMPLATE_TYPE_OPTIONS = [
+  {
+    value: 'select-type',
+    label: <SelectLabel>Select type</SelectLabel>,
+  },
+];
+for (const i of TEMPLATE_TYPES) {
+  TEMPLATE_TYPE_OPTIONS.push({
+    value: i.value,
+    label: <SelectLabel>{i.label}</SelectLabel>,
+  });
+}
+
+const VISIBILITY_TYPE_OPTIONS = VISIBILITY_TYPES.map((opt) => ({
+  value: opt.value,
+  label: <SelectLabel>{opt.label}</SelectLabel>,
 }));
 
 export const CreateProjectForm = ({
@@ -293,49 +336,342 @@ export const CreateProjectForm = ({
   );
 };
 
-export const CreateTemplateForm = (
-  {
-    // setIsOpen,
-    // project,
-    // isLoading,
-    // setIsLoading,
-  }: FormProjectProps,
-) => {
-  return <div>Forms</div>;
+export const CreateTemplateForm = ({
+  setIsOpen,
+  project,
+  isLoading,
+  setIsLoading,
+}: FormProjectProps) => {
+  const navigate = useNavigate();
+
+  const auth = useAuth();
+
+  const createTemplate = useForm(
+    templateParams,
+    {
+      title: project?.title as string,
+      type: 'select-type' as
+        | 'other'
+        | 'collage'
+        | 'instagram-post'
+        | 'instagram-story'
+        | 'invitation'
+        | 'presentation'
+        | 'resume',
+    },
+    true,
+  );
+  const [templateType, setTemplateType] = useState(TEMPLATE_TYPE_OPTIONS[0].value);
+
+  useEffect(() => {
+    if (templateType !== 'select-type')
+      createTemplate.setParam({ target: { name: 'type', value: templateType } });
+  }, [templateType]);
+
+  const redirect = (type: string) => {
+    createTemplate.setSuccess({ message: 'Created template successfully' });
+    setIsLoading?.(false);
+    navigate(`/templates?source=custom&type=${type}`);
+    setIsOpen(false);
+  };
+
+  const handleError = (err: any) => {
+    createTemplate.setFailure(err);
+    setIsLoading?.(false);
+  };
+
+  const submit = (params: TemplateParams) => {
+    if (auth) {
+      setIsLoading?.(true);
+      templatesApi
+        .createTemplateFromProject(project?.id as number, {
+          title: params.title,
+          type: params.type,
+        })
+        .then(({ data: res }) => {
+          redirect(res.data.template.type);
+        })
+        .catch(handleError);
+    }
+  };
+
+  return (
+    <form className="col f-container" onSubmit={createTemplate.handleSubmit(submit)}>
+      <TextField label="Title" {...createTemplate.setField('title')} required />
+
+      <SelectField
+        name="template-type"
+        value={templateType}
+        onChange={(e) => setTemplateType(e.target.value)}
+        options={TEMPLATE_TYPE_OPTIONS}
+        label="Type"
+      />
+
+      <TextField
+        label="From Project"
+        name="project-title"
+        value={project?.title}
+        onChange={() => {}}
+        disabled
+      />
+
+      <Feedback feedback={createTemplate.feedback} />
+
+      <MainButton type="submit" disabled={isLoading || createTemplate.isLoading} upperText wide>
+        Create
+      </MainButton>
+    </form>
+  );
 };
 
-export const ProjectSettingsForm = (
-  {
-    // setIsOpen,
-    // project,
-    // isLoading,
-    // setIsLoading,
-  }: FormProjectProps,
-) => {
-  return <div>Forms</div>;
+export const ProjectSettingsForm = ({
+  setIsOpen,
+  project,
+  isLoading,
+  setIsLoading,
+}: FormProjectProps) => {
+  const dispatch = useAppDispatch();
+
+  const auth = useAuth();
+
+  const editProjectSettings = useForm(
+    projectSettingsParams,
+    {
+      title: project?.title as string,
+      description: project?.description,
+      visibility: project?.isPublic ? 'everyone' : 'me',
+    },
+    true,
+  );
+  const [visibilityType, setVisibilityType] = useState(
+    VISIBILITY_TYPE_OPTIONS[Number(project?.isPublic)].value,
+  );
+  const copyLink = async () => {
+    await navigator.clipboard
+      .writeText(`${window.location.origin}/editor?projectId=${project?.id}`)
+      .then(() => {
+        toast('Project link was copied to the clipboard');
+      })
+      .catch(() => {
+        toast('Something went wrong');
+      });
+  };
+
+  useEffect(() => {
+    if (visibilityType)
+      editProjectSettings.setParam({ target: { name: 'visibility', value: visibilityType } });
+  }, [visibilityType]);
+
+  const handleError = (err: any) => {
+    editProjectSettings.setFailure(err);
+    setIsLoading?.(false);
+  };
+
+  const submit = (params: ProjectSettingsParams) => {
+    if (auth) {
+      setIsLoading?.(true);
+      projectsApi
+        .updateProject(project?.id as number, {
+          title: params.title,
+          description: params.description,
+          isPublic: params.visibility === 'everyone' ? true : false,
+          editDate: `${new Date()}`,
+        })
+        .then(() => {
+          dispatch(setProjectToUpdate(project?.id as number));
+          setIsLoading?.(false);
+          setIsOpen?.(false);
+        })
+        .catch(handleError);
+    }
+  };
+
+  return (
+    <form className="col f-container" onSubmit={editProjectSettings.handleSubmit(submit)}>
+      <TextField label="Title" {...editProjectSettings.setField('title')} />
+
+      <TextField label="Description" {...editProjectSettings.setField('description')} area />
+
+      <SelectField
+        name="visibility-type"
+        value={visibilityType}
+        onChange={(e) => setVisibilityType(e.target.value)}
+        options={VISIBILITY_TYPE_OPTIONS}
+        label="Visibility"
+      />
+      {visibilityType === 'everyone' && (
+        <MainButton color="white" onClick={copyLink}>
+          <LinkIcon />
+        </MainButton>
+      )}
+
+      <Feedback feedback={editProjectSettings.feedback} />
+
+      <MainButton
+        type="submit"
+        disabled={isLoading || editProjectSettings.isLoading}
+        upperText
+        wide
+      >
+        Save
+      </MainButton>
+    </form>
+  );
 };
 
-export const TemplateSettingsForm = (
-  {
-    // setIsOpen,
-    // template,
-    // isLoading,
-    // setIsLoading,
-  }: FormTemplateProps,
-) => {
-  return <div>Forms</div>;
+export const TemplateSettingsForm = ({
+  setIsOpen,
+  template,
+  isLoading,
+  setIsLoading,
+}: FormTemplateProps) => {
+  const dispatch = useAppDispatch();
+
+  const auth = useAuth();
+
+  const editTemplateSettings = useForm(
+    templateParams,
+    {
+      title: template?.title as string,
+      type: template?.type as
+        | 'other'
+        | 'collage'
+        | 'instagram-post'
+        | 'instagram-story'
+        | 'invitation'
+        | 'presentation'
+        | 'resume',
+    },
+    true,
+  );
+  const [templateType, setTemplateType] = useState(template?.type);
+
+  useEffect(() => {
+    if (templateType)
+      editTemplateSettings.setParam({ target: { name: 'type', value: templateType } });
+  }, [templateType]);
+
+  const handleError = (err: any) => {
+    editTemplateSettings.setFailure(err);
+    setIsLoading?.(false);
+  };
+
+  const submit = (params: TemplateParams) => {
+    if (auth) {
+      setIsLoading?.(true);
+      templatesApi
+        .updateTemplate(template?.id as number, { title: params.title, type: params.type })
+        .then(() => {
+          dispatch(setTemplateToUpdate(template?.id as number));
+          setIsLoading?.(false);
+          setIsOpen?.(false);
+        })
+        .catch(handleError);
+    }
+  };
+
+  return (
+    <form className="col f-container" onSubmit={editTemplateSettings.handleSubmit(submit)}>
+      <TextField label="Title" {...editTemplateSettings.setField('title')} />
+
+      <SelectField
+        name="template-type"
+        value={templateType}
+        onChange={(e) => setTemplateType(e.target.value)}
+        options={TEMPLATE_TYPE_OPTIONS}
+        label="Type"
+      />
+
+      <Feedback feedback={editTemplateSettings.feedback} />
+
+      <MainButton
+        type="submit"
+        disabled={isLoading || editTemplateSettings.isLoading}
+        upperText
+        wide
+      >
+        Save
+      </MainButton>
+    </form>
+  );
 };
 
-export const DeletionForm = (
-  {
-    // setIsOpen,
-    // project,
-    // template,
-    // isLoading,
-    // setIsLoading,
-  }: FormProjectProps | FormTemplateProps,
-) => {
-  return <div>Forms</div>;
+export const DeletionForm = ({
+  setIsOpen,
+  project,
+  template,
+  isLoading,
+  setIsLoading,
+}: FormDeleteProps) => {
+  const dispatch = useAppDispatch();
+
+  const auth = useAuth();
+  const navigate = useNavigate();
+
+  const deleteProjectTemplate = useForm(
+    deleteParams,
+    {
+      title: '',
+      expectedTitle: project ? project?.title : template?.title,
+    },
+    true,
+  );
+
+  const handleError = (err: any) => {
+    deleteProjectTemplate.setFailure(err);
+    setIsLoading?.(false);
+  };
+
+  const submit = () => {
+    if (auth) {
+      setIsLoading?.(true);
+      if (project) {
+        projectsApi
+          .deleteProject(project.id)
+          .then(() => {
+            deleteProjectTemplate.setSuccess({ message: 'Deleted project successfully' });
+            dispatch(setProjectToDelete(project.id));
+            setIsLoading?.(false);
+            setIsOpen?.(false);
+            navigate('/');
+          })
+          .catch(handleError);
+      } else {
+        templatesApi
+          .deleteTemplate(template?.id as number)
+          .then(() => {
+            deleteProjectTemplate.setSuccess({ message: 'Deleted template successfully' });
+            dispatch(setTemplateToDelete(template?.id as number));
+            setIsLoading?.(false);
+            setIsOpen?.(false);
+            navigate('/');
+          })
+          .catch(handleError);
+      }
+    }
+  };
+
+  return (
+    <form className="col f-container" onSubmit={deleteProjectTemplate.handleSubmit(submit)}>
+      <p className="field-error">
+        You are about to delete this {project ? 'project' : 'template'}. If you are sure about it,
+        please enter the {project ? 'project' : 'template'} title below. All data associated with it
+        will be deleted permanently. You cannot undo this action.
+      </p>
+      <TextField label="Title" {...deleteProjectTemplate.setField('title')} required />
+
+      <Feedback feedback={deleteProjectTemplate.feedback} />
+
+      <MainButton
+        type="submit"
+        disabled={isLoading || deleteProjectTemplate.isLoading}
+        upperText
+        wide
+      >
+        Delete
+      </MainButton>
+    </form>
+  );
 };
 
 export const ExportProjectForm = (

@@ -22,11 +22,21 @@ interface Modal {
 interface UiState {
   isAvatarLoading: boolean;
   modal: Modal | null;
+  projectToUpdate: number | null;
+  projectToDuplicate: number | null;
+  projectToDelete: number | null;
+  templateToUpdate: number | null;
+  templateToDelete: number | null;
 }
 
 const initialState: UiState = {
   isAvatarLoading: false,
   modal: null,
+  projectToUpdate: null,
+  projectToDuplicate: null,
+  projectToDelete: null,
+  templateToUpdate: null,
+  templateToDelete: null,
 };
 
 const uiSlice = createSlice({
@@ -39,14 +49,42 @@ const uiSlice = createSlice({
     setModal: (state, action: PayloadAction<Modal | null>) => {
       state.modal = action.payload ?? null;
     },
+    setProjectToUpdate: (state, action: PayloadAction<number | null>) => {
+      state.projectToUpdate = action.payload ?? null;
+    },
+    setProjectToDuplicate: (state, action: PayloadAction<number | null>) => {
+      state.projectToDuplicate = action.payload ?? null;
+    },
+    setProjectToDelete: (state, action: PayloadAction<number | null>) => {
+      state.projectToDelete = action.payload ?? null;
+    },
+    setTemplateToUpdate: (state, action: PayloadAction<number | null>) => {
+      state.templateToUpdate = action.payload ?? null;
+    },
+    setTemplateToDelete: (state, action: PayloadAction<number | null>) => {
+      state.templateToDelete = action.payload ?? null;
+    },
   },
 });
 
-export const { setIsAvatarLoading, setModal } = uiSlice.actions;
+export const {
+  setIsAvatarLoading,
+  setModal,
+  setProjectToUpdate,
+  setProjectToDuplicate,
+  setProjectToDelete,
+  setTemplateToUpdate,
+  setTemplateToDelete,
+} = uiSlice.actions;
 
 export const selectUi = {
   isAvatarLoading: (state: RootState) => state.ui.isAvatarLoading,
   modal: (state: RootState) => state.ui.modal,
+  projectToUpdate: (state: RootState) => state.ui.projectToUpdate,
+  projectToDuplicate: (state: RootState) => state.ui.projectToDuplicate,
+  projectToDelete: (state: RootState) => state.ui.projectToDelete,
+  templateToUpdate: (state: RootState) => state.ui.templateToUpdate,
+  templateToDelete: (state: RootState) => state.ui.templateToDelete,
 };
 
 export default uiSlice.reducer;

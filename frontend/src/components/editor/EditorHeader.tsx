@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { selectEditor } from '@store/editorSlice';
 
 import { MainButton } from '@components/MainButton';
-import { Popover } from '@components/Menu';
+import { Menu, Popover } from '@components/Menu';
 import { ProjectMenu, TemplateMenu } from '@components/editor/EditorMenu';
 import { HistoryButtons, buttonProps } from '@components/editor/HistoryButtons';
 import { ShareMenu } from '@components/editor/ShareMenu';
@@ -107,8 +107,10 @@ export const EditorHeader = ({ stageRef, backgroundRef }: CanvasProps) => {
               </MainButton>
             }
           >
-            {project && <ProjectMenu project={project} />}
-            {template && <TemplateMenu template={template} />}
+            <Menu>
+              {project && <ProjectMenu project={project} />}
+              {template && <TemplateMenu template={template} />}
+            </Menu>
           </Popover>
         )}
 

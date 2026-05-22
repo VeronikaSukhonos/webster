@@ -89,7 +89,7 @@ export class TemplatesController {
       data: await this.templatesService.getAll(query, authId),
     };
   }
-  
+
   @ApiOperation({ summary: 'Last used templates fetch' })
   @ApiOkResponse({
     description: 'Fetched templates successfully',
@@ -118,9 +118,7 @@ export class TemplatesController {
   })
   @Get('recent')
   @HttpCode(HttpStatus.OK)
-  async getRecent(
-    @User('id') authId?: number,
-  ): Promise<ApiResponse> {
+  async getRecent(@User('id') authId?: number): Promise<ApiResponse> {
     return {
       message: 'Fetched templates successfully',
       data: await this.templatesService.getRecent(authId),
