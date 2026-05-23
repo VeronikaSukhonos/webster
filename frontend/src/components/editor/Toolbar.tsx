@@ -6,6 +6,8 @@ import { selectEditor, setLeftSheet, setTool } from '@store/editorSlice';
 
 import { SelectField, SelectLabel } from '@components/InputFields';
 import { MainButton } from '@components/MainButton';
+import { ShapesPanel } from '@components/editor/LeftPanels';
+import { Sheet } from '@components/editor/Sheet';
 
 import {
   BrushIcon,
@@ -50,17 +52,21 @@ export const Toolbar = () => {
 
   return (
     <div className="main-toolbar tool-container">
-      <MainButton
-        color="transparent"
-        tooltipId={Tools.Select}
-        onClick={() => dispatch(setTool(Tools.Select))}
-      >
-        <SelectIcon className={clsx('own-color', tool === Tools.Select && 'active')} />
-      </MainButton>
+      {mode !== Modes.View && (
+        <MainButton
+          color="transparent"
+          tooltipId={Tools.Select}
+          onClick={() => dispatch(setTool(Tools.Select))}
+        >
+          <SelectIcon className={clsx('own-color', tool === Tools.Select && 'active')} />
+        </MainButton>
+      )}
       <MainButton
         color="transparent"
         tooltipId={Tools.Grab}
-        onClick={() => dispatch(setTool(Tools.Grab))}
+        onClick={() => {
+          if (mode !== Modes.View) dispatch(setTool(Tools.Grab));
+        }}
       >
         <GrabIcon className={clsx('own-color', tool === Tools.Grab && 'active')} />
       </MainButton>
@@ -120,24 +126,39 @@ export const Toolbar = () => {
             onlyChevron
           />
           <div className="ver-hr"></div>
-          <MainButton
-            color="transparent"
-            tooltipId={LeftSheets.Shapes}
-            onClick={() => dispatch(setLeftSheet(LeftSheets.Shapes))}
+          <Sheet
+            title={LeftSheets.Shapes}
+            isOpen={leftSheet?.type === LeftSheets.Shapes}
+            setIsOpen={() => dispatch(setLeftSheet(LeftSheets.Shapes))}
+            buttonProps={{
+              color: 'transparent' as const,
+              tooltipId: LeftSheets.Shapes,
+              children: (
+                <ShapeIcon
+                  className={clsx('own-color', leftSheet?.type === LeftSheets.Shapes && 'active')}
+                />
+              ),
+            }}
           >
-            <ShapeIcon
-              className={clsx('own-color', leftSheet?.type === LeftSheets.Shapes && 'active')}
-            />
-          </MainButton>
-          <MainButton
-            color="transparent"
-            tooltipId={LeftSheets.Images}
-            onClick={() => dispatch(setLeftSheet(LeftSheets.Images))}
+            <ShapesPanel />
+          </Sheet>
+          <Sheet
+            title={LeftSheets.Images}
+            isOpen={leftSheet?.type === LeftSheets.Images}
+            setIsOpen={() => dispatch(setLeftSheet(LeftSheets.Images))}
+            buttonProps={{
+              color: 'transparent' as const,
+              tooltipId: LeftSheets.Images,
+              children: (
+                <ImageIcon
+                  className={clsx('own-color', leftSheet?.type === LeftSheets.Images && 'active')}
+                />
+              ),
+            }}
           >
-            <ImageIcon
-              className={clsx('own-color', leftSheet?.type === LeftSheets.Images && 'active')}
-            />
-          </MainButton>
+            <ShapesPanel />
+          </Sheet>
+
           <MainButton color="transparent" tooltipId="upload">
             <UploadIcon className={clsx('own-color')} />
           </MainButton>

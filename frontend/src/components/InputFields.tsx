@@ -366,7 +366,7 @@ export const SelectLabel = ({ children, more }: SelectLabelProps) => {
       <div className="row no-gap ver-center no-wide" style={{ gap: '10px' }}>
         {children}
       </div>
-      {more && <div className="select-label-more">{more}</div>}
+      {more && <div className="select-label-more no-wrap">{more}</div>}
     </div>
   );
 };

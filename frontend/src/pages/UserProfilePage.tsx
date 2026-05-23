@@ -112,9 +112,8 @@ const UserProfilePage = () => {
 
   useEffect(() => {
     if (projectToUpdate || projectToDuplicate || projectToDelete) {
-      const pagination = { page: getPage(), limit: DEFAULT_PROJECT_LIST_LIMIT };
       setAreProjectsLoading(true);
-      ProjectsApi.getOwnProjects(pagination)
+      ProjectsApi.getOwnProjects({ page: getPage(), limit: DEFAULT_PROJECT_LIST_LIMIT })
         .then(({ data: res }) => {
           setAreProjectsLoading(false);
           setProjectsFeedback(res.message, 'ok');
@@ -126,21 +125,19 @@ const UserProfilePage = () => {
           setProjectsFeedback(err.message, 'fail');
           setProjects([]);
           setTotal();
+        })
+        .finally(() => {
+          dispatch(setProjectToUpdate(null));
+          dispatch(setProjectToDuplicate(null));
+          dispatch(setProjectToDelete(null));
         });
     }
   }, [projectToUpdate, projectToDuplicate, projectToDelete, searchParams]);
+
   useEffect(() => {
     return () => {
       dispatch(setProjectToUpdate(null));
-    };
-  }, []);
-  useEffect(() => {
-    return () => {
       dispatch(setProjectToDuplicate(null));
-    };
-  }, []);
-  useEffect(() => {
-    return () => {
       dispatch(setProjectToDelete(null));
     };
   }, []);
@@ -151,7 +148,7 @@ const UserProfilePage = () => {
     return <ErrorPage reason={userFeedback.message} entity="user" />;
 
   return (
-    <div className="col hor-center" style={{ paddingTop: '30px' }}>
+    <div className="col hor-center grow" style={{ paddingTop: '30px' }}>
       <div className="col profile-avatar-container">
         <img
           className={clsx(
@@ -179,6 +176,7 @@ const UserProfilePage = () => {
         projects={projects}
         areProjectsLoading={areProjectsLoading}
         projectsFeedback={projectsFeedback}
+        noDataFeedback="No projects yet"
       />
       <Pagination totalPages={total.totalPages} disabled={areProjectsLoading} />
     </div>

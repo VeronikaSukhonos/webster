@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
-import ProjectsApi from '@api/projectsApi';
-import TemplatesApi from '@api/templatesApi';
+import projectsApi from '@api/projectsApi';
+import templatesApi from '@api/templatesApi';
 
 import {
   selectUi,
@@ -24,12 +24,14 @@ import type { ProjectResponse, TemplateResponse } from '@mytypes/responseTypes';
 
 const HomePageAuth = () => {
   const dispatch = useAppDispatch();
+
   const [areProjectsLoading, setAreProjectsLoading] = useState(false);
   const [projectsFeedback, setProjectsFeedback] = useFeedback();
   const [projects, setProjects] = useState<ProjectResponse[]>([]);
   const [areTemplatesLoading, setAreTemplatesLoading] = useState(false);
   const [templatesFeedback, setTemplatesFeedback] = useFeedback();
   const [templates, setTemplates] = useState<TemplateResponse[]>([]);
+
   const projectToUpdate = useAppSelector(selectUi.projectToUpdate);
   const projectToDuplicate = useAppSelector(selectUi.projectToDuplicate);
   const projectToDelete = useAppSelector(selectUi.projectToDelete);
@@ -38,7 +40,8 @@ const HomePageAuth = () => {
 
   useEffect(() => {
     setAreProjectsLoading(true);
-    ProjectsApi.getOwnProjects()
+    projectsApi
+      .getOwnProjects()
       .then(({ data: res }) => {
         setAreProjectsLoading(false);
         setProjectsFeedback(res.message, 'ok');
@@ -53,7 +56,8 @@ const HomePageAuth = () => {
 
   useEffect(() => {
     setAreTemplatesLoading(true);
-    TemplatesApi.getRecentTemplates()
+    templatesApi
+      .getRecentTemplates()
       .then(({ data: res }) => {
         setAreTemplatesLoading(false);
         setTemplatesFeedback(res.message, 'ok');
@@ -65,10 +69,12 @@ const HomePageAuth = () => {
         setTemplates([]);
       });
   }, []);
+
   useEffect(() => {
     if (projectToUpdate || projectToDuplicate || projectToDelete) {
       setAreProjectsLoading(true);
-      ProjectsApi.getOwnProjects()
+      projectsApi
+        .getOwnProjects()
         .then(({ data: res }) => {
           setAreProjectsLoading(false);
           setProjectsFeedback(res.message, 'ok');
@@ -78,28 +84,28 @@ const HomePageAuth = () => {
           setAreProjectsLoading(false);
           setProjectsFeedback(err.message, 'fail');
           setProjects([]);
+        })
+        .finally(() => {
+          dispatch(setProjectToUpdate(null));
+          dispatch(setProjectToDuplicate(null));
+          dispatch(setProjectToDelete(null));
         });
     }
   }, [projectToUpdate, projectToDuplicate, projectToDelete]);
+
   useEffect(() => {
     return () => {
       dispatch(setProjectToUpdate(null));
-    };
-  }, []);
-  useEffect(() => {
-    return () => {
       dispatch(setProjectToDuplicate(null));
-    };
-  }, []);
-  useEffect(() => {
-    return () => {
       dispatch(setProjectToDelete(null));
     };
   }, []);
+
   useEffect(() => {
     if (templateToUpdate || templateToDelete) {
       setAreTemplatesLoading(true);
-      TemplatesApi.getRecentTemplates()
+      templatesApi
+        .getRecentTemplates()
         .then(({ data: res }) => {
           setAreTemplatesLoading(false);
           setTemplatesFeedback(res.message, 'ok');
@@ -109,16 +115,17 @@ const HomePageAuth = () => {
           setAreTemplatesLoading(false);
           setTemplatesFeedback(err.message, 'fail');
           setTemplates([]);
+        })
+        .finally(() => {
+          dispatch(setTemplateToUpdate(null));
+          dispatch(setTemplateToDelete(null));
         });
     }
   }, [templateToUpdate, templateToDelete]);
+
   useEffect(() => {
     return () => {
       dispatch(setTemplateToUpdate(null));
-    };
-  }, []);
-  useEffect(() => {
-    return () => {
       dispatch(setTemplateToDelete(null));
     };
   }, []);

@@ -1,0 +1,45 @@
+.sheet-anchor {
+  position: fixed;
+  top: 43px;
+}
+
+.sheet-anchor.left {
+  left: 0;
+}
+
+.sheet-anchor.right {
+  right: 0;
+}
+
+.sheet {
+  background: var(--opaque-container-color);
+  height: calc(100% - 103px);
+  width: 300px;
+  max-width: 50%;
+  transition: all 0.2s ease-in-out;
+
+  &[data-entering],
+  &[data-exiting] {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+}
+
+.sheet.right {
+  &[data-entering],
+  &[data-exiting] {
+    transform: translateX(10px);
+  }
+}
+
+@media (max-width: 600px) {
+  .sheet-anchor {
+    inset: auto 0 45px auto;
+  }
+
+  .sheet {
+    height: 40% !important;
+    width: calc(100% - 23px);
+    max-width: calc(100% - 23px);
+  }
+}

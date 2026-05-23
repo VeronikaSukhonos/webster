@@ -22,21 +22,29 @@ import {
 
 import { DEFAULT_PROJECT_LIST_LIMIT, TEMPLATE_TYPES } from '@utils/constants';
 
-import type { TemplateResponse } from '@mytypes/responseTypes';
+import { type TemplateResponse, type TemplateType } from '@mytypes/responseTypes';
 
 const TemplatesPage = () => {
-  const auth = useAuth();
   const dispatch = useAppDispatch();
+
+  const auth = useAuth();
+
   const [areTemplatesLoading, setAreTemplatesLoading] = useState(false);
   const [templatesFeedback, setTemplatesFeedback] = useFeedback();
   const [templates, setTemplates] = useState<TemplateResponse[]>([]);
-  const { searchParams, getPage } = usePage();
-  const [search, setSearch] = useState(undefined);
-  const [templateType, setTemplateType] = useState(undefined);
-  const [source, setSource] = useState('all');
+
+  const { searchParams, setSearchParams, getPage } = usePage();
+  const [search, setSearch] = useState(searchParams.get('search') ?? undefined);
+  const [templateType, setTemplateType] = useState<TemplateType | 'all'>(
+    (searchParams.get('templateType') as TemplateType | undefined) ?? ('all' as const),
+  );
+  const [source, setSource] = useState(searchParams.get('source') ?? 'all');
   const { total, setTotal } = useTotal();
+
   const templateToUpdate = useAppSelector(selectUi.templateToUpdate);
   const templateToDelete = useAppSelector(selectUi.templateToDelete);
+  const [shouldRefetch, setShouldRefetch] = useState(true);
+
   const templateTypes = [
     {
       value: 'all',
@@ -49,94 +57,71 @@ const TemplatesPage = () => {
       label: <SelectLabel>{i.label}</SelectLabel>,
     });
   }
+
   const searchTemplates = async function (e: React.SubmitEvent) {
     e.preventDefault();
-    const pagination = { page: getPage(), limit: DEFAULT_PROJECT_LIST_LIMIT };
-    setAreTemplatesLoading(true);
-    TemplatesApi.getTemplates({
-      page: pagination.page,
-      limit: pagination.limit,
-      search: search,
-      type: templateType === 'all' ? undefined : templateType,
-      source: source as 'custom' | 'all' | 'built-in' | undefined,
-    })
-      .then(({ data: res }) => {
-        setAreTemplatesLoading(false);
-        setTemplatesFeedback(res.message, 'ok');
-        setTemplates(res.data.templates);
-        setTotal(res.data.pagination.total, res.data.pagination.limit);
-      })
-      .catch((err) => {
-        setAreTemplatesLoading(false);
-        setTemplatesFeedback(err.message, 'fail');
-        setTemplates([]);
-        setTotal();
-      });
+    setSearchParams({
+      ...(search && { search }),
+      ...(templateType && { templateType }),
+      ...(source && { source }),
+    });
+    setShouldRefetch(true);
   };
-  useEffect(() => {
-    const pagination = { page: getPage(), limit: DEFAULT_PROJECT_LIST_LIMIT };
-    setAreTemplatesLoading(true);
-    TemplatesApi.getTemplates({
-      page: pagination.page,
-      limit: pagination.limit,
-      search: search,
-      type: templateType === 'all' ? undefined : templateType,
-      source: source as 'custom' | 'all' | 'built-in' | undefined,
-    })
-      .then(({ data: res }) => {
-        setAreTemplatesLoading(false);
-        setTemplatesFeedback(res.message, 'ok');
-        setTemplates(res.data.templates);
-        setTotal(res.data.pagination.total, res.data.pagination.limit);
-      })
-      .catch((err) => {
-        setAreTemplatesLoading(false);
-        setTemplatesFeedback(err.message, 'fail');
-        setTemplates([]);
-        setTotal();
-      });
-  }, [searchParams]);
+
   useEffect(() => {
     if (templateToUpdate || templateToDelete) {
-      const pagination = { page: getPage(), limit: DEFAULT_PROJECT_LIST_LIMIT };
-      setAreTemplatesLoading(true);
-      TemplatesApi.getTemplates({
-        page: pagination.page,
-        limit: pagination.limit,
-        search: search,
-        type: templateType === 'all' ? undefined : templateType,
-        source: source as 'custom' | 'all' | 'built-in' | undefined,
-      })
-        .then(({ data: res }) => {
-          setAreTemplatesLoading(false);
-          setTemplatesFeedback(res.message, 'ok');
-          setTemplates(res.data.templates);
-          setTotal(res.data.pagination.total, res.data.pagination.limit);
-        })
-        .catch((err) => {
-          setAreTemplatesLoading(false);
-          setTemplatesFeedback(err.message, 'fail');
-          setTemplates([]);
-          setTotal();
-        });
+      setSearch('');
+      setSearchParams({});
+      setShouldRefetch(true);
     }
-  }, [templateToUpdate, templateToDelete, searchParams]);
+  }, [templateToUpdate, templateToDelete]);
+
+  useEffect(() => {
+    if (!shouldRefetch) setShouldRefetch(true);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!shouldRefetch) return;
+    setAreTemplatesLoading(true);
+    TemplatesApi.getTemplates({
+      page: getPage(),
+      limit: DEFAULT_PROJECT_LIST_LIMIT,
+      search,
+      type: templateType === 'all' ? undefined : templateType,
+      source: source as 'custom' | 'all' | 'built-in' | undefined,
+    })
+      .then(({ data: res }) => {
+        setAreTemplatesLoading(false);
+        setTemplatesFeedback(res.message, 'ok');
+        setTemplates(res.data.templates);
+        setTotal(res.data.pagination.total, res.data.pagination.limit);
+      })
+      .catch((err) => {
+        setAreTemplatesLoading(false);
+        setTemplatesFeedback(err.message, 'fail');
+        setTemplates([]);
+        setTotal();
+      })
+      .finally(() => {
+        dispatch(setTemplateToUpdate(null));
+        dispatch(setTemplateToDelete(null));
+        setShouldRefetch(false);
+      });
+  }, [searchParams, shouldRefetch]);
+
   useEffect(() => {
     return () => {
       dispatch(setTemplateToUpdate(null));
-    };
-  }, []);
-  useEffect(() => {
-    return () => {
       dispatch(setTemplateToDelete(null));
     };
   }, []);
+
   return (
-    <div style={{ alignItems: 'center', display: 'flex', flexDirection: 'column' }}>
+    <div className="col hor-center grow">
       <h1 className="slogan t-art t-center">Templates</h1>
       <form
         onSubmit={searchTemplates}
-        style={{ display: 'flex', flexDirection: 'row', gap: 5 + 'px', marginBottom: 10 + 'px' }}
+        style={{ display: 'flex', flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}
       >
         <TextField
           name="search"
@@ -145,8 +130,9 @@ const TemplatesPage = () => {
             setSearch(e.target.value === '' ? undefined : e.target.value)
           }
           placeholder="Search template..."
+          disabled={areTemplatesLoading}
         />
-        <MainButton type="submit" color="white">
+        <MainButton type="submit" color="white" disabled={areTemplatesLoading}>
           <SearchIcon />
         </MainButton>
         <SelectField
@@ -154,21 +140,22 @@ const TemplatesPage = () => {
           value={templateType}
           onChange={(e) => setTemplateType(e.target.value)}
           options={templateTypes}
+          style={{ width: 155 }}
         />
       </form>
       {auth && (
-        <div
-          style={{ display: 'flex', flexDirection: 'row', gap: 5 + 'px', marginBottom: 10 + 'px' }}
-        >
+        <div className="row all-center" style={{ width: '340px', maxWidth: '100%', gap: 10 }}>
           <MainButton
             onClick={() => setSource(source === 'built-in' ? 'all' : 'built-in')}
             color={source === 'built-in' ? 'purple' : 'white'}
+            style={{ flex: 1 }}
           >
             Built-In
           </MainButton>
           <MainButton
             onClick={() => setSource(source === 'custom' ? 'all' : 'custom')}
             color={source === 'custom' ? 'purple' : 'white'}
+            style={{ flex: 1 }}
           >
             Custom
           </MainButton>

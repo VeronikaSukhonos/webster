@@ -1,4 +1,8 @@
+import { toast } from 'react-toastify';
+
 import { differenceInDays, format, formatDistanceToNow } from 'date-fns';
+
+import { ERROR_TYPES } from '@utils/constants';
 
 export const formatDate = (date: string, withTime: boolean = false) => {
   const d = new Date(date);
@@ -30,4 +34,15 @@ export const createQuery = (query?: object) => {
 
 export const capitalize = (text: string) => {
   return text.charAt(0).toUpperCase() + text.slice(1);
+};
+
+export const copyLink = async (location: string, id: number) => {
+  await navigator.clipboard
+    .writeText(`${location}/editor?projectId=${id}`)
+    .then(() => {
+      toast('Project link was copied to the clipboard');
+    })
+    .catch(() => {
+      toast(ERROR_TYPES.SWW);
+    });
 };

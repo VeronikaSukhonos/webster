@@ -11,6 +11,7 @@ export const MIN_CANVAS_SIZE = 40;
 export const MAX_CANVAS_SIZE = 4000;
 export const DEFAULT_CANVAS_SIZE = 1080;
 export const DEFAULT_SHAPE_COLOR = '#eaeaea';
+export const DEFAULT_BORDER_COLOR = '#4069a9';
 export const MIN_SCALE = 0.1;
 export const MAX_SCALE = 5;
 export const SCALE_FACTOR = 1.05;
@@ -28,10 +29,10 @@ export const SIZE_TYPES = [
 export const TEMPLATE_TYPES = [
   { value: 'other', label: 'Other' },
   { value: 'collage', label: 'Collage' },
-  { value: 'instagram-post', label: 'Instagram Post' },
-  { value: 'instagram-story', label: 'Instagram Story' },
+  { value: 'facebook-post', label: 'Facebook Post' },
+  { value: 'facebook-story', label: 'Facebook Story' },
   { value: 'invitation', label: 'Invitation' },
-  { value: 'presentation', label: 'Presentation' },
+  { value: 'pinterest-pin', label: 'Pinterest Pin' },
   { value: 'resume', label: 'Resume' },
 ] as const;
 

@@ -21,9 +21,8 @@ export const createServerImageItem = (file: ImageResponse): ImageItem => ({
 });
 
 export const initCanvas = (size: Size, image?: ImageItem) => {
-  const backgroundId = crypto.randomUUID();
   const background: Background = {
-    id: backgroundId,
+    id: 'background',
     type: 'background',
     width: size.width,
     height: size.height,
@@ -32,8 +31,8 @@ export const initCanvas = (size: Size, image?: ImageItem) => {
 
   return {
     background,
-    layers: [],
-    images: { ...(image && { [image.id]: [backgroundId] }) },
+    elements: [],
+    images: { ...(image && { [image.id]: ['background'] }) },
   } as Canvas;
 };
 

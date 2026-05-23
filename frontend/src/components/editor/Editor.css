@@ -35,13 +35,13 @@
 }
 
 .tool-container .main-button .own-color path,
-.tool-container .no-style-button .own-color path {
+.tool-container.no-style-button .own-color path {
   fill: var(--main-font-color);
   transition: fill ease-in-out 0.2s;
 }
 
 .tool-container .main-button .active path,
-.tool-container .no-style-button .active path {
+.tool-container.no-style-button .active path {
   fill: var(--accent-font-color);
 }
 
@@ -63,7 +63,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: wrap-reverse;
   gap: 10px;
   padding: 0 10px;
   width: 100%;

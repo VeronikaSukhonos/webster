@@ -55,11 +55,11 @@ export type CanvasElementType = (typeof CanvasElements)[keyof typeof CanvasEleme
 export interface BaseCanvasElement extends CanvasElementPlacement, BaseStyle {
   id: string;
   type: CanvasElementType;
-  selected?: boolean;
+  name: 'element';
   order: number;
 }
 
-export interface Background extends Pick<BaseCanvasElement, 'id' | 'type' | 'selected'>, Size {
+export interface Background extends Pick<BaseCanvasElement, 'id' | 'type'>, Size {
   type: typeof CanvasElements.Background;
   fill?: string;
   image?: string;
@@ -219,7 +219,7 @@ export interface ImageItem {
 
 export interface Canvas {
   background: Background;
-  layers: CanvasElement[];
+  elements: CanvasElement[];
   images: { [imageId: string]: string[] };
 }
 
@@ -265,3 +265,10 @@ export const LeftSheets = {
 } as const;
 
 export type LeftSheetType = (typeof LeftSheets)[keyof typeof LeftSheets];
+
+export const RightSheets = {
+  Element: 'element',
+  History: 'history',
+} as const;
+
+export type RightSheetType = (typeof RightSheets)[keyof typeof RightSheets];

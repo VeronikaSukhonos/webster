@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import projectsApi from '@api/projectsApi';
 import templatesApi from '@api/templatesApi';
@@ -38,6 +37,7 @@ import {
   VISIBILITY_TYPES,
 } from '@utils/constants';
 import { createLocalImageItem, getInitCanvasSize, initCanvas } from '@utils/editorUtils';
+import { copyLink } from '@utils/utils';
 
 import { Modes, type Size } from '@mytypes/editorTypes';
 import {
@@ -350,22 +350,14 @@ export const CreateTemplateForm = ({
     templateParams,
     {
       title: project?.title as string,
-      type: 'select-type' as
-        | 'other'
-        | 'collage'
-        | 'instagram-post'
-        | 'instagram-story'
-        | 'invitation'
-        | 'presentation'
-        | 'resume',
+      type: 'select-type' as any,
     },
     true,
   );
   const [templateType, setTemplateType] = useState(TEMPLATE_TYPE_OPTIONS[0].value);
 
   useEffect(() => {
-    if (templateType !== 'select-type')
-      createTemplate.setParam({ target: { name: 'type', value: templateType } });
+    createTemplate.setParam({ target: { name: 'type', value: templateType } });
   }, [templateType]);
 
   const redirect = (type: string) => {
@@ -405,15 +397,17 @@ export const CreateTemplateForm = ({
         onChange={(e) => setTemplateType(e.target.value)}
         options={TEMPLATE_TYPE_OPTIONS}
         label="Type"
+        error={createTemplate.errors.type}
       />
 
-      <TextField
-        label="From Project"
-        name="project-title"
-        value={project?.title}
-        onChange={() => {}}
-        disabled
-      />
+      <div className="field">
+        <span className="field-label">From Project</span>
+        <div className="field-container selected" style={{ fontWeight: 800, padding: '0 10px' }}>
+          <SelectLabel more={project?.width + ' x ' + project?.height}>
+            {project?.title}
+          </SelectLabel>
+        </div>
+      </div>
 
       <Feedback feedback={createTemplate.feedback} />
 
@@ -446,16 +440,6 @@ export const ProjectSettingsForm = ({
   const [visibilityType, setVisibilityType] = useState(
     VISIBILITY_TYPE_OPTIONS[Number(project?.isPublic)].value,
   );
-  const copyLink = async () => {
-    await navigator.clipboard
-      .writeText(`${window.location.origin}/editor?projectId=${project?.id}`)
-      .then(() => {
-        toast('Project link was copied to the clipboard');
-      })
-      .catch(() => {
-        toast('Something went wrong');
-      });
-  };
 
   useEffect(() => {
     if (visibilityType)
@@ -475,7 +459,7 @@ export const ProjectSettingsForm = ({
           title: params.title,
           description: params.description,
           isPublic: params.visibility === 'everyone' ? true : false,
-          editDate: `${new Date()}`,
+          editDate: new Date().toISOString(),
         })
         .then(() => {
           dispatch(setProjectToUpdate(project?.id as number));
@@ -492,18 +476,24 @@ export const ProjectSettingsForm = ({
 
       <TextField label="Description" {...editProjectSettings.setField('description')} area />
 
-      <SelectField
-        name="visibility-type"
-        value={visibilityType}
-        onChange={(e) => setVisibilityType(e.target.value)}
-        options={VISIBILITY_TYPE_OPTIONS}
-        label="Visibility"
-      />
-      {visibilityType === 'everyone' && (
-        <MainButton color="white" onClick={copyLink}>
-          <LinkIcon />
-        </MainButton>
-      )}
+      <div className="row">
+        <SelectField
+          name="visibility-type"
+          value={visibilityType}
+          onChange={(e) => setVisibilityType(e.target.value)}
+          options={VISIBILITY_TYPE_OPTIONS}
+          label="Visibility"
+        />
+        {visibilityType === 'everyone' && (
+          <MainButton
+            color="white"
+            onClick={() => copyLink(window.location.origin, project?.id as number)}
+            style={{ alignSelf: 'flex-end' }}
+          >
+            <LinkIcon />
+          </MainButton>
+        )}
+      </div>
 
       <Feedback feedback={editProjectSettings.feedback} />
 
@@ -533,14 +523,7 @@ export const TemplateSettingsForm = ({
     templateParams,
     {
       title: template?.title as string,
-      type: template?.type as
-        | 'other'
-        | 'collage'
-        | 'instagram-post'
-        | 'instagram-story'
-        | 'invitation'
-        | 'presentation'
-        | 'resume',
+      type: 'select-type' as any,
     },
     true,
   );
@@ -580,6 +563,7 @@ export const TemplateSettingsForm = ({
         onChange={(e) => setTemplateType(e.target.value)}
         options={TEMPLATE_TYPE_OPTIONS}
         label="Type"
+        error={editTemplateSettings.errors.type}
       />
 
       <Feedback feedback={editTemplateSettings.feedback} />
@@ -604,6 +588,7 @@ export const DeletionForm = ({
   setIsLoading,
 }: FormDeleteProps) => {
   const dispatch = useAppDispatch();
+  const location = useLocation();
 
   const auth = useAuth();
   const navigate = useNavigate();
@@ -633,7 +618,7 @@ export const DeletionForm = ({
             dispatch(setProjectToDelete(project.id));
             setIsLoading?.(false);
             setIsOpen?.(false);
-            navigate('/');
+            if (location.pathname.includes('editor')) navigate('/');
           })
           .catch(handleError);
       } else {
@@ -644,7 +629,7 @@ export const DeletionForm = ({
             dispatch(setTemplateToDelete(template?.id as number));
             setIsLoading?.(false);
             setIsOpen?.(false);
-            navigate('/');
+            if (location.pathname.includes('editor')) navigate('/');
           })
           .catch(handleError);
       }

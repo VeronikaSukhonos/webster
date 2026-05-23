@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import ProjectsApi from '@api/projectsApi';
+import projectsApi from '@api/projectsApi';
 
 import {
   selectUi,
@@ -31,46 +31,49 @@ import { DEFAULT_PROJECT_LIST_LIMIT } from '@utils/constants';
 import type { ProjectResponse } from '@mytypes/responseTypes';
 
 const ProjectsPage = () => {
-  const auth = useAuth();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+
+  const auth = useAuth();
+
   const [areProjectsLoading, setAreProjectsLoading] = useState(false);
   const [projectsFeedback, setProjectsFeedback] = useFeedback();
   const [projects, setProjects] = useState<ProjectResponse[]>([]);
-  const [search, setSearch] = useState(undefined);
+
   const { searchParams, setSearchParams, getPage } = usePage();
+  const [search, setSearch] = useState(searchParams.get('search') ?? undefined);
   const { total, setTotal } = useTotal();
+
   const projectToUpdate = useAppSelector(selectUi.projectToUpdate);
   const projectToDuplicate = useAppSelector(selectUi.projectToDuplicate);
   const projectToDelete = useAppSelector(selectUi.projectToDelete);
+  const [shouldRefetch, setShouldRefetch] = useState(true);
+
   const searchProjects = function (e: React.SubmitEvent) {
     e.preventDefault();
-    const pagination = { page: getPage(), limit: DEFAULT_PROJECT_LIST_LIMIT };
-    setSearchParams({ search: search === undefined ? '' : search });
-    setAreProjectsLoading(true);
-    ProjectsApi.getOwnProjects({
-      ...pagination,
-      search: search,
-    })
-      .then(({ data: res }) => {
-        setAreProjectsLoading(false);
-        setProjectsFeedback(res.message, 'ok');
-        setProjects(res.data.projects);
-        setTotal(res.data.pagination.total, res.data.pagination.limit);
-      })
-      .catch((err) => {
-        setAreProjectsLoading(false);
-        setProjectsFeedback(err.message, 'fail');
-        setProjects([]);
-        setTotal();
-      });
+    setSearchParams(search && { search });
+    setShouldRefetch(true);
   };
+
+  useEffect(() => {
+    if (projectToUpdate || projectToDuplicate || projectToDelete) {
+      setSearch('');
+      setSearchParams({});
+      setShouldRefetch(true);
+    }
+  }, [projectToUpdate, projectToDuplicate, projectToDelete]);
+
+  useEffect(() => {
+    if (!shouldRefetch) setShouldRefetch(true);
+  }, [searchParams]);
+
   useEffect(() => {
     if (!auth) navigate('/');
     else {
-      const pagination = { page: getPage(), limit: DEFAULT_PROJECT_LIST_LIMIT };
+      if (!shouldRefetch) return;
       setAreProjectsLoading(true);
-      ProjectsApi.getOwnProjects({ ...pagination, search: search })
+      projectsApi
+        .getOwnProjects({ page: getPage(), limit: DEFAULT_PROJECT_LIST_LIMIT, search })
         .then(({ data: res }) => {
           setAreProjectsLoading(false);
           setProjectsFeedback(res.message, 'ok');
@@ -82,62 +85,38 @@ const ProjectsPage = () => {
           setProjectsFeedback(err.message, 'fail');
           setProjects([]);
           setTotal();
-        });
-    }
-  }, [auth, searchParams]);
-  useEffect(() => {
-    if (projectToUpdate || projectToDuplicate || projectToDelete) {
-      const pagination = { page: getPage(), limit: DEFAULT_PROJECT_LIST_LIMIT };
-      setAreProjectsLoading(true);
-      ProjectsApi.getOwnProjects({
-        ...pagination,
-        search: search,
-      })
-        .then(({ data: res }) => {
-          setAreProjectsLoading(false);
-          setProjectsFeedback(res.message, 'ok');
-          setProjects(res.data.projects);
-          setTotal(res.data.pagination.total, res.data.pagination.limit);
         })
-        .catch((err) => {
-          setAreProjectsLoading(false);
-          setProjectsFeedback(err.message, 'fail');
-          setProjects([]);
-          setTotal();
+        .finally(() => {
+          dispatch(setProjectToUpdate(null));
+          dispatch(setProjectToDuplicate(null));
+          dispatch(setProjectToDelete(null));
+          setShouldRefetch(false);
         });
     }
-  }, [projectToUpdate, projectToDuplicate, projectToDelete, searchParams]);
+  }, [auth, searchParams, shouldRefetch]);
+
   useEffect(() => {
     return () => {
       dispatch(setProjectToUpdate(null));
-    };
-  }, []);
-  useEffect(() => {
-    return () => {
       dispatch(setProjectToDuplicate(null));
-    };
-  }, []);
-  useEffect(() => {
-    return () => {
       dispatch(setProjectToDelete(null));
     };
   }, []);
+
   if (!auth) navigate('/');
   else {
     return (
-      <div style={{ alignItems: 'center', display: 'flex', flexDirection: 'column' }}>
+      <div className="col hor-center grow">
         <h1 className="slogan t-art t-center">Projects</h1>
-        <form
-          onSubmit={searchProjects}
-          style={{ display: 'flex', flexDirection: 'row', gap: 5 + 'px', marginBottom: 10 + 'px' }}
-        >
+        <form onSubmit={searchProjects} style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
           <TextField
             name="search"
             value={search}
             onChange={(e) => setSearch(e.target.value === '' ? undefined : e.target.value)}
             placeholder="Search project..."
+            disabled={areProjectsLoading}
           />
-          <MainButton type="submit" color="white">
+          <MainButton type="submit" color="white" disabled={areProjectsLoading}>
             <SearchIcon />
           </MainButton>
         </form>
@@ -145,7 +124,7 @@ const ProjectsPage = () => {
           projects={projects}
           areProjectsLoading={areProjectsLoading}
           projectsFeedback={projectsFeedback}
-          noDataFeedback="You do not have any projects yet"
+          noDataFeedback="No projects yet"
         />
         <Pagination totalPages={total.totalPages} disabled={areProjectsLoading} />
       </div>

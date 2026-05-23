@@ -1,24 +1,34 @@
-import { useRef } from 'react';
-import { Group, Image, Layer, Rect, Stage } from 'react-konva';
+import { Group, Image, Layer, Rect, Stage, Transformer } from 'react-konva';
 import { useImage } from 'react-konva-utils';
 
+// import { Html } from 'react-konva-utils';
+
 import clsx from 'clsx';
-import type Konva from 'konva';
 
 import { selectEditor, setCanvasSize, setLeftSheet } from '@store/editorSlice';
 
 import { NumberField, SizeField } from '@components/InputFields';
 import { MainButton } from '@components/MainButton';
 import { Popover } from '@components/Menu';
+import { CanvasElementShape } from '@components/editor/CanvasElementShape';
+import { LayersPanel } from '@components/editor/LeftPanels';
+import { Sheet } from '@components/editor/Sheet';
 import { Toolbar } from '@components/editor/Toolbar';
 
 import { LayerIcon, QuestionIcon } from '@assets/index';
 
-import { useStageSize, useStageZoom } from '@hooks/editor/useStageZoom';
+import { useStageSize } from '@hooks/editor/useStageSize';
+import { useStageZoom, useToolbar } from '@hooks/editor/useToolbar';
 import { useImages } from '@hooks/useImages';
 import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
 
-import { MAX_CANVAS_SIZE, MAX_SCALE, MIN_CANVAS_SIZE, MIN_SCALE } from '@utils/constants';
+import {
+  DEFAULT_BORDER_COLOR,
+  MAX_CANVAS_SIZE,
+  MAX_SCALE,
+  MIN_CANVAS_SIZE,
+  MIN_SCALE,
+} from '@utils/constants';
 import { shortcuts } from '@utils/shortcuts';
 
 import { type CanvasProps, LeftSheets, Modes, Tools } from '@mytypes/editorTypes';
@@ -29,13 +39,16 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
   const dispatch = useAppDispatch();
 
   const canvas = useAppSelector(selectEditor.canvas);
+  const selectedIds = useAppSelector(selectEditor.selected);
   const tool = useAppSelector(selectEditor.tool);
-  const leftSheet = useAppSelector(selectEditor.leftSheet);
   const mode = useAppSelector(selectEditor.mode);
+  const leftSheet = useAppSelector(selectEditor.leftSheet);
   const project = useAppSelector(selectEditor.project);
 
   const { stageSize } = useStageSize();
   const { stageZoom, setStageZoom, ...zoomProps } = useStageZoom(stageRef);
+  const { selectRectProps, transformerRef, selectGroupRef, ...toolbarHandlers } =
+    useToolbar(stageRef);
 
   const imagesCtx = useImages();
   const [backgroundImage] = useImage(
@@ -43,14 +56,13 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
     'anonymous',
   );
 
-  const actionsLayerRef = useRef<Konva.Layer | null>(null);
-
   return (
     <div className="work-area">
       <Toolbar />
       <Stage
         {...stageSize}
         {...zoomProps}
+        {...toolbarHandlers}
         style={{ background: 'var(--dark-gray)' }}
         draggable={tool === Tools.Grab}
         ref={stageRef}
@@ -77,28 +89,71 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
                 width={canvas.background.width}
                 height={canvas.background.height}
                 image={backgroundImage}
+                listening={false}
+              />
+            )}
+            {selectedIds.includes('background') && (
+              <Rect
+                x={-3}
+                y={-3}
+                width={canvas.background.width + 6}
+                height={canvas.background.height + 6}
+                stroke={DEFAULT_BORDER_COLOR}
+                strokeWidth={1}
+                listening={false}
               />
             )}
           </Group>
         </Layer>
-        <Layer id="layers-layer"></Layer>
-        <Layer id="actions-layer" ref={actionsLayerRef}>
-          {/* <Rect {...selectedArea} fill="aqua" stroke="blue" strokeWidth={1} opacity={0.2} /> */}
+        <Layer id="elements-layer">
+          {canvas.elements
+            .filter((el) => !selectedIds.includes(el.id))
+            .map((el) => (
+              <CanvasElementShape key={el.id} element={el} />
+            ))}
+        </Layer>
+        <Layer id="actions-layer">
+          <Group ref={selectGroupRef} draggable={tool === Tools.Select}>
+            {canvas.elements
+              .filter((el) => selectedIds.includes(el.id))
+              .map((el) => (
+                <CanvasElementShape key={el.id} element={el} draggable={false} />
+              ))}
+          </Group>
+          <Transformer
+            ref={transformerRef}
+            boundBoxFunc={(o, n) => (n.width < 1 || n.height < 1 ? o : n)}
+            borderStroke={DEFAULT_BORDER_COLOR}
+            borderStrokeWidth={1}
+            anchorFill="white"
+            anchorStroke={DEFAULT_BORDER_COLOR}
+            anchorStrokeWidth={2}
+            anchorSize={10}
+            anchorCornerRadius={20}
+          />
+          <Rect {...selectRectProps} />
         </Layer>
       </Stage>
 
       <div className="bottom-toolbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <MainButton
-            noStyle
-            className="tool-container mini square"
-            tooltipId={LeftSheets.Layers}
-            onClick={() => dispatch(setLeftSheet(LeftSheets.Layers))}
+          <Sheet
+            title={LeftSheets.Layers}
+            isOpen={leftSheet?.type === LeftSheets.Layers}
+            setIsOpen={() => dispatch(setLeftSheet(LeftSheets.Layers))}
+            buttonProps={{
+              noStyle: true,
+              className: 'tool-container mini square',
+              tooltipId: LeftSheets.Layers,
+              children: (
+                <LayerIcon
+                  className={clsx('own-color', leftSheet?.type === LeftSheets.Layers && 'active')}
+                />
+              ),
+            }}
           >
-            <LayerIcon
-              className={clsx('own-color', leftSheet?.type === LeftSheets.Layers && 'active')}
-            />
-          </MainButton>
+            <LayersPanel />
+          </Sheet>
           <div className="tool-container mini" style={{ maxWidth: '125px' }}>
             <NumberField
               name="stage-scale"
@@ -117,7 +172,7 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
         </div>
         {mode !== Modes.View && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div className="tool-container mini" style={{ maxWidth: '215px' }}>
+            <div className="tool-container mini" style={{ maxWidth: '215px', marginRight: 42 }}>
               <SizeField
                 name="canvas-size"
                 value={{ width: canvas.background.width, height: canvas.background.height }}
@@ -132,7 +187,12 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
             </div>
             <Popover
               button={
-                <MainButton noStyle className="tool-container mini square" tooltipId="help">
+                <MainButton
+                  noStyle
+                  className="tool-container mini square"
+                  style={{ position: 'fixed', bottom: 10, right: 10 }}
+                  tooltipId="help"
+                >
                   <QuestionIcon />
                 </MainButton>
               }

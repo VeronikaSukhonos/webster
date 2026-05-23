@@ -118,7 +118,7 @@ export const templateParams = z.object({
   title,
   type: z.enum(
     TEMPLATE_TYPES.map((t) => t.value),
-    'invalid template type',
+    'select template type',
   ),
 });
 export type TemplateParams = z.infer<typeof templateParams>;

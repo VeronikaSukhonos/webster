@@ -17,20 +17,19 @@ interface ProjectPreviewProps {
   template?: TemplateResponse;
 }
 
+const DEFAULT_PREVIEW = 'http://localhost:3000/files/projects/default-preview.jpg';
+
 export const ProjectPreview = ({ project, template }: ProjectPreviewProps) => {
   return (
-    <Link to={project ? `/editor?projectId=${project.id}` : `/editor?templateId=${template?.id}`}>
+    <Link
+      to={project ? `/editor?projectId=${project.id}` : `/editor?templateId=${template?.id}`}
+      className="project-preview-container"
+    >
       <div className="project-preview">
         <div className="image-and-size">
           <img
             src={
-              project
-                ? project.preview === ''
-                  ? 'http://localhost:3000/files/projects/default-preview.jpg'
-                  : project.preview
-                : template?.preview === ''
-                  ? 'http://localhost:3000/files/projects/default-preview.jpg'
-                  : template?.preview
+              project ? project.preview || DEFAULT_PREVIEW : template?.preview || DEFAULT_PREVIEW
             }
             alt={
               project
@@ -40,7 +39,7 @@ export const ProjectPreview = ({ project, template }: ProjectPreviewProps) => {
           />
           <DropdownMenu
             button={
-              <MainButton className="project-preview-menu" color="white" mini={true}>
+              <MainButton className="project-preview-menu" color="white" mini>
                 <DotsIcon />
               </MainButton>
             }
@@ -54,15 +53,25 @@ export const ProjectPreview = ({ project, template }: ProjectPreviewProps) => {
           </p>
         </div>
         <div className="project-info">
-          <div className="project-name">
-            <p className="title">{project ? project.title : template?.title}</p>
+          <div
+            className="row ver-center content-title mini"
+            style={{ justifyContent: 'space-between' }}
+          >
+            <span className="t-cut-200">{project ? project.title : template?.title}</span>
             {project && project.isPublic && <PublicIcon />}
           </div>
-          {project && <p>edited {formatDate(project.editDate)}</p>}
-          {template && (
-            <p>
-              {template.isBuiltIn ? 'built-in' : 'custom'} ・ {template.type}
+          {project && (
+            <p style={{ fontWeight: 500, fontSize: '0.9rem' }}>
+              edited {formatDate(project.editDate)}
             </p>
+          )}
+          {template && (
+            <div className="t-separator" style={{ fontWeight: 500, fontSize: '0.9rem' }}>
+              <span className="item" style={{ paddingRight: '6px' }}>
+                {template.isBuiltIn ? 'built-in' : 'custom'}
+              </span>
+              <span className="item">{template.type}</span>
+            </div>
           )}
         </div>
       </div>

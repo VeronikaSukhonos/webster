@@ -242,10 +242,10 @@ textarea,
 }
 
 .t-separator .item + .item::before {
-  content: '•';
+  content: '.';
   color: var(--accent-font-color);
-  font-size: 1rem;
-  line-height: 0.9;
+  font-size: 3rem;
+  line-height: 0.001;
   padding-right: 6px;
 }
 

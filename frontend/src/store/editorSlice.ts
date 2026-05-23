@@ -12,6 +12,7 @@ import {
   type LeftSheetType,
   type Mode,
   Modes,
+  type RightSheetType,
   type Size,
   type Tool,
   Tools,
@@ -21,9 +22,9 @@ import type { ProjectResponse, TemplateResponse } from '@mytypes/responseTypes';
 import type { RootState } from './store';
 
 interface History {
-  id: string;
-  from?: CanvasElement;
-  to?: CanvasElement;
+  ids: string[];
+  from?: CanvasElement[];
+  to?: CanvasElement[];
   action: Action;
 }
 
@@ -36,10 +37,9 @@ interface LeftSheet {
   type: LeftSheetType;
 }
 
-// interface RightSheet {
-//   type: 'element' | 'history';
-//   target?: string;
-// }
+interface RightSheet {
+  type: RightSheetType;
+}
 
 interface EditorState {
   canvas: Canvas;
@@ -48,10 +48,11 @@ interface EditorState {
   project: Project | null;
   template: Template | null;
   mode: Mode;
+  selectedIds: string[];
   hasUnsavedChanges: boolean;
   tool: Tool;
   leftSheet: LeftSheet | null;
-  // rightSheet: RightSheet | null;
+  rightSheet: RightSheet | null;
 }
 
 const initialState: EditorState = {
@@ -61,10 +62,11 @@ const initialState: EditorState = {
   project: null,
   template: null,
   mode: Modes.Edit,
+  selectedIds: [],
   hasUnsavedChanges: false,
   tool: Tools.Select,
   leftSheet: null,
-  // rightSheet: null,
+  rightSheet: null,
 };
 
 const editorSlice = createSlice({
@@ -84,9 +86,9 @@ const editorSlice = createSlice({
       state.history = [
         ...state.history,
         {
-          id: from.id,
-          from,
-          to: state.canvas.background,
+          ids: [from.id],
+          from: [from],
+          to: [state.canvas.background],
           action: Actions.Resize,
         },
       ];
@@ -118,6 +120,7 @@ const editorSlice = createSlice({
         state.canvas = content;
         state.template = template;
         state.mode = Modes.View;
+        state.tool = Tools.Grab;
       }
     },
     setMode: (state, action: PayloadAction<Mode>) => {
@@ -132,12 +135,21 @@ const editorSlice = createSlice({
     setTool: (state, action: PayloadAction<Tool>) => {
       state.tool = state.tool === action.payload ? Tools.Select : action.payload;
     },
-    setLeftSheet: (state, action: PayloadAction<LeftSheetType>) => {
-      state.leftSheet = state.leftSheet?.type === action.payload ? null : { type: action.payload };
+    setSelectedIds: (state, action: PayloadAction<string[]>) => {
+      state.selectedIds = action.payload ?? [];
     },
-    // setRightSheet: (state, action: PayloadAction<RightSheet | null>) => {
-    //   state.rightSheet = action.payload ?? null;
-    // },
+    setLeftSheet: (state, action: PayloadAction<LeftSheetType | null>) => {
+      state.leftSheet =
+        !action.payload || state.leftSheet?.type === action.payload
+          ? null
+          : { type: action.payload };
+    },
+    setRightSheet: (state, action: PayloadAction<RightSheetType | null>) => {
+      state.rightSheet =
+        !action.payload || state.rightSheet?.type === action.payload
+          ? null
+          : { type: action.payload };
+    },
     clearEditor: (state) => {
       Object.assign(state, initialState);
     },
@@ -153,13 +165,15 @@ export const {
   setHasUnsavedChanges,
   updateProjectData,
   setTool,
+  setSelectedIds,
   setLeftSheet,
-  // setRightSheet,
+  setRightSheet,
   clearEditor,
 } = editorSlice.actions;
 
 export const selectEditor = {
   canvas: (state: RootState) => state.editor.canvas,
+  selected: (state: RootState) => state.editor.selectedIds,
   tool: (state: RootState) => state.editor.tool,
   history: (state: RootState) => state.editor.history,
   historyTarget: (state: RootState) => state.editor.historyTarget,
@@ -168,7 +182,7 @@ export const selectEditor = {
   mode: (state: RootState) => state.editor.mode,
   hasUnsavedChanges: (state: RootState) => state.editor.hasUnsavedChanges,
   leftSheet: (state: RootState) => state.editor.leftSheet,
-  // rightSheet: (state: RootState) => state.editor.rightSheet,
+  rightSheet: (state: RootState) => state.editor.rightSheet,
 };
 
 export default editorSlice.reducer;

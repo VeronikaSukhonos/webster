@@ -132,7 +132,7 @@ const EditorPage = () => {
         } else if (tId) {
           const { data: res } = await templatesApi.getTemplate(tId);
           if (!last) return;
-          dispatch(setTemplate(res.data.template));
+          dispatch(setTemplate({ template: res.data.template }));
           imagesCtx?.replaceImageItems(res.data.template.images, true);
           setIsLoading(false);
         }

@@ -12,7 +12,10 @@ import { capitalize } from '@utils/utils';
 
 import './MainButton.css';
 
-interface MainButtonProps extends Omit<RACButtonProps, 'children' | 'className' | 'onClick'> {
+export interface MainButtonProps extends Omit<
+  RACButtonProps,
+  'children' | 'className' | 'onClick'
+> {
   children: React.ReactNode;
   onClick?: (e: PressEvent) => void;
   type?: 'button' | 'submit';

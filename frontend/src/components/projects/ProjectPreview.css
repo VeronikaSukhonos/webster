@@ -5,7 +5,7 @@
 }
 
 .project-info {
-  padding: 0 25px;
+  padding: 3px 5px 0 5px;
 }
 
 .project-name {
@@ -18,8 +18,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-width: 300px;
-  max-width: 450px;
+  width: 250;
   position: relative;
   transition:
     background ease-in-out 0.5s,
@@ -30,16 +29,16 @@
 .project-preview img {
   border: 2px solid #fff;
   border-radius: 20px;
-  height: 167.333px;
+  height: auto;
   object-fit: cover;
   object-position: 50% 50%;
-  width: 251px;
+  width: 250px;
 }
 
 .project-preview-menu {
-  left: 235px;
   position: absolute;
   top: 10px;
+  right: 10px;
 }
 
 .project-preview-menu,
@@ -64,8 +63,7 @@
   z-index: 1;
 }
 
-.title {
-  font-size: 22.5px;
-  font-weight: 750;
+.project-preview-container svg path {
+  fill: var(--accent-font-color) !important;
+  transition: fill ease-in-out 0.3s;
 }
-
