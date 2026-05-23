@@ -15,6 +15,7 @@ import {
   setMode,
   setProject,
   setTemplate,
+  updateProjectData,
 } from '@store/editorSlice';
 
 import { Load } from '@components/Load';
@@ -71,7 +72,7 @@ const EditorPage = () => {
     if (!project || !project.id) return true;
     try {
       setIsSaving(true);
-      await projectsApi.updateProject(project.id, {
+      const { data: res } = await projectsApi.updateProject(project.id, {
         size: { width: canvas.background.width, height: canvas.background.height },
         content: canvas,
         images: imagesCtx?.presentFiles,
@@ -84,6 +85,12 @@ const EditorPage = () => {
         }),
         editDate: new Date().toISOString(),
       });
+      dispatch(
+        updateProjectData({
+          preview: res.data.project.preview,
+          editDate: res.data.project.editDate,
+        }),
+      );
       lastSavedHistoryRef.current = history;
       setIsSaving(false);
       return true;
