@@ -244,8 +244,8 @@ textarea,
 .t-separator .item + .item::before {
   content: '.';
   color: var(--accent-font-color);
-  font-size: 3rem;
-  line-height: 0.001;
+  font-size: 3rem !important;
+  line-height: 0.001 !important;
   padding-right: 6px;
 }
 

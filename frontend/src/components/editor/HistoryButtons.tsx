@@ -45,10 +45,10 @@ export const HistoryButtons = () => {
         <HistoryIcon />
       </Sheet>
       <div className="row mini-gap" style={{ width: 'max-content' }}>
-        <MainButton onClick={undo} {...buttonProps} aria-label="Undo">
+        <MainButton onClick={undo} {...buttonProps} aria-label="Undo" tooltipId="undo">
           <ArrowIcon />
         </MainButton>
-        <MainButton onClick={redo} {...buttonProps} aria-label="Redo">
+        <MainButton onClick={redo} {...buttonProps} aria-label="Redo" tooltipId="redo">
           <ArrowIcon style={{ transform: 'rotate(180deg)' }} />
         </MainButton>
       </div>

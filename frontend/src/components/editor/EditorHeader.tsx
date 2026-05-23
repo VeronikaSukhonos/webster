@@ -29,7 +29,7 @@ export const EditorHeader = ({ stageRef, backgroundRef }: CanvasProps) => {
   return (
     <header className="editor-header">
       <nav>
-        <MainButton to="/" {...buttonProps} aria-label="Home">
+        <MainButton to="/" {...buttonProps} aria-label="Home" tooltipId="home">
           <HomeIcon />
         </MainButton>
 
@@ -38,6 +38,7 @@ export const EditorHeader = ({ stageRef, backgroundRef }: CanvasProps) => {
             <MainButton
               {...buttonProps}
               aria-label={`${template ? 'Template' : 'Project'} information`}
+              tooltipId="info"
             >
               <InfoIcon />
             </MainButton>
@@ -49,7 +50,7 @@ export const EditorHeader = ({ stageRef, backgroundRef }: CanvasProps) => {
               className="row ver-center content-title mini"
               style={{ justifyContent: 'space-between' }}
             >
-              <span>{project?.title}</span>
+              <span>{project?.title || template?.title}</span>
               {project?.isPublic && <PublicIcon />}
             </div>
             {project?.author && (
@@ -62,13 +63,24 @@ export const EditorHeader = ({ stageRef, backgroundRef }: CanvasProps) => {
                   <Link
                     className="link blue"
                     style={{ paddingRight: '6px' }}
-                    to={`/users/${project.author.id.toString()}`}
+                    to={`/users/${project?.author?.id.toString()}`}
                     target="blank"
                   >
-                    {project.author.username}
+                    {project?.author?.username}
                   </Link>
                 </div>
-                <div className="item">{formatDate(project.editDate || '')}</div>
+                <div className="item">{formatDate(project?.editDate || '')}</div>
+              </div>
+            )}
+            {template?.isBuiltIn !== undefined && (
+              <div
+                className="t-separator"
+                style={{ display: 'flex', flexWrap: 'wrap', fontSize: '0.95rem' }}
+              >
+                <div className="item" style={{ paddingRight: '6px' }}>
+                  {template.isBuiltIn ? 'built-in' : 'custom'}
+                </div>
+                <div className="item">{formatDate(template?.createDate || '')}</div>
               </div>
             )}
           </div>
@@ -78,9 +90,15 @@ export const EditorHeader = ({ stageRef, backgroundRef }: CanvasProps) => {
               <div style={{ fontSize: '0.95rem', fontStyle: 'italic' }}>{project.description}</div>
             </>
           )}
+          {template?.type && (
+            <>
+              <hr />
+              <div style={{ fontSize: '0.95rem', fontStyle: 'italic' }}>{template.type}</div>
+            </>
+          )}
           <hr />
           <div style={{ fontWeight: '700' }}>
-            {project?.width} x {project?.height} pixels
+            {project?.width || template?.width} x {project?.height || template?.height} pixels
           </div>
           {project?.template && (
             <div className="t-cut-300" style={{ fontSize: '0.95rem' }}>
@@ -102,6 +120,7 @@ export const EditorHeader = ({ stageRef, backgroundRef }: CanvasProps) => {
               <MainButton
                 {...buttonProps}
                 aria-label={`${template ? 'Template' : 'Project'} actions`}
+                tooltipId={project ? 'project' : 'template'}
               >
                 <ProjectIcon />
               </MainButton>
@@ -115,7 +134,7 @@ export const EditorHeader = ({ stageRef, backgroundRef }: CanvasProps) => {
         )}
 
         <h1 className="content-title">
-          <span className="t-cut-300">{project?.title}</span>
+          <span className="t-cut-300">{project?.title || template?.title}</span>
         </h1>
 
         {mode !== Modes.View && <HistoryButtons />}
@@ -124,7 +143,7 @@ export const EditorHeader = ({ stageRef, backgroundRef }: CanvasProps) => {
             {project && auth.id === project.author?.id && (
               <Popover
                 button={
-                  <MainButton {...buttonProps} aria-label="Share">
+                  <MainButton {...buttonProps} aria-label="Share" tooltipId="share">
                     <ShareIcon />
                   </MainButton>
                 }

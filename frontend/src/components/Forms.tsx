@@ -1,10 +1,16 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 import projectsApi from '@api/projectsApi';
 import templatesApi from '@api/templatesApi';
 
-import { setProject } from '@store/editorSlice';
+import {
+  selectEditor,
+  setProject,
+  updateProjectData,
+  updateTemplateData,
+} from '@store/editorSlice';
 import {
   setProjectToDelete,
   setProjectToUpdate,
@@ -27,7 +33,7 @@ import { LinkIcon } from '@assets/index';
 
 import { useForm } from '@hooks/useForm';
 import { useImages } from '@hooks/useImages';
-import { useAppDispatch, useAuth } from '@hooks/utilHooks';
+import { useAppDispatch, useAppSelector, useAuth } from '@hooks/utilHooks';
 
 import {
   MAX_CANVAS_SIZE,
@@ -345,6 +351,7 @@ export const CreateTemplateForm = ({
   const navigate = useNavigate();
 
   const auth = useAuth();
+  const editorProject = useAppSelector(selectEditor.project);
 
   const createTemplate = useForm(
     templateParams,
@@ -361,9 +368,12 @@ export const CreateTemplateForm = ({
   }, [templateType]);
 
   const redirect = (type: string) => {
-    createTemplate.setSuccess({ message: 'Created template successfully' });
+    const message = 'Created template successfully';
+
+    createTemplate.setSuccess({ message });
     setIsLoading?.(false);
-    navigate(`/templates?source=custom&type=${type}`);
+    if (editorProject && editorProject.id === project?.id) toast(message);
+    else navigate(`/templates?source=custom&type=${type}`);
     setIsOpen(false);
   };
 
@@ -427,6 +437,7 @@ export const ProjectSettingsForm = ({
   const dispatch = useAppDispatch();
 
   const auth = useAuth();
+  const editorProject = useAppSelector(selectEditor.project);
 
   const editProjectSettings = useForm(
     projectSettingsParams,
@@ -461,8 +472,17 @@ export const ProjectSettingsForm = ({
           isPublic: params.visibility === 'everyone' ? true : false,
           editDate: new Date().toISOString(),
         })
-        .then(() => {
-          dispatch(setProjectToUpdate(project?.id as number));
+        .then(({ data: res }) => {
+          if (editorProject && editorProject.id === project?.id)
+            dispatch(
+              updateProjectData({
+                title: res.data.project.title,
+                description: res.data.project.description,
+                isPublic: res.data.project.isPublic,
+                editDate: res.data.project.editDate,
+              }),
+            );
+          else dispatch(setProjectToUpdate(project?.id as number));
           setIsLoading?.(false);
           setIsOpen?.(false);
         })
@@ -518,6 +538,7 @@ export const TemplateSettingsForm = ({
   const dispatch = useAppDispatch();
 
   const auth = useAuth();
+  const editorTemplate = useAppSelector(selectEditor.template);
 
   const editTemplateSettings = useForm(
     templateParams,
@@ -544,8 +565,15 @@ export const TemplateSettingsForm = ({
       setIsLoading?.(true);
       templatesApi
         .updateTemplate(template?.id as number, { title: params.title, type: params.type })
-        .then(() => {
-          dispatch(setTemplateToUpdate(template?.id as number));
+        .then(({ data: res }) => {
+          if (editorTemplate && editorTemplate.id === template?.id)
+            dispatch(
+              updateTemplateData({
+                title: res.data.template.title,
+                type: res.data.template.type,
+              }),
+            );
+          else dispatch(setTemplateToUpdate(template?.id as number));
           setIsLoading?.(false);
           setIsOpen?.(false);
         })
@@ -588,10 +616,11 @@ export const DeletionForm = ({
   setIsLoading,
 }: FormDeleteProps) => {
   const dispatch = useAppDispatch();
-  const location = useLocation();
+  const navigate = useNavigate();
 
   const auth = useAuth();
-  const navigate = useNavigate();
+  const editorProject = useAppSelector(selectEditor.project);
+  const editorTemplate = useAppSelector(selectEditor.template);
 
   const deleteProjectTemplate = useForm(
     deleteParams,
@@ -614,22 +643,28 @@ export const DeletionForm = ({
         projectsApi
           .deleteProject(project.id)
           .then(() => {
-            deleteProjectTemplate.setSuccess({ message: 'Deleted project successfully' });
+            const message = 'Deleted project successfully';
+
+            deleteProjectTemplate.setSuccess({ message });
             dispatch(setProjectToDelete(project.id));
             setIsLoading?.(false);
             setIsOpen?.(false);
-            if (location.pathname.includes('editor')) navigate('/');
+            toast(message);
+            if (editorProject && editorProject.id === project?.id) navigate('/');
           })
           .catch(handleError);
       } else {
         templatesApi
           .deleteTemplate(template?.id as number)
           .then(() => {
-            deleteProjectTemplate.setSuccess({ message: 'Deleted template successfully' });
+            const message = 'Deleted template successfully';
+
+            deleteProjectTemplate.setSuccess({ message });
             dispatch(setTemplateToDelete(template?.id as number));
             setIsLoading?.(false);
             setIsOpen?.(false);
-            if (location.pathname.includes('editor')) navigate('/');
+            toast(message);
+            if (editorTemplate && editorTemplate.id === template?.id) navigate('/');
           })
           .catch(handleError);
       }
