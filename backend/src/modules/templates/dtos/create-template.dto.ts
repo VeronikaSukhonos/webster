@@ -17,6 +17,7 @@ import type { JsonDocument } from '../../../common/utils';
 import {
   TEMPLATE_TYPE_ENUM,
   TEMPLATE_TYPE_EXAMPLE,
+  TEMPLATE_TYPE_VALIDATION_MESSAGE,
   type TemplateType,
 } from '../template-type.enum';
 
@@ -60,8 +61,7 @@ export class CreateTemplateDto {
 
   @ApiProperty({ enum: TEMPLATE_TYPE_ENUM, example: TEMPLATE_TYPE_EXAMPLE })
   @IsIn(TEMPLATE_TYPE_ENUM, {
-    message:
-      'type must be one of the following values: other, collage, instagram-post, instagram-story, invitation, presentation, resume',
+    message: TEMPLATE_TYPE_VALIDATION_MESSAGE,
   })
   @IsNotEmpty({ message: 'type cannot be empty' })
   @SanitizeString('lower')

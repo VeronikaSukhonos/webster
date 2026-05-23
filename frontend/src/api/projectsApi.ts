@@ -14,6 +14,8 @@ interface CreateProjectRequest {
 
 interface CreateProjectFromTemplateRequest {
   title: string;
+  description?: string | null;
+  isPublic?: boolean;
 }
 
 interface UpdateProjectRequest extends Partial<CreateProjectRequest> {

@@ -17,7 +17,8 @@ interface ProjectPreviewProps {
   template?: TemplateResponse;
 }
 
-const DEFAULT_PREVIEW = 'http://localhost:3000/files/projects/default-preview.jpg';
+const API_ORIGIN = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '').replace(/\/$/, '');
+const DEFAULT_PREVIEW = `${API_ORIGIN || window.location.origin}/files/projects/default-preview.jpg`;
 
 export const ProjectPreview = ({ project, template }: ProjectPreviewProps) => {
   return (

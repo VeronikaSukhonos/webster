@@ -42,7 +42,7 @@ export class TemplatesController {
   @ApiOperation({ summary: 'Templates fetch' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 10 })
-  @ApiQuery({ name: 'search', required: false, example: 'instagram' })
+  @ApiQuery({ name: 'search', required: false, example: 'facebook' })
   @ApiQuery({
     name: 'type',
     required: false,
@@ -73,7 +73,7 @@ export class TemplatesController {
           },
         ],
         pagination: { page: 1, limit: 10, total: 1, pages: 1 },
-        filters: [{ search: 'instagram' }, { type: 'instagram-post' }, { source: 'built-in' }],
+        filters: [{ search: 'facebook' }, { type: 'facebook-post' }, { source: 'built-in' }],
       },
     },
   })
@@ -235,7 +235,7 @@ export class TemplatesController {
           width: 1080,
           height: 1350,
           createDate: '2026-04-28T18:17:06.813Z',
-          type: 'instagram-post',
+          type: 'facebook-post',
           isBuiltIn: false,
           projectId: 1,
           author: { id: 1, username: 'user' },

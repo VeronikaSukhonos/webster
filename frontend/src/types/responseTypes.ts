@@ -26,6 +26,7 @@ export interface ImageResponse {
 
 interface BaseContentResponse {
   id: number;
+  authorId: number;
   author: Pick<UserResponse, 'id' | 'username'>;
   title: string;
   preview: string;
@@ -38,13 +39,15 @@ interface BaseContentResponse {
 }
 
 export interface ProjectResponse extends BaseContentResponse {
-  description: string;
+  description: string | null;
   editDate: string;
   isPublic: boolean;
+  templateId: number | null;
   template: Pick<TemplateResponse, 'id' | 'title'> | null;
 }
 
 export interface TemplateResponse extends BaseContentResponse {
   type: TemplateType;
   isBuiltIn: boolean;
+  projectId: number | null;
 }

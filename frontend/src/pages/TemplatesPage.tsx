@@ -36,7 +36,8 @@ const TemplatesPage = () => {
   const { searchParams, setSearchParams, getPage } = usePage();
   const [search, setSearch] = useState(searchParams.get('search') ?? undefined);
   const [templateType, setTemplateType] = useState<TemplateType | 'all'>(
-    (searchParams.get('templateType') as TemplateType | undefined) ?? ('all' as const),
+    ((searchParams.get('type') ?? searchParams.get('templateType')) as TemplateType | undefined) ??
+      ('all' as const),
   );
   const [source, setSource] = useState(searchParams.get('source') ?? 'all');
   const { total, setTotal } = useTotal();
@@ -62,7 +63,7 @@ const TemplatesPage = () => {
     e.preventDefault();
     setSearchParams({
       ...(search && { search }),
-      ...(templateType && { templateType }),
+      ...(templateType !== 'all' && { type: templateType }),
       ...(source && { source }),
     });
     setShouldRefetch(true);
@@ -136,7 +137,7 @@ const TemplatesPage = () => {
           <SearchIcon />
         </MainButton>
         <SelectField
-          name="templateType"
+          name="type"
           value={templateType}
           onChange={(e) => setTemplateType(e.target.value)}
           options={templateTypes}
