@@ -38,15 +38,46 @@ export const ShareMenu = ({ stageRef, backgroundRef }: CanvasProps) => {
     return new URL(url, API_ORIGIN || window.location.origin).toString();
   };
 
+  const getAlreadyShareableProject = () => {
+    if (!project?.id || !project.isPublic || hasUnsavedChanges) return;
+
+    return project as ProjectResponse;
+  };
+
+  const openPendingShareWindow = () => {
+    const shareWindow = window.open('about:blank', '_blank');
+    if (shareWindow) shareWindow.opener = null;
+
+    return shareWindow;
+  };
+
+  const openExternalShare = async (getUrl: (project: ProjectResponse) => string) => {
+    const alreadyShareableProject = getAlreadyShareableProject();
+    if (alreadyShareableProject) {
+      window.open(getUrl(alreadyShareableProject), '_blank', 'noopener');
+      return;
+    }
+
+    const shareWindow = openPendingShareWindow();
+    const updatedProject = await ensureProjectIsShareable();
+
+    if (!updatedProject) {
+      shareWindow?.close();
+      return;
+    }
+
+    if (shareWindow) shareWindow.location.href = getUrl(updatedProject);
+    else window.open(getUrl(updatedProject), '_blank', 'noopener');
+  };
+
   const ensureProjectIsShareable = async (): Promise<ProjectResponse | undefined> => {
     if (!project?.id) {
       toast('Project is not saved yet');
       return;
     }
 
-    if (project.isPublic && !hasUnsavedChanges) {
-      return project as ProjectResponse;
-    }
+    const alreadyShareableProject = getAlreadyShareableProject();
+    if (alreadyShareableProject) return alreadyShareableProject;
 
     try {
       dispatch(setMode(Modes.Load));
@@ -113,39 +144,49 @@ export const ShareMenu = ({ stageRef, backgroundRef }: CanvasProps) => {
   };
 
   const shareAsEmail = async () => {
+    const getEmailUrl = (shareableProject: ProjectResponse) => {
+      const subject = encodeURIComponent(`SketCherry project: ${shareableProject.title}`);
+      const body = encodeURIComponent(
+        `Check out my SketCherry project:\n${getPublicProjectUrl(shareableProject.id)}`,
+      );
+
+      return `mailto:?subject=${subject}&body=${body}`;
+    };
+
+    const alreadyShareableProject = getAlreadyShareableProject();
+    if (alreadyShareableProject) {
+      window.location.href = getEmailUrl(alreadyShareableProject);
+      return;
+    }
+
+    const emailWindow = openPendingShareWindow();
     const updatedProject = await ensureProjectIsShareable();
-    if (!updatedProject) return;
 
-    const subject = encodeURIComponent(`SketCherry project: ${updatedProject.title}`);
-    const body = encodeURIComponent(
-      `Check out my SketCherry project:\n${getPublicProjectUrl(updatedProject.id)}`,
-    );
+    if (!updatedProject) {
+      emailWindow?.close();
+      return;
+    }
 
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    if (emailWindow) emailWindow.location.href = getEmailUrl(updatedProject);
+    else window.location.href = getEmailUrl(updatedProject);
   };
 
   const shareOnFacebook = async () => {
-    const updatedProject = await ensureProjectIsShareable();
-    if (!updatedProject) return;
+    await openExternalShare((shareableProject) => {
+      const url = encodeURIComponent(getPublicProjectUrl(shareableProject.id));
 
-    const url = encodeURIComponent(getPublicProjectUrl(updatedProject.id));
-
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank', 'noopener');
+      return `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+    });
   };
 
   const shareOnPinterest = async () => {
-    const updatedProject = await ensureProjectIsShareable();
-    if (!updatedProject) return;
+    await openExternalShare((shareableProject) => {
+      const url = encodeURIComponent(getPublicProjectUrl(shareableProject.id));
+      const media = encodeURIComponent(getAbsoluteUrl(shareableProject.preview));
+      const description = encodeURIComponent(shareableProject.title);
 
-    const url = encodeURIComponent(getPublicProjectUrl(updatedProject.id));
-    const media = encodeURIComponent(getAbsoluteUrl(updatedProject.preview));
-    const description = encodeURIComponent(updatedProject.title);
-
-    window.open(
-      `https://www.pinterest.com/pin/create/button/?url=${url}&media=${media}&description=${description}`,
-      '_blank',
-      'noopener',
-    );
+      return `https://www.pinterest.com/pin/create/button/?url=${url}&media=${media}&description=${description}`;
+    });
   };
 
   return (

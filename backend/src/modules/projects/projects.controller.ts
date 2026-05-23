@@ -388,7 +388,7 @@ export class ProjectsController {
           images: [{ id: '2f5c4a63-7a51-4e9f-bc9c-16e1f1f9ac32', url: '/files/images/image.jpg' }],
           width: 1080,
           height: 1350,
-          isPublic: true,
+          isPublic: false,
           createDate: '2026-04-28T18:17:06.813Z',
           editDate: '2026-04-28T18:17:06.813Z',
           templateId: 1,
