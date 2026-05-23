@@ -126,6 +126,9 @@ const editorSlice = createSlice({
     setHasUnsavedChanges: (state, action: PayloadAction<boolean>) => {
       state.hasUnsavedChanges = action.payload;
     },
+    updateProjectData: (state, action: PayloadAction<Partial<Project>>) => {
+      if (state.project) state.project = { ...state.project, ...action.payload };
+    },
     setTool: (state, action: PayloadAction<Tool>) => {
       state.tool = state.tool === action.payload ? Tools.Select : action.payload;
     },
@@ -148,6 +151,7 @@ export const {
   setTemplate,
   setMode,
   setHasUnsavedChanges,
+  updateProjectData,
   setTool,
   setLeftSheet,
   // setRightSheet,

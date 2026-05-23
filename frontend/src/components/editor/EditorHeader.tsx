@@ -129,7 +129,7 @@ export const EditorHeader = ({ stageRef, backgroundRef }: CanvasProps) => {
                   </MainButton>
                 }
               >
-                <ShareMenu />
+                <ShareMenu stageRef={stageRef} backgroundRef={backgroundRef} />
               </Popover>
             )}
             <AuthMenu stageRef={stageRef} backgroundRef={backgroundRef} />
