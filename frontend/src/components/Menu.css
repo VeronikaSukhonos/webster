@@ -58,7 +58,7 @@
   flex-shrink: 0;
 }
 
-.menu-item svg path {
+.menu-item svg:not(.own-color) path {
   fill: var(--main-font-color);
   transition: fill ease-in-out 0.3s;
 }
@@ -82,8 +82,8 @@
   color: var(--accent-font-color);
 }
 
-.menu-item:hover svg path,
-.menu-item:focus-visible svg path,
-.menu-item .active svg path {
+.menu-item:hover svg:not(.own-color) path,
+.menu-item:focus-visible svg:not(.own-color) path,
+.menu-item .active svg:not(.own-color) path {
   fill: var(--accent-font-color);
 }

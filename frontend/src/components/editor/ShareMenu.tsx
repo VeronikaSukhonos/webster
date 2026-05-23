@@ -16,8 +16,6 @@ import { exportFile } from '@utils/editorUtils';
 import { type CanvasProps, Modes } from '@mytypes/editorTypes';
 import type { ProjectResponse } from '@mytypes/responseTypes';
 
-import './ShareMenu.css';
-
 const API_ORIGIN = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '').replace(/\/$/, '');
 
 const getErrorMessage = (err: unknown) =>
@@ -129,21 +127,21 @@ export const ShareMenu = ({ stageRef, backgroundRef }: CanvasProps) => {
   };
 
   return (
-    <Menu aria-label="Share project" className="menu share-menu">
+    <Menu aria-label="Share project">
       <MenuItem onAction={copyLink}>
         <LinkIcon />
         <span>Copy link</span>
       </MenuItem>
       <MenuItem onAction={shareAsEmail}>
-        <EmailIcon className="email-icon" />
+        <EmailIcon />
         <span>Share as email</span>
       </MenuItem>
       <MenuItem onAction={shareOnPinterest}>
-        <PinterestIcon className="pinterest-icon" />
+        <PinterestIcon className="own-color" />
         <span>Share on Pinterest</span>
       </MenuItem>
       <MenuItem onAction={shareOnFacebook}>
-        <FacebookIcon className="facebook-icon" />
+        <FacebookIcon className="own-color" />
         <span>Share on Facebook</span>
       </MenuItem>
     </Menu>
