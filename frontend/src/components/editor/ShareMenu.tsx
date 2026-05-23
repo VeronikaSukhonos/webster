@@ -26,6 +26,7 @@ export const ShareMenu = ({ stageRef, backgroundRef }: CanvasProps) => {
   const imagesCtx = useImages();
   const project = useAppSelector(selectEditor.project);
   const canvas = useAppSelector(selectEditor.canvas);
+  const hasUnsavedChanges = useAppSelector(selectEditor.hasUnsavedChanges);
 
   const getPublicProjectUrl = (projectId: number) =>
     `${window.location.origin}/editor?projectId=${projectId}`;
@@ -43,8 +44,29 @@ export const ShareMenu = ({ stageRef, backgroundRef }: CanvasProps) => {
       return;
     }
 
+    if (project.isPublic && !hasUnsavedChanges) {
+      return project as ProjectResponse;
+    }
+
     try {
       dispatch(setMode(Modes.Load));
+
+      if (!hasUnsavedChanges) {
+        const { data: res } = await projectsApi.updateProject(project.id, {
+          isPublic: true,
+          editDate: project.editDate ?? new Date().toISOString(),
+        });
+        const updatedProject = res.data.project as ProjectResponse;
+
+        dispatch(
+          updateProjectData({
+            isPublic: updatedProject.isPublic,
+            editDate: updatedProject.editDate,
+          }),
+        );
+
+        return updatedProject;
+      }
 
       const preview = await exportFile({
         stageRef,
@@ -59,7 +81,7 @@ export const ShareMenu = ({ stageRef, backgroundRef }: CanvasProps) => {
         images: imagesCtx?.presentFiles,
         preview,
         isPublic: true,
-        editDate: new Date().toISOString(),
+        editDate: project.editDate ?? new Date().toISOString(),
       });
       const updatedProject = res.data.project as ProjectResponse;
 

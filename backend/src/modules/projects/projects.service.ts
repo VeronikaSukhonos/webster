@@ -203,7 +203,7 @@ export class ProjectsService {
         preview: sourceProject.preview,
         width: sourceProject.width,
         height: sourceProject.height,
-        isPublic: sourceProject.isPublic,
+        isPublic: false,
         templateId: sourceProject.templateId,
       }),
     );
