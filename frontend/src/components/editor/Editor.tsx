@@ -18,7 +18,7 @@ import { Toolbar } from '@components/editor/Toolbar';
 import { LayerIcon, QuestionIcon } from '@assets/index';
 
 import { useStageSize } from '@hooks/editor/useStageSize';
-import { useStageZoom, useToolbar } from '@hooks/editor/useToolbar';
+import { useToolbar } from '@hooks/editor/useToolbar';
 import { useImages } from '@hooks/useImages';
 import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
 
@@ -46,9 +46,14 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
   const project = useAppSelector(selectEditor.project);
 
   const { stageSize } = useStageSize();
-  const { stageZoom, setStageZoom, ...zoomProps } = useStageZoom(stageRef);
-  const { selectRectProps, transformerRef, selectGroupRef, ...toolbarHandlers } =
-    useToolbar(stageRef);
+  const {
+    stageZoom,
+    setStageZoom,
+    selectRectProps,
+    transformerRef,
+    selectGroupRef,
+    ...toolbarHandlers
+  } = useToolbar(stageRef);
 
   const imagesCtx = useImages();
   const [backgroundImage] = useImage(
@@ -61,7 +66,6 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
       <Toolbar />
       <Stage
         {...stageSize}
-        {...zoomProps}
         {...toolbarHandlers}
         style={{ background: 'var(--dark-gray)' }}
         draggable={tool === Tools.Grab}

@@ -67,7 +67,7 @@
   gap: 10px;
   padding: 0 10px;
   width: 100%;
-  position: absolute;
+  position: fixed;
   bottom: 10px;
   z-index: 100;
   transition: all ease-in-out 0.3s;

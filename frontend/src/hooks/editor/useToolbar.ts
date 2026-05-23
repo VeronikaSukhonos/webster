@@ -23,16 +23,64 @@ import type { Placement } from '@mytypes/editorTypes';
 Konva.hitOnDragEnabled = true;
 Konva.dragButtons = [0, 2];
 
+const defaultPosition = { x: 0, y: 0 };
+const defaultState = { dist: 0, center: null };
+const initialSelectRect = { x1: 0, y1: 0, x2: 0, y2: 0, visible: false };
+
 export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
   const dispatch = useAppDispatch();
 
   const tool = useAppSelector(selectEditor.tool);
   const selectedIds = useAppSelector(selectEditor.selected);
 
-  const initialSelectRect = { x1: 0, y1: 0, x2: 0, y2: 0, visible: false };
-  const [selectRect, setSelectRect] = useState(initialSelectRect);
+  const [stageScale, setStageScale] = useState(1);
+  const [stagePos, setStagePos] = useState(defaultPosition);
 
+  const [selectRect, setSelectRect] = useState(initialSelectRect);
   const [isDragging, setIsDragging] = useState(false);
+
+  const prevStateRef = useRef<{ dist: number; center: Placement | null }>(defaultState);
+  const hasDragStoppedRef = useRef(false);
+
+  const transformerRef = useRef<Konva.Transformer | null>(null);
+  const selectGroupRef = useRef<Konva.Group | null>(null);
+  const isSelectingRef = useRef(false);
+  const isRightRef = useRef(false);
+
+  useEffect(() => {
+    if (tool !== Tools.Select) dispatch(setSelectedIds([]));
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    if (tool === Tools.Grab || isDragging)
+      stage.container().style.cursor = isDragging
+        ? `url(${grabbingCursor}), grabbing`
+        : `url(${grabCursor}), grab`;
+    else if (tool === Tools.Select)
+      stage.container().style.cursor = `url(${selectCursor}), default`;
+    else if (tool === Tools.Text) stage.container().style.cursor = 'crosshair';
+    else if (tool === Tools.Pencil)
+      stage.container().style.cursor = `url(${pencilCursor}), pointer`;
+    else if (tool === Tools.Marker)
+      stage.container().style.cursor = `url(${markerCursor}), pointer`;
+    else if (tool === Tools.Brush) stage.container().style.cursor = `url(${brushCursor}), pointer`;
+  }, [tool, isDragging]);
+
+  useEffect(() => {
+    if (!stageRef.current || !transformerRef.current) return;
+
+    const selected = selectedIds.filter((id) => id !== 'background');
+
+    if (selected.length === 0) {
+      transformerRef.current.nodes([]);
+    } else if (selected.length === 1) {
+      const element = stageRef.current.findOne(`#${selected[0]}`);
+      if (!element) return;
+      transformerRef.current.nodes([element]);
+    } else if (selectGroupRef.current) {
+      transformerRef.current.nodes([selectGroupRef.current]);
+    }
+  }, [selectedIds]);
 
   const calcSelectBox = useCallback(() => {
     return {
@@ -53,45 +101,71 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     };
   }, [selectRect]);
 
-  const transformerRef = useRef<Konva.Transformer | null>(null);
-  const selectGroupRef = useRef<Konva.Group | null>(null);
-  const isSelectingRef = useRef(false);
-  const isRightRef = useRef(false);
+  const setStageZoom = ({
+    direction = 1,
+    newScale,
+    zoomCenter,
+  }: {
+    direction?: number;
+    newScale?: number;
+    zoomCenter?: Placement;
+  }) => {
+    const stage = stageRef.current;
+    if (!stage) return;
 
-  useEffect(() => {
-    if (tool !== Tools.Select) dispatch(setSelectedIds([]));
-    if (!stageRef.current) return;
+    const prevScale = stage.scaleX();
+    let dx = 0,
+      dy = 0;
 
-    if (tool === Tools.Grab || isDragging)
-      stageRef.current.container().style.cursor = isDragging
-        ? `url(${grabbingCursor}), grabbing`
-        : `url(${grabCursor}), grab`;
-    else if (tool === Tools.Select)
-      stageRef.current.container().style.cursor = `url(${selectCursor}), default`;
-    else if (tool === Tools.Text) stageRef.current.container().style.cursor = 'crosshair';
-    else if (tool === Tools.Pencil)
-      stageRef.current.container().style.cursor = `url(${pencilCursor}), pointer`;
-    else if (tool === Tools.Marker)
-      stageRef.current.container().style.cursor = `url(${markerCursor}), pointer`;
-    else if (tool === Tools.Brush)
-      stageRef.current.container().style.cursor = `url(${brushCursor}), pointer`;
-  }, [tool, isDragging]);
+    if (zoomCenter && newScale && prevStateRef.current.center) {
+      ((dx = zoomCenter.x - prevStateRef.current.center.x),
+        (dy = zoomCenter.y - prevStateRef.current.center.y));
+      newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+    } else {
+      zoomCenter = { x: stage.width() / 2, y: stage.height() / 2 };
 
-  useEffect(() => {
-    if (!stageRef.current || !transformerRef.current) return;
+      if (!newScale) {
+        const p = stage.getPointerPosition();
+        if (!p) return;
 
-    const selected = selectedIds.filter((id) => id !== 'background');
-
-    if (selected.length === 0) {
-      transformerRef.current.nodes([]);
-    } else if (selected.length === 1) {
-      const element = stageRef.current.findOne(`#${selected[0]}`);
-      if (!element) return;
-      transformerRef.current.nodes([element]);
-    } else if (selectGroupRef.current) {
-      transformerRef.current.nodes([selectGroupRef.current]);
+        newScale = Math.max(
+          MIN_SCALE,
+          Math.min(MAX_SCALE, direction > 0 ? prevScale * SCALE_FACTOR : prevScale / SCALE_FACTOR),
+        );
+        zoomCenter = p;
+      }
     }
-  }, [selectedIds]);
+    const pointTo = {
+      x: (zoomCenter.x - stage.x()) / prevScale,
+      y: (zoomCenter.y - stage.y()) / prevScale,
+    };
+    const position = {
+      x: zoomCenter.x - pointTo.x * newScale + dx,
+      y: zoomCenter.y - pointTo.y * newScale + dy,
+    };
+
+    stage.scale({ x: newScale, y: newScale });
+    stage.position(position);
+    setStageScale(newScale);
+    setStagePos(position);
+  };
+
+  const applySelectGroup = () => {
+    if (!stageRef.current) return;
+    const box = calcSelectBox();
+
+    if (box.width > 2 || box.height > 2) {
+      const elements = stageRef.current.find('.element');
+      const ids: string[] = [];
+
+      elements.forEach((el: Konva.Node) => {
+        const id = el.id();
+        if (Konva.Util.haveIntersection(box, el.getClientRect())) ids.push(id);
+      });
+      dispatch(setSelectedIds(ids));
+    }
+    setSelectRect(initialSelectRect);
+  };
 
   const resetSelectGroup = useCallback(() => {
     if (!selectGroupRef.current) return;
@@ -105,6 +179,113 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     dispatch(setSelectedIds(id ? [id] : []));
     resetSelectGroup();
   }, []);
+
+  const onWheel = (e: KonvaEventObject<WheelEvent>) => {
+    e.evt.preventDefault();
+    let direction = e.evt.deltaY > 0 ? -1 : 1;
+    if (e.evt.ctrlKey) direction = -direction;
+    setStageZoom({ direction });
+  };
+
+  const onTouchStart = (e: KonvaEventObject<TouchEvent>) => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const [t1, t2] = e.evt.touches;
+
+    if (t1 && !t2) {
+      if (tool === Tools.Select) {
+        if (e.target.getParent() === transformerRef.current) return;
+
+        if (e.target === stage) {
+          const p = stage.getRelativePointerPosition();
+          if (!p) return;
+          clearPrevSelection();
+          setSelectRect({ x1: p.x, y1: p.y, x2: p.x, y2: p.y, visible: true });
+          isSelectingRef.current = true;
+        } else if (e.target.getParent() !== selectGroupRef.current) {
+          const id = e.target.id();
+          if (id && !selectedIds.includes(id)) clearPrevSelection(id);
+        }
+      } else if (tool === Tools.Text) {
+        const p = stage.getRelativePointerPosition();
+        if (!p) return;
+        setSelectRect({ x1: p.x, y1: p.y, x2: p.x, y2: p.y, visible: true });
+        isSelectingRef.current = true;
+      }
+    }
+  };
+
+  const onTouchMove = (e: KonvaEventObject<TouchEvent>) => {
+    e.evt.preventDefault();
+    const [t1, t2] = e.evt.touches;
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    if (t1 && t2) {
+      if (stage.isDragging()) {
+        stage.stopDrag();
+        hasDragStoppedRef.current = true;
+      }
+
+      const { left, top } = stage.container().getBoundingClientRect();
+      const p1 = { x: t1.clientX - left, y: t1.clientY - top },
+        p2 = { x: t2.clientX - left, y: t2.clientY - top };
+      const zoomCenter = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+
+      if (!prevStateRef.current.center) {
+        prevStateRef.current.center = zoomCenter;
+        return;
+      }
+      const dist = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+
+      if (!prevStateRef.current.dist) {
+        prevStateRef.current.dist = dist;
+        return;
+      }
+
+      setStageZoom({ zoomCenter, newScale: stage.scaleX() * (dist / prevStateRef.current.dist) });
+      prevStateRef.current = { dist, center: zoomCenter };
+      return;
+    }
+
+    if (t1 && !t2) {
+    }
+    if (tool === Tools.Select || tool === Tools.Text) {
+      if (stage.isDragging()) {
+        stage.stopDrag();
+        hasDragStoppedRef.current = true;
+      }
+      if (isSelectingRef.current) {
+        const p = stage.getRelativePointerPosition();
+        if (p) {
+          setSelectRect((rect) => ({ ...rect, x2: p.x, y2: p.y }));
+        }
+      }
+    } else if (tool === Tools.Grab) {
+      if (!stage.isDragging() && hasDragStoppedRef) {
+        stage.startDrag();
+        hasDragStoppedRef.current = false;
+      }
+    }
+  };
+
+  const onTouchEnd = () => {
+    prevStateRef.current = defaultState;
+
+    if (tool === Tools.Select) {
+      if (!isSelectingRef.current) return;
+      isSelectingRef.current = false;
+      applySelectGroup();
+    } else if (tool === Tools.Text) {
+      // TODO
+    }
+  };
+
+  const onDragEnd = () => {
+    hasDragStoppedRef.current = false;
+    if (!stageRef.current) return;
+    setStagePos({ x: stageRef.current.x(), y: stageRef.current.y() });
+  };
 
   const onClick = (e: KonvaEventObject<MouseEvent>) => {
     if (!stageRef.current) return;
@@ -164,31 +345,20 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     if (!stageRef.current) return;
 
     if (e.evt.button === 0) {
-      if (tool === Tools.Select) {
+      if (tool === Tools.Grab) {
+        setIsDragging(false);
+      } else if (tool === Tools.Select) {
         if (!isSelectingRef.current) return;
         isSelectingRef.current = false;
-        const box = calcSelectBox();
-
-        if (box.width > 2 || box.height > 2) {
-          const elements = stageRef.current.find('.element');
-          const ids: string[] = [];
-
-          elements.forEach((el: Konva.Node) => {
-            const id = el.id();
-            if (Konva.Util.haveIntersection(box, el.getClientRect())) ids.push(id);
-          });
-          dispatch(setSelectedIds(ids));
-        }
-        setSelectRect(initialSelectRect);
-      } else if (tool === Tools.Grab) {
-        setIsDragging(false);
+        applySelectGroup();
       } else if (tool === Tools.Text) {
         isSelectingRef.current = false;
         const box = calcSelectBox();
 
         if (box.width > 2 || box.height > 2) {
-          //
+          // TODO draw text rect with this size // probably move this to separate function and use it in touchend
         } else {
+          // draw text react with some default small size
         }
         setSelectRect(initialSelectRect);
       }
@@ -200,139 +370,22 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
   };
 
   return {
+    stagePos,
+    stageZoom: stageScale,
+    setStageZoom,
     selectRectProps,
     transformerRef,
     selectGroupRef,
+    onWheel,
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
+    onDragEnd,
     onClick,
     onMouseDown,
     onMouseMove,
     onMouseUp,
     onMouseLeave: onMouseUp,
     onContextmenu: (e: KonvaEventObject<MouseEvent>) => e.evt.preventDefault(),
-  };
-};
-
-export const useStageZoom = (stageRef: React.RefObject<Konva.Stage | null>) => {
-  const defaultPosition = { x: 0, y: 0 };
-  const defaultState = { dist: 0, center: null };
-
-  const [stageScale, setStageScale] = useState(1);
-  const [stagePos, setStagePos] = useState(defaultPosition);
-
-  const prevState = useRef<{ dist: number; center: Placement | null }>(defaultState);
-  const hasDragStopped = useRef(false);
-
-  const setStageZoom = ({
-    direction = 1,
-    newScale,
-    zoomCenter,
-  }: {
-    direction?: number;
-    newScale?: number;
-    zoomCenter?: Placement;
-  }) => {
-    const stage = stageRef.current;
-    if (!stage) return;
-
-    const prevScale = stage.scaleX();
-    let dx = 0,
-      dy = 0;
-
-    if (zoomCenter && newScale && prevState.current.center) {
-      ((dx = zoomCenter.x - prevState.current.center.x),
-        (dy = zoomCenter.y - prevState.current.center.y));
-      newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
-    } else {
-      zoomCenter = { x: stage.width() / 2, y: stage.height() / 2 };
-
-      if (!newScale) {
-        const p = stage.getPointerPosition();
-        if (!p) return;
-
-        newScale = Math.max(
-          MIN_SCALE,
-          Math.min(MAX_SCALE, direction > 0 ? prevScale * SCALE_FACTOR : prevScale / SCALE_FACTOR),
-        );
-        zoomCenter = p;
-      }
-    }
-    const pointTo = {
-      x: (zoomCenter.x - stage.x()) / prevScale,
-      y: (zoomCenter.y - stage.y()) / prevScale,
-    };
-    const position = {
-      x: zoomCenter.x - pointTo.x * newScale + dx,
-      y: zoomCenter.y - pointTo.y * newScale + dy,
-    };
-
-    stage.scale({ x: newScale, y: newScale });
-    stage.position(position);
-    setStageScale(newScale);
-    setStagePos(position);
-  };
-
-  const onWheel = (e: KonvaEventObject<WheelEvent>) => {
-    e.evt.preventDefault();
-    let direction = e.evt.deltaY > 0 ? -1 : 1;
-    if (e.evt.ctrlKey) direction = -direction;
-    setStageZoom({ direction });
-  };
-
-  const onTouchMove = (e: KonvaEventObject<TouchEvent>) => {
-    e.evt.preventDefault();
-    const [t1, t2] = e.evt.touches;
-    const stage = stageRef.current;
-    if (!stage) return;
-
-    if (t1 && t2) {
-      if (stage.isDragging()) {
-        stage.stopDrag();
-        hasDragStopped.current = true;
-      }
-
-      const { left, top } = stage.container().getBoundingClientRect();
-      const p1 = { x: t1.clientX - left, y: t1.clientY - top },
-        p2 = { x: t2.clientX - left, y: t2.clientY - top };
-      const zoomCenter = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
-
-      if (!prevState.current.center) {
-        prevState.current.center = zoomCenter;
-        return;
-      }
-      const dist = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-
-      if (!prevState.current.dist) {
-        prevState.current.dist = dist;
-        return;
-      }
-
-      setStageZoom({ zoomCenter, newScale: stage.scaleX() * (dist / prevState.current.dist) });
-      prevState.current = { dist, center: zoomCenter };
-    }
-
-    if (t1 && !t2 && !stage.isDragging() && hasDragStopped) {
-      stage.startDrag();
-      hasDragStopped.current = false;
-    }
-  };
-
-  const onTouchEnd = () => {
-    prevState.current = defaultState;
-  };
-
-  const onDragEnd = () => {
-    hasDragStopped.current = false;
-    if (!stageRef.current) return;
-    setStagePos({ x: stageRef.current.x(), y: stageRef.current.y() });
-  };
-
-  return {
-    stageZoom: stageScale,
-    setStageZoom,
-    stagePos,
-    onWheel,
-    onTouchMove,
-    onTouchEnd,
-    onDragEnd,
   };
 };
