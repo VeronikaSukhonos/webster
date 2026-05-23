@@ -1,12 +1,9 @@
-// import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 import ProjectsApi from '@api/projectsApi';
 
 import type { Project, Template } from '@store/editorSlice';
 import { setModal, setProjectToDuplicate } from '@store/uiSlice';
-
-// import { setTemplate } from '@store/editorSlice';
 
 import { MenuItem } from '@components/Menu';
 
@@ -15,28 +12,20 @@ import {
   DeleteIcon,
   DownloadIcon,
   EditIcon,
-  EyeOpenIcon,
   LinkIcon,
   TemplateIcon,
 } from '@assets/index';
 
 import { useAppDispatch, useAuth } from '@hooks/utilHooks';
 
+import { copyLink } from '@utils/utils';
+
 import type { ProjectResponse } from '@mytypes/responseTypes';
 
 export const ProjectMenu = ({ project }: { project: Project }) => {
   const auth = useAuth();
   const dispatch = useAppDispatch();
-  const copyLink = async () => {
-    await navigator.clipboard
-      .writeText(`${window.location.origin}/editor?projectId=${project?.id}`)
-      .then(() => {
-        toast('Project link was copied to the clipboard');
-      })
-      .catch(() => {
-        toast('Something went wrong');
-      });
-  };
+
   const duplicateProject = async function () {
     if (project) {
       ProjectsApi.duplicateProject(project.id as number)
@@ -49,6 +38,7 @@ export const ProjectMenu = ({ project }: { project: Project }) => {
         });
     }
   };
+
   return (
     <>
       <MenuItem>
@@ -87,7 +77,10 @@ export const ProjectMenu = ({ project }: { project: Project }) => {
       )}
       {project.isPublic && (
         <MenuItem>
-          <div className="m-row" onClick={copyLink}>
+          <div
+            className="m-row"
+            onClick={() => copyLink(window.location.href, project?.id as number)}
+          >
             <LinkIcon />
             <span>Copy link</span>
           </div>
@@ -144,22 +137,9 @@ export const ProjectMenu = ({ project }: { project: Project }) => {
 export const TemplateMenu = ({ template }: { template: Template }) => {
   const auth = useAuth();
   const dispatch = useAppDispatch();
-  /*const navigate = useNavigate();
-  const viewTemplate = () => {
-    dispatch(setTemplate({ template: template }));
-    navigate(`/editor?templateId=${template.id}`);
-  };*/
+
   return (
     <>
-      <MenuItem>
-        <div
-          className="m-row"
-          /*onClick={viewTemplate}*/
-        >
-          <EyeOpenIcon />
-          <span>View</span>
-        </div>
-      </MenuItem>
       <MenuItem>
         <div
           className="m-row"

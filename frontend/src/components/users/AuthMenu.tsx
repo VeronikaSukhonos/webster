@@ -6,7 +6,7 @@ import authApi from '@api/authApi';
 import projectsApi from '@api/projectsApi';
 
 import { setAuthUser } from '@store/authSlice';
-import { selectEditor, setMode } from '@store/editorSlice';
+import { selectEditor, setMode, updateProjectData } from '@store/editorSlice';
 import { selectUi } from '@store/uiSlice';
 
 import { MainButton } from '@components/MainButton';
@@ -72,7 +72,13 @@ export const AuthMenu = ({ stageRef, backgroundRef }: Partial<CanvasProps>) => {
               }),
             editDate: new Date().toISOString(),
           })
-          .then(() => {
+          .then(({ data: res }) => {
+            dispatch(
+              updateProjectData({
+                preview: res.data.project.preview,
+                editDate: res.data.project.editDate,
+              }),
+            );
             logout();
           })
           .catch((err) => {
