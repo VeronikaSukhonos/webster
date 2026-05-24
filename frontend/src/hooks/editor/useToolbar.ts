@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
-import { selectEditor, setSelectedIds } from '@store/editorSlice';
+import { addCanvasElement, selectEditor, setSelectedIds } from '@store/editorSlice';
 
 import brushCursor from '@assets/brush.png';
 import grabCursor from '@assets/grab.png';
@@ -14,11 +14,11 @@ import selectCursor from '@assets/select.png';
 
 import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
 
-import { DEFAULT_BORDER_COLOR } from '@utils/constants';
+import { DEFAULT_BORDER_COLOR, DEFAULT_BRUSH_PROPS, DEFAULT_PROPS } from '@utils/constants';
 import { MAX_SCALE, MIN_SCALE, SCALE_FACTOR } from '@utils/constants';
 
 import { Tools } from '@mytypes/editorTypes';
-import type { Placement } from '@mytypes/editorTypes';
+import type { BrushType, Drawing, Placement } from '@mytypes/editorTypes';
 
 Konva.hitOnDragEnabled = true;
 Konva.dragButtons = [0, 2];
@@ -33,6 +33,8 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
   const tool = useAppSelector(selectEditor.tool);
   const selectedIds = useAppSelector(selectEditor.selected);
 
+  const lastUsedStyle = useAppSelector(selectEditor.lastUsedStyle);
+
   const [stageScale, setStageScale] = useState(1);
   const [stagePos, setStagePos] = useState(defaultPosition);
 
@@ -43,9 +45,14 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
   const hasDragStoppedRef = useRef(false);
 
   const transformerRef = useRef<Konva.Transformer | null>(null);
+  const backdropRef = useRef<Konva.Rect | null>(null);
   const selectGroupRef = useRef<Konva.Group | null>(null);
   const isSelectingRef = useRef(false);
   const isRightRef = useRef(false);
+
+  const drawingLine = useRef<Drawing | null>(null);
+  const drawingLineRef = useRef<Konva.Line | null>(null);
+  const isDrawing = useRef(false);
 
   useEffect(() => {
     if (tool !== Tools.Select) dispatch(setSelectedIds([]));
@@ -150,7 +157,35 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     setStagePos(position);
   };
 
-  const applySelectGroup = () => {
+  const resetSelectGroup = useCallback(() => {
+    if (!selectGroupRef.current) return;
+    selectGroupRef.current.position({ x: 0, y: 0 });
+    selectGroupRef.current.scaleX(1);
+    selectGroupRef.current.scaleY(1);
+    selectGroupRef.current.rotation(0);
+  }, [selectGroupRef.current]);
+
+  const startSelectGroup = useCallback(
+    (e: KonvaEventObject<TouchEvent | MouseEvent>) => {
+      if (e.target.getParent() === transformerRef.current) return;
+      const stage = stageRef.current;
+      if (!stage) return;
+
+      if (e.target === stage) {
+        const p = stage.getRelativePointerPosition();
+        if (!p) return;
+        clearPrevSelection();
+        setSelectRect({ x1: p.x, y1: p.y, x2: p.x, y2: p.y, visible: true });
+        isSelectingRef.current = true;
+      } else {
+        const id = e.target.id();
+        if (id && !selectedIds.includes(id)) clearPrevSelection(id);
+      }
+    },
+    [stageRef.current, selectGroupRef.current, transformerRef.current, selectedIds],
+  );
+
+  const applySelectGroup = useCallback(() => {
     if (!stageRef.current) return;
     const box = calcSelectBox();
 
@@ -165,20 +200,70 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
       dispatch(setSelectedIds(ids));
     }
     setSelectRect(initialSelectRect);
-  };
-
-  const resetSelectGroup = useCallback(() => {
-    if (!selectGroupRef.current) return;
-    selectGroupRef.current.position({ x: 0, y: 0 });
-    selectGroupRef.current.scaleX(1);
-    selectGroupRef.current.scaleY(1);
-    selectGroupRef.current.rotation(0);
-  }, [selectGroupRef.current]);
+  }, [calcSelectBox, stageRef.current]);
 
   const clearPrevSelection = useCallback((id?: string) => {
     dispatch(setSelectedIds(id ? [id] : []));
     resetSelectGroup();
   }, []);
+
+  const startDrawing = useCallback(
+    (e: KonvaEventObject<TouchEvent | MouseEvent>) => {
+      const stage = stageRef.current;
+      if (!stage) return;
+
+      const p = stage.getRelativePointerPosition();
+      if (!p) return;
+      const el: Drawing = {
+        id: crypto.randomUUID(),
+        ...DEFAULT_PROPS.drawing,
+        ...DEFAULT_BRUSH_PROPS[tool as BrushType],
+        stroke: lastUsedStyle.stroke,
+        points: [p.x, p.y + (e.evt.type === 'mousedown' ? 16 : 0)],
+      };
+      drawingLine.current = el;
+      drawingLineRef.current?.setAttrs(el);
+      drawingLineRef.current?.getLayer()?.batchDraw();
+      isDrawing.current = true;
+    },
+    [
+      stageRef.current,
+      tool,
+      lastUsedStyle,
+      drawingLine.current,
+      drawingLineRef.current,
+      isDrawing.current,
+    ],
+  );
+
+  const continueDrawing = useCallback(
+    (e: KonvaEventObject<TouchEvent | MouseEvent>) => {
+      const stage = stageRef.current;
+      if (!stage) return;
+
+      const p = stage.getRelativePointerPosition();
+      if (!isDrawing.current || !drawingLine.current || !p) return;
+      e.evt.preventDefault();
+      const tmp = drawingLine.current;
+      drawingLine.current = {
+        ...tmp,
+        points: [...tmp.points, p.x, p.y + (e.evt.type === 'mousedown' ? 16 : 0)],
+      };
+      drawingLineRef.current?.setAttrs(drawingLine.current);
+      drawingLineRef.current?.getLayer()?.batchDraw();
+    },
+    [stageRef.current, drawingLine.current, drawingLineRef.current, isDrawing.current],
+  );
+
+  const finishDrawing = useCallback(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    if (!isDrawing.current || !drawingLine.current) return;
+    isDrawing.current = false;
+    dispatch(addCanvasElement(drawingLine.current));
+    drawingLine.current = null;
+  }, [stageRef.current, drawingLine.current, drawingLineRef.current, isDrawing.current]);
 
   const onWheel = (e: KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
@@ -193,24 +278,21 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     const [t1, t2] = e.evt.touches;
 
     if (t1 && !t2) {
-      if (tool === Tools.Select) {
-        if (e.target.getParent() === transformerRef.current) return;
-
-        if (e.target === stage) {
+      switch (tool) {
+        case Tools.Select:
+          startSelectGroup(e);
+          break;
+        case Tools.Text:
           const p = stage.getRelativePointerPosition();
           if (!p) return;
-          clearPrevSelection();
           setSelectRect({ x1: p.x, y1: p.y, x2: p.x, y2: p.y, visible: true });
           isSelectingRef.current = true;
-        } else if (e.target.getParent() !== selectGroupRef.current) {
-          const id = e.target.id();
-          if (id && !selectedIds.includes(id)) clearPrevSelection(id);
-        }
-      } else if (tool === Tools.Text) {
-        const p = stage.getRelativePointerPosition();
-        if (!p) return;
-        setSelectRect({ x1: p.x, y1: p.y, x2: p.x, y2: p.y, visible: true });
-        isSelectingRef.current = true;
+          break;
+        case Tools.Pencil:
+        case Tools.Marker:
+        case Tools.Brush:
+          startDrawing(e);
+          break;
       }
     }
   };
@@ -249,22 +331,28 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     }
 
     if (t1 && !t2) {
-    }
-    if (tool === Tools.Select || tool === Tools.Text) {
-      if (stage.isDragging()) {
-        stage.stopDrag();
-        hasDragStoppedRef.current = true;
-      }
-      if (isSelectingRef.current) {
-        const p = stage.getRelativePointerPosition();
-        if (p) {
-          setSelectRect((rect) => ({ ...rect, x2: p.x, y2: p.y }));
-        }
-      }
-    } else if (tool === Tools.Grab) {
-      if (!stage.isDragging() && hasDragStoppedRef) {
-        stage.startDrag();
-        hasDragStoppedRef.current = false;
+      switch (tool) {
+        case Tools.Select:
+        case Tools.Text:
+          if (stage.isDragging()) {
+            stage.stopDrag();
+            hasDragStoppedRef.current = true;
+          }
+          if (!isSelectingRef.current) return;
+          const p = stage.getRelativePointerPosition();
+          if (p) setSelectRect((rect) => ({ ...rect, x2: p.x, y2: p.y }));
+          break;
+        case Tools.Grab:
+          if (!stage.isDragging() && hasDragStoppedRef) {
+            stage.startDrag();
+            hasDragStoppedRef.current = false;
+          }
+          break;
+        case Tools.Pencil:
+        case Tools.Marker:
+        case Tools.Brush:
+          continueDrawing(e);
+          break;
       }
     }
   };
@@ -272,12 +360,27 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
   const onTouchEnd = () => {
     prevStateRef.current = defaultState;
 
-    if (tool === Tools.Select) {
-      if (!isSelectingRef.current) return;
-      isSelectingRef.current = false;
-      applySelectGroup();
-    } else if (tool === Tools.Text) {
-      // TODO
+    switch (tool) {
+      case Tools.Select:
+        if (!isSelectingRef.current) return;
+        isSelectingRef.current = false;
+        applySelectGroup();
+        break;
+      case Tools.Text:
+        isSelectingRef.current = false;
+        const box = calcSelectBox();
+
+        if (box.width > 2 || box.height > 2) {
+          // TODO draw text rect with this size // probably move this to separate function and use it in touchend
+        } else {
+          // draw text rect with some default size
+        }
+        setSelectRect(initialSelectRect);
+        break;
+      case Tools.Pencil:
+      case Tools.Marker:
+      case Tools.Brush:
+        finishDrawing();
     }
   };
 
@@ -287,7 +390,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     setStagePos({ x: stageRef.current.x(), y: stageRef.current.y() });
   };
 
-  const onClick = (e: KonvaEventObject<MouseEvent>) => {
+  const onClick = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
     if (!stageRef.current) return;
 
     if (tool === Tools.Select) {
@@ -299,45 +402,54 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
   };
 
   const onMouseDown = (e: KonvaEventObject<MouseEvent>) => {
-    if (!stageRef.current) return;
+    const stage = stageRef.current;
+    if (!stage) return;
 
     if (e.evt.button === 0) {
-      if (tool === Tools.Select) {
-        if (e.target.getParent() === transformerRef.current) return;
-
-        if (e.target === stageRef.current) {
-          const p = stageRef.current.getRelativePointerPosition();
+      switch (tool) {
+        case Tools.Select:
+          startSelectGroup(e);
+          break;
+        case Tools.Grab:
+          setIsDragging(true);
+          break;
+        case Tools.Text:
+          const p = stage.getRelativePointerPosition();
           if (!p) return;
-          clearPrevSelection();
           setSelectRect({ x1: p.x, y1: p.y, x2: p.x, y2: p.y, visible: true });
           isSelectingRef.current = true;
-        } else if (e.target.getParent() !== selectGroupRef.current) {
-          const id = e.target.id();
-          if (id && !selectedIds.includes(id)) clearPrevSelection(id);
-        }
-      } else if (tool === Tools.Grab) {
-        setIsDragging(true);
-      } else if (tool === Tools.Text) {
-        const p = stageRef.current.getRelativePointerPosition();
-        if (!p) return;
-        setSelectRect({ x1: p.x, y1: p.y, x2: p.x, y2: p.y, visible: true });
-        isSelectingRef.current = true;
+          break;
+        case Tools.Pencil:
+        case Tools.Marker:
+        case Tools.Brush:
+          startDrawing(e);
+          break;
       }
     } else if (e.evt.button === 2) {
       isRightRef.current = true;
-      stageRef.current.setDraggable(true);
+      stage.setDraggable(true);
     }
   };
 
-  const onMouseMove = () => {
+  const onMouseMove = (e: KonvaEventObject<MouseEvent>) => {
     if (!stageRef.current) return;
 
     if (isRightRef.current) {
       if (stageRef.current.isDragging()) setIsDragging(true);
-    } else if (tool === Tools.Select || tool === Tools.Text) {
-      if (!isSelectingRef.current) return;
-      const p = stageRef.current.getRelativePointerPosition();
-      if (p) setSelectRect((rect) => ({ ...rect, x2: p.x, y2: p.y }));
+    } else {
+      switch (tool) {
+        case Tools.Select:
+        case Tools.Text:
+          const p = stageRef.current.getRelativePointerPosition();
+          if (!isSelectingRef.current) return;
+          if (p) setSelectRect((rect) => ({ ...rect, x2: p.x, y2: p.y }));
+          break;
+        case Tools.Pencil:
+        case Tools.Marker:
+        case Tools.Brush:
+          continueDrawing(e);
+          break;
+      }
     }
   };
 
@@ -345,27 +457,35 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     if (!stageRef.current) return;
 
     if (e.evt.button === 0) {
-      if (tool === Tools.Grab) {
-        setIsDragging(false);
-      } else if (tool === Tools.Select) {
-        if (!isSelectingRef.current) return;
-        isSelectingRef.current = false;
-        applySelectGroup();
-      } else if (tool === Tools.Text) {
-        isSelectingRef.current = false;
-        const box = calcSelectBox();
+      switch (tool) {
+        case Tools.Select:
+          if (!isSelectingRef.current) return;
+          isSelectingRef.current = false;
+          applySelectGroup();
+          break;
+        case Tools.Grab:
+          setIsDragging(false);
+          break;
+        case Tools.Text:
+          isSelectingRef.current = false;
+          const box = calcSelectBox();
 
-        if (box.width > 2 || box.height > 2) {
-          // TODO draw text rect with this size // probably move this to separate function and use it in touchend
-        } else {
-          // draw text react with some default small size
-        }
-        setSelectRect(initialSelectRect);
+          if (box.width > 2 || box.height > 2) {
+            // TODO draw text rect with this size // probably move this to separate function and use it in touchend
+          } else {
+            // draw text rect with some default size
+          }
+          setSelectRect(initialSelectRect);
+          break;
+        case Tools.Pencil:
+        case Tools.Marker:
+        case Tools.Brush:
+          finishDrawing();
       }
     } else if (e.evt.button === 2) {
       setIsDragging(false);
       isRightRef.current = false;
-      stageRef.current.setDraggable(false);
+      if (tool !== Tools.Grab) stageRef.current.setDraggable(false);
     }
   };
 
@@ -376,12 +496,16 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     selectRectProps,
     transformerRef,
     selectGroupRef,
+    backdropRef,
+    drawingLine,
+    drawingLineRef,
     onWheel,
     onTouchStart,
     onTouchMove,
     onTouchEnd,
     onDragEnd,
     onClick,
+    onTap: onClick,
     onMouseDown,
     onMouseMove,
     onMouseUp,

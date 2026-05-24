@@ -1,14 +1,16 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 
-import { DEFAULT_CANVAS_SIZE } from '@utils/constants';
+import { DEFAULT_CANVAS_SIZE, DEFAULT_FILL_COLOR, DEFAULT_STROKE_COLOR } from '@utils/constants';
 import { initCanvas } from '@utils/editorUtils';
 
 import {
   type Action,
   Actions,
+  type Background,
   type Canvas,
   type CanvasElement,
+  type LastUsedStyle,
   type LeftSheetType,
   type Mode,
   Modes,
@@ -23,8 +25,8 @@ import type { RootState } from './store';
 
 interface History {
   ids: string[];
-  from?: CanvasElement[];
-  to?: CanvasElement[];
+  from?: (CanvasElement | Background)[];
+  to?: (CanvasElement | Background)[];
   action: Action;
 }
 
@@ -51,6 +53,7 @@ interface EditorState {
   selectedIds: string[];
   hasUnsavedChanges: boolean;
   tool: Tool;
+  lastUsedStyle: LastUsedStyle;
   leftSheet: LeftSheet | null;
   rightSheet: RightSheet | null;
 }
@@ -65,6 +68,7 @@ const initialState: EditorState = {
   selectedIds: [],
   hasUnsavedChanges: false,
   tool: Tools.Select,
+  lastUsedStyle: { fill: DEFAULT_FILL_COLOR, stroke: DEFAULT_STROKE_COLOR },
   leftSheet: null,
   rightSheet: null,
 };
@@ -90,6 +94,20 @@ const editorSlice = createSlice({
           from: [from],
           to: [state.canvas.background],
           action: Actions.Resize,
+        },
+      ];
+    },
+    addCanvasElement: (state, action: PayloadAction<CanvasElement>) => {
+      const el = { ...action.payload, order: state.canvas.elements.length };
+      state.canvas.elements = [...state.canvas.elements, el];
+
+      state.history = [
+        ...state.history,
+        {
+          ids: [action.payload.id],
+          from: undefined,
+          to: [el],
+          action: Actions.Add,
         },
       ];
     },
@@ -161,6 +179,7 @@ const editorSlice = createSlice({
 
 export const {
   setCanvasSize,
+  addCanvasElement,
   setHistory,
   setProject,
   setTemplate,
@@ -184,6 +203,7 @@ export const selectEditor = {
   project: (state: RootState) => state.editor.project,
   template: (state: RootState) => state.editor.template,
   mode: (state: RootState) => state.editor.mode,
+  lastUsedStyle: (state: RootState) => state.editor.lastUsedStyle,
   hasUnsavedChanges: (state: RootState) => state.editor.hasUnsavedChanges,
   leftSheet: (state: RootState) => state.editor.leftSheet,
   rightSheet: (state: RootState) => state.editor.rightSheet,

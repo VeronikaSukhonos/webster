@@ -1,7 +1,13 @@
 import { jsPDF } from 'jspdf';
 import Konva from 'konva';
 
-import { ERROR_TYPES, EXPORT_TYPES, MAX_CANVAS_SIZE, MIN_CANVAS_SIZE } from '@utils/constants';
+import {
+  DEFAULT_PROPS,
+  ERROR_TYPES,
+  EXPORT_TYPES,
+  MAX_CANVAS_SIZE,
+  MIN_CANVAS_SIZE,
+} from '@utils/constants';
 
 import type { Background, Canvas, CanvasProps, ImageItem, Size } from '@mytypes/editorTypes';
 import type { ImageResponse } from '@mytypes/responseTypes';
@@ -25,11 +31,10 @@ export const createServerImageItem = (file: ImageResponse): ImageItem => ({
 
 export const initCanvas = (size: Size, image?: ImageItem) => {
   const background: Background = {
-    id: 'background',
-    type: 'background',
+    ...DEFAULT_PROPS.background,
     width: size.width,
     height: size.height,
-    ...(image ? { image: image.id } : { fill: 'transparent' }),
+    ...(image && { image: image.id }),
   };
 
   return {
