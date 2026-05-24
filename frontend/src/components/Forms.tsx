@@ -751,8 +751,9 @@ export const ExportProjectForm = ({
           backgroundRef,
           filename: params.title,
           format: params.format,
-          width: backgroundRef.current.width(),
-          height: backgroundRef.current.height(),
+          width: project.width,
+          height: project.height,
+          preview: false,
         })
           .then((file) => {
             if (file) {

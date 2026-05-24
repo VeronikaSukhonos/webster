@@ -62,6 +62,7 @@ interface ExportFileProps extends CanvasProps {
   format: ExportType;
   width?: number;
   height?: number;
+  preview?: boolean,
 }
 
 export const exportFile = async ({
@@ -71,6 +72,7 @@ export const exportFile = async ({
   format = 'png',
   width,
   height,
+  preview = true,
 }: ExportFileProps) => {
   const stage = stageRef.current;
   const back = backgroundRef.current;
@@ -92,7 +94,7 @@ export const exportFile = async ({
     y,
     width: back.width() * stage.scaleX(),
     height: back.height() * stage.scaleX(),
-    pixelRatio: scale * (format === 'pdf' ? 2 : 1),
+    pixelRatio: scale * (format === 'pdf' ? 2 : 1) / (preview ? 1 : stage.scaleX()),
   });
   if (format === 'pdf') {
     const pdf = new jsPDF('l', 'px', [canvas.width, canvas.height]);
