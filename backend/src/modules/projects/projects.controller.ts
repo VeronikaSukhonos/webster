@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   HttpCode,
   HttpStatus,
   Param,
@@ -46,6 +47,15 @@ interface ProjectMultipartFiles {
 }
 
 const MAX_IMAGE_FILE_SIZE = 10 * 1024 * 1024;
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 const PROJECT_MULTIPART_CREATE_SCHEMA = {
   schema: {
@@ -259,6 +269,50 @@ export class ProjectsController {
       message: 'Fetched project successfully',
       data: { project: await this.projectsService.getOne(id, authId) },
     };
+  }
+
+  @ApiOperation({ summary: 'Project share metadata page' })
+  @ApiParam({ name: 'id', description: 'Public project id', example: 1 })
+  @ApiOkResponse({ description: 'Returned HTML page with Open Graph share metadata' })
+  @ApiNotFoundResponse({ description: 'Project is not found or is private' })
+  @Public()
+  @Get(':id/share')
+  @Header('Content-Type', 'text/html; charset=utf-8')
+  @HttpCode(HttpStatus.OK)
+  async getSharePage(
+    @Param('id', new ParseIntWithMessagePipe('Project is not found', HttpStatus.NOT_FOUND))
+    id: number,
+  ): Promise<string> {
+    const metadata = await this.projectsService.getShareMetadata(id);
+    const title = escapeHtml(`${metadata.title} | SketCherry`);
+    const description = escapeHtml(metadata.description);
+    const imageUrl = escapeHtml(metadata.imageUrl);
+    const projectUrl = escapeHtml(metadata.projectUrl);
+    const shareUrl = escapeHtml(metadata.shareUrl);
+
+    return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${title}</title>
+    <meta name="description" content="${description}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SketCherry" />
+    <meta property="og:title" content="${title}" />
+    <meta property="og:description" content="${description}" />
+    <meta property="og:image" content="${imageUrl}" />
+    <meta property="og:url" content="${shareUrl}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${title}" />
+    <meta name="twitter:description" content="${description}" />
+    <meta name="twitter:image" content="${imageUrl}" />
+    <meta http-equiv="refresh" content="0; url=${projectUrl}" />
+  </head>
+  <body>
+    <p>Opening <a href="${projectUrl}">SketCherry project</a>...</p>
+  </body>
+</html>`;
   }
 
   @ApiOperation({ summary: 'Project creation' })

@@ -12,6 +12,12 @@ export class ResponseInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       map((apiResponse) => {
+        const contentType = res.getHeader('content-type');
+
+        if (typeof contentType === 'string' && contentType.includes('text/html')) {
+          return apiResponse;
+        }
+
         const ar =
           typeof apiResponse === 'object' && apiResponse !== null
             ? (apiResponse as ApiResponse)

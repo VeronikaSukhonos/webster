@@ -29,6 +29,14 @@ import { CloudflareR2Service } from '../cloudflare-r2/cloudflare-r2.service';
 import { DEFAULT_PROJECT_PREVIEW } from '../../common/constants';
 import { DocumentImagesService } from '../document-images/document-images.service';
 
+interface ProjectShareMetadata {
+  title: string;
+  description: string;
+  imageUrl: string;
+  projectUrl: string;
+  shareUrl: string;
+}
+
 @Injectable()
 export class ProjectsService {
   constructor(
@@ -117,6 +125,27 @@ export class ProjectsService {
       content: await this.readProjectDocument(project.file),
       images: await this.documentImagesService.getProjectImages(project.id),
     });
+  }
+
+  async getShareMetadata(id: number): Promise<ProjectShareMetadata> {
+    const project = await this.projectsRepository.findOne({
+      where: { id, isPublic: true },
+      relations: { author: true },
+    });
+
+    if (!project) throw new NotFoundException('Project is not found');
+
+    const appUrl = this.getConfiguredUrl('APP_URL', 'http://localhost:5173');
+    const apiUrl = this.getConfiguredUrl('VITE_API_URL', 'http://localhost:3000/api');
+    const authorName = project.author?.username ? ` by ${project.author.username}` : '';
+
+    return {
+      title: project.title,
+      description: project.description?.trim() || `Check out this SketCherry project${authorName}.`,
+      imageUrl: this.resolveAbsoluteUrl(project.preview || DEFAULT_PROJECT_PREVIEW),
+      projectUrl: `${appUrl}/editor?projectId=${project.id}`,
+      shareUrl: `${apiUrl}/projects/${project.id}/share`,
+    };
   }
 
   async createOne(
@@ -321,6 +350,21 @@ export class ProjectsService {
     }
 
     return { ...project, template: null, templateId: null };
+  }
+
+  private getConfiguredUrl(key: 'APP_URL' | 'VITE_API_URL', fallback: string): string {
+    return (this.configService.get<string>(key) ?? fallback).replace(/\/$/, '');
+  }
+
+  private resolveAbsoluteUrl(url: string): string {
+    if (/^https?:\/\//i.test(url)) return url;
+
+    const apiOrigin = this.getConfiguredUrl('VITE_API_URL', 'http://localhost:3000/api').replace(
+      /\/api$/,
+      '',
+    );
+
+    return new URL(url, apiOrigin).toString();
   }
 
   private async writeProjectDocument(

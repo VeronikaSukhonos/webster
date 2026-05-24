@@ -16,7 +16,8 @@ import { exportFile } from '@utils/editorUtils';
 import { type CanvasProps, Modes } from '@mytypes/editorTypes';
 import type { ProjectResponse } from '@mytypes/responseTypes';
 
-const API_ORIGIN = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '').replace(/\/$/, '');
+const API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '');
+const API_ORIGIN = API_URL?.replace(/\/api\/?$/, '').replace(/\/$/, '');
 
 const getErrorMessage = (err: unknown) =>
   err instanceof Error ? err.message : 'Something went wrong';
@@ -30,6 +31,14 @@ export const ShareMenu = ({ stageRef, backgroundRef }: CanvasProps) => {
 
   const getPublicProjectUrl = (projectId: number) =>
     `${window.location.origin}/editor?projectId=${projectId}`;
+
+  const getProjectShareMetadataUrl = (projectId: number) =>
+    `${API_URL || `${window.location.origin}/api`}/projects/${projectId}/share`;
+
+  const getShareDescription = (shareableProject: ProjectResponse) =>
+    shareableProject.description?.trim()
+      ? `${shareableProject.title}: ${shareableProject.description}`
+      : `Check out my SketCherry project: ${shareableProject.title}`;
 
   const getAbsoluteUrl = (url?: string) => {
     if (!url) return '';
@@ -173,7 +182,7 @@ export const ShareMenu = ({ stageRef, backgroundRef }: CanvasProps) => {
 
   const shareOnFacebook = async () => {
     await openExternalShare((shareableProject) => {
-      const url = encodeURIComponent(getPublicProjectUrl(shareableProject.id));
+      const url = encodeURIComponent(getProjectShareMetadataUrl(shareableProject.id));
 
       return `https://www.facebook.com/sharer/sharer.php?u=${url}`;
     });
@@ -183,7 +192,7 @@ export const ShareMenu = ({ stageRef, backgroundRef }: CanvasProps) => {
     await openExternalShare((shareableProject) => {
       const url = encodeURIComponent(getPublicProjectUrl(shareableProject.id));
       const media = encodeURIComponent(getAbsoluteUrl(shareableProject.preview));
-      const description = encodeURIComponent(shareableProject.title);
+      const description = encodeURIComponent(getShareDescription(shareableProject));
 
       return `https://www.pinterest.com/pin/create/button/?url=${url}&media=${media}&description=${description}`;
     });
