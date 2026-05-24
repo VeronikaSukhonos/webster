@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
+import type Konva from 'konva';
+
 import projectsApi from '@api/projectsApi';
 import templatesApi from '@api/templatesApi';
 
@@ -36,22 +38,31 @@ import { useImages } from '@hooks/useImages';
 import { useAppDispatch, useAppSelector, useAuth } from '@hooks/utilHooks';
 
 import {
+  EXPORT_TYPES,
   MAX_CANVAS_SIZE,
   MIN_CANVAS_SIZE,
   SIZE_TYPES,
   TEMPLATE_TYPES,
   VISIBILITY_TYPES,
 } from '@utils/constants';
-import { createLocalImageItem, getInitCanvasSize, initCanvas } from '@utils/editorUtils';
+import {
+  createLocalImageItem,
+  exportFile,
+  exportFileFromJson,
+  getInitCanvasSize,
+  initCanvas,
+} from '@utils/editorUtils';
 import { copyLink } from '@utils/utils';
 
 import { Modes, type Size } from '@mytypes/editorTypes';
 import {
   type CreateProjectParams,
+  type ExportProjectParams,
   type ProjectSettingsParams,
   type TemplateParams,
   createProjectParams,
   deleteParams,
+  exportProjectParams,
   projectSettingsParams,
   templateParams,
 } from '@mytypes/formParams';
@@ -77,6 +88,11 @@ interface CreateProjectFormProps extends FormTemplateProps {
 
 interface FormDeleteProps extends FormProjectProps, FormTemplateProps {}
 
+interface ExportProjectFormProps extends FormProjectProps {
+  stageRef?: React.RefObject<Konva.Stage | null>;
+  backgroundRef?: React.RefObject<Konva.Rect | null>;
+}
+
 const SIZE_TYPE_OPTIONS = SIZE_TYPES.map((opt) => ({
   value: { width: opt.width, height: opt.height },
   label:
@@ -101,6 +117,11 @@ for (const i of TEMPLATE_TYPES) {
 }
 
 const VISIBILITY_TYPE_OPTIONS = VISIBILITY_TYPES.map((opt) => ({
+  value: opt.value,
+  label: <SelectLabel>{opt.label}</SelectLabel>,
+}));
+
+const EXPORT_TYPE_OPTIONS = EXPORT_TYPES.map((opt) => ({
   value: opt.value,
   label: <SelectLabel>{opt.label}</SelectLabel>,
 }));
@@ -694,13 +715,107 @@ export const DeletionForm = ({
   );
 };
 
-export const ExportProjectForm = (
-  {
-    // setIsOpen,
-    // project,
-    // isLoading,
-    // setIsLoading,
-  }: FormProjectProps,
-) => {
-  return <div>Forms</div>;
+export const ExportProjectForm = ({
+  setIsOpen,
+  project,
+  isLoading,
+  setIsLoading,
+  stageRef,
+  backgroundRef,
+}: ExportProjectFormProps) => {
+  const exportProject = useForm(
+    exportProjectParams,
+    {
+      title: project?.title ?? '',
+      format: EXPORT_TYPE_OPTIONS[0].value,
+    },
+    false,
+  );
+  const [exportType, setExportType] = useState(EXPORT_TYPE_OPTIONS[0].value);
+
+  useEffect(() => {
+    if (exportType) exportProject.setParam({ target: { name: 'format', value: exportType } });
+  }, [exportType]);
+
+  const handleError = (err: any) => {
+    exportProject.setFailure(err);
+    setIsLoading?.(false);
+  };
+
+  const submit = (params: ExportProjectParams) => {
+    if (project) {
+      setIsLoading?.(true);
+      if (stageRef?.current && backgroundRef?.current) {
+        exportFile({
+          stageRef,
+          backgroundRef,
+          filename: params.title,
+          format: params.format,
+          width: backgroundRef.current.width(),
+          height: backgroundRef.current.height(),
+        })
+          .then((file) => {
+            if (file) {
+              const url = URL.createObjectURL(file);
+              const link = document.createElement('a');
+              link.download = file.name || `${params.title}.${params.format}`;
+              link.href = url;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              // toast('Exported project successfully');
+            }
+            setIsLoading?.(false);
+            setIsOpen(false);
+          })
+          .catch(handleError);
+      } else if (project.id) {
+        projectsApi
+          .getProject(project.id)
+          .then(({ data: res }) => {
+            exportFileFromJson({
+              filename: params.title,
+              format: params.format,
+              content: res.data.project.content,
+              images: res.data.project.images,
+            })
+              .then((file) => {
+                if (file) {
+                  const url = URL.createObjectURL(file);
+                  const link = document.createElement('a');
+                  link.download = file.name || `${params.title}.${params.format}`;
+                  link.href = url;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  // toast('Exported project successfully');
+                }
+                setIsLoading?.(false);
+                setIsOpen(false);
+              })
+              .catch(handleError);
+          })
+          .catch(handleError);
+      }
+    }
+  };
+
+  return (
+    <form className="col f-container" onSubmit={exportProject.handleSubmit(submit)}>
+      <TextField label="Title" {...exportProject.setField('title')} required />
+      <SelectField
+        name="format"
+        value={exportType}
+        onChange={(e) => setExportType(e.target.value)}
+        options={EXPORT_TYPE_OPTIONS}
+        label="Format"
+      />
+
+      <Feedback feedback={exportProject.feedback} />
+
+      <MainButton type="submit" disabled={isLoading || exportProject.isLoading} upperText wide>
+        Export
+      </MainButton>
+    </form>
+  );
 };

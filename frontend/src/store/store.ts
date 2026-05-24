@@ -10,6 +10,14 @@ const store = configureStore({
     editor: editorReducer,
     ui: uiReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: ['ui/setModal'],
+        ignoredActionPaths: ['payload.stageRef.current', 'payload.backgroundRef.current'],
+        ignoredPaths: ['ui.modal.stageRef.current', 'ui.modal.backgroundRef.current'],
+      },
+    }),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

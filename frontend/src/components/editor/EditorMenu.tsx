@@ -1,5 +1,7 @@
 import { toast } from 'react-toastify';
 
+import type Konva from 'konva';
+
 import ProjectsApi from '@api/projectsApi';
 
 import type { Project, Template } from '@store/editorSlice';
@@ -22,7 +24,15 @@ import { copyLink } from '@utils/utils';
 
 import type { ProjectResponse } from '@mytypes/responseTypes';
 
-export const ProjectMenu = ({ project }: { project: Project }) => {
+export const ProjectMenu = ({
+  project,
+  stageRef,
+  backgroundRef,
+}: {
+  project: Project;
+  stageRef?: React.RefObject<Konva.Stage | null>;
+  backgroundRef?: React.RefObject<Konva.Rect | null>;
+}) => {
   const auth = useAuth();
   const dispatch = useAppDispatch();
 
@@ -49,6 +59,8 @@ export const ProjectMenu = ({ project }: { project: Project }) => {
               setModal({
                 type: 'exportProject',
                 project: project as Omit<ProjectResponse, 'file' | 'images' | 'content'>,
+                stageRef,
+                backgroundRef,
               }),
             )
           }

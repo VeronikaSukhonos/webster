@@ -1,3 +1,6 @@
+import { jsPDF } from 'jspdf';
+import Konva from 'konva';
+
 import { ERROR_TYPES, EXPORT_TYPES, MAX_CANVAS_SIZE, MIN_CANVAS_SIZE } from '@utils/constants';
 
 import type { Background, Canvas, CanvasProps, ImageItem, Size } from '@mytypes/editorTypes';
@@ -82,21 +85,146 @@ export const exportFile = async ({
   excluded.forEach((n) => n.hide());
 
   const { x, y } = back.getAbsolutePosition();
+  const mimeType =
+    format === 'jpg' ? 'image/jpeg' : format === 'pdf' ? 'application/pdf' : `image/${format}`;
   const canvas = stage.toCanvas({
     x,
     y,
     width: back.width() * stage.scaleX(),
     height: back.height() * stage.scaleX(),
-    pixelRatio: scale,
+    pixelRatio: scale * (format === 'pdf' ? 2 : 1),
   });
-  const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
-  const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(ERROR_TYPES.SWW))), mimeType);
+  if (format === 'pdf') {
+    const pdf = new jsPDF('l', 'px', [canvas.width, canvas.height]);
+    pdf.addImage(canvas, 0, 0, canvas.width, canvas.height);
+    const blob = pdf.output('blob');
+
+    excluded.forEach((n) => n.show());
+
+    return new File([blob], filename, {
+      type: mimeType,
+    });
+  } else {
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(ERROR_TYPES.SWW))), mimeType);
+    });
+
+    excluded.forEach((n) => n.show());
+
+    return new File([blob], filename, {
+      type: mimeType,
+    });
+  }
+};
+
+interface ExportFileFromJsonProps {
+  filename: string;
+  format: ExportType;
+  content?: Canvas;
+  images?: ImageResponse[];
+  selectedIds?: string[];
+}
+
+export const exportFileFromJson = async ({
+  filename,
+  format = 'png',
+  content,
+  images,
+  selectedIds = [],
+}: ExportFileFromJsonProps) => {
+  if (!content) {
+    return;
+  }
+
+  const container = document.createElement('div');
+  const stage = new Konva.Stage({
+    container,
+    width: content.background.width,
+    height: content.background.height,
   });
 
-  excluded.forEach((n) => n.show());
+  const bgLayer = new Konva.Layer();
+  stage.add(bgLayer);
+  const bgGroup = new Konva.Group();
+  bgLayer.add(bgGroup);
+  // if (format === 'jpg') {
+  //   const fillerBgLayer = new Konva.Rect({
+  //     width: content.background.width,
+  //     height: content.background.height,
+  //     fill: "white",
+  //     stroke: "white",
+  //   });
+  //   bgGroup.add(fillerBgLayer);
+  // }
+  const bg = new Konva.Rect(content.background);
+  bgGroup.add(bg);
+  if (content.background.image && images) {
+    await new Promise((resolve, reject) => {
+      Konva.Image.fromURL(
+        images[images.findIndex((image) => image.id === content.background.image)].url,
+        (bgImage) => {
+          const image = bgImage.image();
+          bgImage.setAttrs({
+            width: content.background.width,
+            height: content.background.height,
+            image,
+          });
+          bgGroup.add(bgImage);
+          resolve(bgImage);
+        },
+        () => {
+          reject(new Error(ERROR_TYPES.SWW));
+        },
+      );
+    });
+  }
 
-  return new File([blob], filename, {
-    type: mimeType,
-  });
+  const elementsLayer = new Konva.Layer();
+  stage.add(elementsLayer);
+  content.elements
+    .filter((el) => !selectedIds.includes(el.id))
+    .forEach((el) => {
+      const element = new Konva.Rect(el);
+      elementsLayer.add(element);
+    });
+
+  const actionLayer = new Konva.Layer();
+  stage.add(actionLayer);
+  content.elements
+    .filter((el) => selectedIds.includes(el.id))
+    .forEach((el) => {
+      const element = new Konva.Rect(el);
+      actionLayer.add(element);
+    });
+
+  const mimeType =
+    format === 'jpg' ? 'image/jpeg' : format === 'pdf' ? 'application/pdf' : `image/${format}`;
+  if (format === 'pdf') {
+    const pdf = new jsPDF('l', 'px', [content.background.width, content.background.height]);
+    pdf.addImage(
+      stage.toDataURL({ pixelRatio: 2 }),
+      0,
+      0,
+      content.background.width,
+      content.background.height,
+    );
+    const blob = pdf.output('blob');
+
+    stage.destroy();
+
+    return new File([blob], filename, {
+      type: mimeType,
+    });
+  } else {
+    const canvas = stage.toCanvas();
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(ERROR_TYPES.SWW))), mimeType);
+    });
+
+    stage.destroy();
+
+    return new File([blob], filename, {
+      type: mimeType,
+    });
+  }
 };

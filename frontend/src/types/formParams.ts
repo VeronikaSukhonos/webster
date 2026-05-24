@@ -143,4 +143,4 @@ export const exportProjectParams = z.object({
     'invalid format',
   ),
 });
-export type exportProjectParams = z.infer<typeof exportProjectParams>;
+export type ExportProjectParams = z.infer<typeof exportProjectParams>;

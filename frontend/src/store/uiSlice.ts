@@ -1,5 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
+import { castDraft } from 'immer';
+import type Konva from 'konva';
 
 import type { ProjectResponse, TemplateResponse } from '@mytypes/responseTypes';
 
@@ -17,6 +19,8 @@ interface Modal {
     | 'exportProject';
   project?: Omit<ProjectResponse, 'content' | 'file' | 'images'>;
   template?: Omit<TemplateResponse, 'content' | 'file' | 'images'>;
+  stageRef?: React.RefObject<Konva.Stage | null>;
+  backgroundRef?: React.RefObject<Konva.Rect | null>;
 }
 
 interface UiState {
@@ -47,7 +51,7 @@ const uiSlice = createSlice({
       state.isAvatarLoading = action.payload;
     },
     setModal: (state, action: PayloadAction<Modal | null>) => {
-      state.modal = action.payload ?? null;
+      state.modal = castDraft(action.payload ?? null);
     },
     setProjectToUpdate: (state, action: PayloadAction<number | null>) => {
       state.projectToUpdate = action.payload ?? null;

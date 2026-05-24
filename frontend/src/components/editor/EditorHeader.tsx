@@ -127,7 +127,9 @@ export const EditorHeader = ({ stageRef, backgroundRef }: CanvasProps) => {
             }
           >
             <Menu>
-              {project && <ProjectMenu project={project} />}
+              {project && (
+                <ProjectMenu project={project} stageRef={stageRef} backgroundRef={backgroundRef} />
+              )}
               {template && <TemplateMenu template={template} />}
             </Menu>
           </Popover>

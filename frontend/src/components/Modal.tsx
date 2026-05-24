@@ -168,6 +168,8 @@ export const ModalWrapper = () => {
               isLoading={isLoading}
               setIsLoading={setIsLoading}
               setIsOpen={setIsOpen}
+              stageRef={modal.stageRef}
+              backgroundRef={modal.backgroundRef}
             />
           ),
         });
