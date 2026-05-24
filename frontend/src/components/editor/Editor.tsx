@@ -1,16 +1,15 @@
-import { Group, Image, Layer, Rect, Stage, Transformer } from 'react-konva';
-import { useImage } from 'react-konva-utils';
-
-// import { Html } from 'react-konva-utils';
+import { useEffect, useMemo } from 'react';
+import { Group, Layer, Line, Rect, Stage, Transformer } from 'react-konva';
 
 import clsx from 'clsx';
+import type { KonvaEventObject } from 'konva/lib/Node';
 
 import { selectEditor, setCanvasSize, setLeftSheet } from '@store/editorSlice';
 
 import { NumberField, SizeField } from '@components/InputFields';
 import { MainButton } from '@components/MainButton';
 import { Popover } from '@components/Menu';
-import { CanvasElementShape } from '@components/editor/CanvasElementShape';
+import { CanvasElementShape, CanvasImage } from '@components/editor/CanvasElementShape';
 import { LayersPanel } from '@components/editor/LeftPanels';
 import { Sheet } from '@components/editor/Sheet';
 import { Toolbar } from '@components/editor/Toolbar';
@@ -19,7 +18,6 @@ import { LayerIcon, QuestionIcon } from '@assets/index';
 
 import { useStageSize } from '@hooks/editor/useStageSize';
 import { useToolbar } from '@hooks/editor/useToolbar';
-import { useImages } from '@hooks/useImages';
 import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
 
 import {
@@ -52,14 +50,23 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
     selectRectProps,
     transformerRef,
     selectGroupRef,
+    backdropRef,
+    drawingLine,
+    drawingLineRef,
     ...toolbarHandlers
   } = useToolbar(stageRef);
 
-  const imagesCtx = useImages();
-  const [backgroundImage] = useImage(
-    imagesCtx?.findImageItem(canvas.background.image ?? '')?.url ?? '',
-    'anonymous',
-  );
+  useEffect(() => {
+    if (!backdropRef.current) return;
+    if (!selectGroupRef.current || selectedIds.length === 0) {
+      backdropRef.current.setAttrs({ x: 0, y: 0, width: 0, height: 0 });
+      return;
+    }
+    const { x, y, width, height } = selectGroupRef.current.getClientRect({
+      relativeTo: selectGroupRef.current,
+    });
+    backdropRef.current.setAttrs({ x, y, width, height });
+  }, [selectedIds, canvas.elements]);
 
   return (
     <div className="work-area">
@@ -71,10 +78,10 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
         draggable={tool === Tools.Grab}
         ref={stageRef}
       >
-        <Layer id="background-layer">
+        <Layer id="background-layer" listening={mode !== Modes.View}>
           <Group
-            x={(stageSize.width - canvas.background.width) / 2}
-            y={(stageSize.height - canvas.background.height) / 2}
+            x={useMemo(() => (stageSize.width - canvas.background.width) / 2, [])}
+            y={useMemo(() => (stageSize.height - canvas.background.height) / 2, [])}
           >
             <Rect
               name="excluded"
@@ -88,14 +95,7 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
               shadowColor="#341734"
             />
             <Rect {...canvas.background} ref={backgroundRef} />
-            {canvas.background.image && (
-              <Image
-                width={canvas.background.width}
-                height={canvas.background.height}
-                image={backgroundImage}
-                listening={false}
-              />
-            )}
+            {canvas.background.image && <CanvasImage el={canvas.background} />}
             {selectedIds.includes('background') && (
               <Rect
                 x={-3}
@@ -109,19 +109,43 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
             )}
           </Group>
         </Layer>
-        <Layer id="elements-layer">
+        <Layer id="elements-layer" listening={mode !== Modes.View}>
           {canvas.elements
             .filter((el) => !selectedIds.includes(el.id))
             .map((el) => (
               <CanvasElementShape key={el.id} element={el} />
             ))}
         </Layer>
-        <Layer id="actions-layer">
-          <Group ref={selectGroupRef} draggable={tool === Tools.Select}>
+        <Layer id="drawing-layer" listening={false}>
+          <Line {...drawingLine} ref={drawingLineRef} />
+        </Layer>
+        <Layer id="act-layer" listening={mode !== Modes.View}>
+          <Rect
+            ref={backdropRef}
+            fill="red"
+            listening={selectedIds.length > 0}
+            draggable
+            onDragStart={(e: KonvaEventObject<DragEvent>) => {
+              e.target.stopDrag();
+              if (selectGroupRef.current) selectGroupRef.current.startDrag();
+            }}
+          />
+          <Group
+            id="select-group"
+            ref={selectGroupRef}
+            draggable={tool === Tools.Select}
+            onDragMove={() => {
+              if (!selectGroupRef.current || !backdropRef.current) return;
+              const { x, y } = selectGroupRef.current.getClientRect({
+                relativeTo: selectGroupRef.current,
+              });
+              backdropRef.current.setAttrs({ x, y });
+            }}
+          >
             {canvas.elements
               .filter((el) => selectedIds.includes(el.id))
               .map((el) => (
-                <CanvasElementShape key={el.id} element={el} draggable={false} />
+                <CanvasElementShape key={el.id} element={el} preventDrag />
               ))}
           </Group>
           <Transformer

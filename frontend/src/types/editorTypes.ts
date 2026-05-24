@@ -1,36 +1,30 @@
 import type Konva from 'konva';
 
-export interface Size {
-  width: number; // 0 and more
-  height: number; // 0 and more
-}
-
 export interface Placement {
   x: number; // any
   y: number; // any
 }
 
-export interface CanvasElementPlacement extends Placement {
-  draggable: boolean;
+export interface Size {
+  width: number; // 0 and more
+  height: number; // 0 and more
 }
 
 export interface BaseStyle {
   fill: string; // color
   stroke: string; // color
   strokeWidth: number; // 0 and more
-  dash: [dash: number, gap: number];
-
-  opacity: number; // 0 to 1
   visible: boolean;
-
-  shadowColor: string; // color
-  shadowOffset: Placement; // any
-  shadowBlur: number; // 0 and more
-  shadowOpacity: number; // 0 to 1
-
+  opacity: number; // 0 to 1
   rotation: number; // 0 to 360
   scaleX: number; // 1 or -1 for horizontal flip // to change size of path
   scaleY: number; // 1 or -1 for vertical flip // to change size of path
+
+  dash?: [dash: number, gap: number];
+  shadowColor?: string; // color
+  shadowOffset?: Placement; // any
+  shadowBlur?: number; // 0 and more
+  shadowOpacity?: number; // 0 to 1
 }
 
 export const CanvasElements = {
@@ -52,17 +46,18 @@ export const CanvasElements = {
 
 export type CanvasElementType = (typeof CanvasElements)[keyof typeof CanvasElements];
 
-export interface BaseCanvasElement extends CanvasElementPlacement, BaseStyle {
+export interface Background extends Size {
   id: string;
-  type: CanvasElementType;
-  name: 'element';
-  order: number;
+  type: typeof CanvasElements.Background;
+  fill: string;
+  image?: string; // id
 }
 
-export interface Background extends Pick<BaseCanvasElement, 'id' | 'type'>, Size {
-  type: typeof CanvasElements.Background;
-  fill?: string;
-  image?: string;
+export interface BaseCanvasElement extends Placement, BaseStyle {
+  id: string;
+  type: CanvasElementType;
+  order?: number;
+  locked?: boolean;
 }
 
 export interface Rectangle extends BaseCanvasElement, Size {
@@ -102,20 +97,20 @@ export interface Arrow extends Omit<Line, 'type'> {
 
 export const LineCaps = {
   Round: 'round',
-  Butt: 'butt',
+  Square: 'square',
 } as const;
 
 export type LineCap = (typeof LineCaps)[keyof typeof LineCaps];
 
 export const LineJoins = {
   Round: 'round',
-  Miter: 'miter',
+  Bevel: 'bevel',
 } as const;
 
 export type LineJoin = (typeof LineJoins)[keyof typeof LineJoins];
 
 export interface BrokenLine extends BaseCanvasElement {
-  type: typeof CanvasElements.Line;
+  type: typeof CanvasElements.BrokenLine;
   points: number[];
   tension: number; // 0 to 1
   closed: boolean;
@@ -167,25 +162,18 @@ export const BrushTypes = {
 
 export type BrushType = (typeof BrushTypes)[keyof typeof BrushTypes];
 
-export interface BaseDraw extends BaseCanvasElement {
+export interface Drawing extends BaseCanvasElement {
   type: typeof CanvasElements.Drawing;
-  points: number[];
   brushType: BrushType;
+  points: number[];
+  tension: number;
   lineCap: LineCap;
-  lineJoin: typeof LineJoins.Round;
-}
-
-export interface Pencil extends BaseDraw {
-  brushType: typeof BrushTypes.Pencil;
-}
-
-export interface Marker extends BaseDraw {
-  brushType: typeof BrushTypes.Marker;
+  lineJoin: LineJoin;
 }
 
 export interface Image extends Omit<Rectangle, 'type'> {
   type: typeof CanvasElements.Image;
-  image: Image;
+  image: string; // id
 }
 
 export interface Group extends BaseCanvasElement, Size {
@@ -194,7 +182,6 @@ export interface Group extends BaseCanvasElement, Size {
 }
 
 export type CanvasElement =
-  | Background
   | Rectangle
   | Ellipse
   | Polygon
@@ -205,7 +192,7 @@ export type CanvasElement =
   | Tooltip
   | Path
   | Text
-  | BaseDraw
+  | Drawing
   | Image
   | Group;
 
@@ -226,6 +213,11 @@ export interface Canvas {
 export interface CanvasProps {
   stageRef: React.RefObject<Konva.Stage | null>;
   backgroundRef: React.RefObject<Konva.Rect | null>;
+}
+
+export interface LastUsedStyle {
+  fill: string;
+  stroke: string;
 }
 
 export const Modes = {

@@ -325,7 +325,7 @@ export const SizeField = ({
         {...props}
         {...(innerLabels && { label: 'Width' })}
         {...(innerPlaceholders && { placeholder: 'width' })}
-        {...wrapperProps}
+        {...{ ...wrapperProps, error: '' }}
       />
       <div className="size-field-lock" style={{ fontWeight: 'bold' }}>
         x
@@ -336,7 +336,7 @@ export const SizeField = ({
         {...props}
         {...(innerLabels && { label: 'Height' })}
         {...(innerPlaceholders && { placeholder: 'height' })}
-        {...wrapperProps}
+        {...{ ...wrapperProps, error: '' }}
       />
       <div className="size-field-lock">
         <div className="no-wrap" style={{ fontWeight: 'bold' }}>
