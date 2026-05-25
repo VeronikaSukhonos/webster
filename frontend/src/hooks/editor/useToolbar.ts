@@ -96,11 +96,11 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     return {
       fill: '#b1cbf480',
       stroke: DEFAULT_BORDER_COLOR,
-      strokeWidth: 1,
+      strokeWidth: 1 / stageScale,
       ...calcSelectBox(),
       visible: selectRect.visible,
     };
-  }, [selectRect]);
+  }, [selectRect, stageScale]);
 
   const setStageZoom = ({
     direction = 1,
@@ -218,7 +218,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
         points: [p.x, p.y + (e.evt.type === 'mousedown' ? 16 : 0)],
       };
       drawingLine.current = el;
-      drawingLineRef.current?.setAttrs(el);
+      drawingLineRef.current?.setAttrs({ ...el, visible: true });
       isDrawing.current = true;
     },
     [
@@ -257,6 +257,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     isDrawing.current = false;
     dispatch(addCanvasElement(drawingLine.current));
     drawingLine.current = null;
+    drawingLineRef.current?.visible(false);
   }, [stageRef.current, drawingLine.current, drawingLineRef.current, isDrawing.current]);
 
   const onWheel = (e: KonvaEventObject<WheelEvent>) => {
@@ -497,7 +498,6 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     selectGroupRef,
     selectGroupPos,
     setSelectGroupPos,
-    drawingLine,
     drawingLineRef,
     // onTransformEnd,
     onWheel,

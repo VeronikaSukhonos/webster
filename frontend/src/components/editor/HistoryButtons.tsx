@@ -1,6 +1,7 @@
 import { selectEditor, setRightSheet } from '@store/editorSlice';
 
 import { MainButton } from '@components/MainButton';
+import { HistoryPanel } from '@components/editor/RightPanels';
 import { Sheet } from '@components/editor/Sheet';
 
 import { ArrowIcon, HistoryIcon } from '@assets/index';
@@ -42,7 +43,7 @@ export const HistoryButtons = () => {
         }}
         side="right"
       >
-        <HistoryIcon />
+        <HistoryPanel />
       </Sheet>
       <div className="row mini-gap" style={{ width: 'max-content' }}>
         <MainButton onClick={undo} {...buttonProps} aria-label="Undo" tooltipId="undo">

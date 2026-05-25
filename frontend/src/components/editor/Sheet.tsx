@@ -3,6 +3,7 @@ import {
   Popover as RACPopover,
   type PopoverProps as RACPopoverProps,
 } from 'react-aria-components/Popover';
+import { useResizeDetector } from 'react-resize-detector';
 
 import clsx from 'clsx';
 
@@ -34,6 +35,7 @@ export const Sheet = ({
   shouldCloseOnOutside,
   ...props
 }: SheetProps) => {
+  const { height, ref } = useResizeDetector<HTMLButtonElement>({ handleWidth: false });
   const anchorRef = useRef<HTMLDivElement | null>(null);
 
   return (
@@ -49,6 +51,7 @@ export const Sheet = ({
         shouldCloseOnInteractOutside={() => !!shouldCloseOnOutside}
         isNonModal
         triggerRef={anchorRef}
+        ref={ref}
         {...props}
       >
         <div className="col mini-gap">
@@ -58,7 +61,10 @@ export const Sheet = ({
               <ChevronIcon />
             </MainButton>
           </div>
-          <div className="scroll" style={{ overflowY: 'auto' }}>
+          <div
+            className="sheet-content scroll"
+            style={{ height: (height ?? 200) - 32, overflowY: 'auto' }}
+          >
             {children}
           </div>
         </div>

@@ -80,7 +80,6 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
     selectGroupRef,
     selectGroupPos,
     setSelectGroupPos,
-    drawingLine,
     drawingLineRef,
     // onTransformEnd,
     ...toolbarHandlers
@@ -105,9 +104,7 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isEditableTarget(e.target)) return;
 
-      const selectedElementIds = selectedIds.filter((id) =>
-        canvas.elements.some((el) => el.id === id),
-      );
+      const selectedElementIds = selectedIds.filter((id) => id !== 'background');
       const selectedElements = canvas.elements.filter((el) => selectedElementIds.includes(el.id));
 
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c' && selectedElements.length) {
@@ -222,7 +219,7 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
             ))}
         </Layer>
         <Layer id="drawing-layer" listening={false}>
-          <Line {...drawingLine} ref={drawingLineRef} />
+          <Line ref={drawingLineRef} />
         </Layer>
         <Layer id="act-layer" listening={mode !== Modes.View}>
           <Rect
@@ -353,12 +350,12 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
                       style={{
                         color: 'var(--accent-font-color)',
                         fontWeight: 'bold',
-                        width: '50px',
+                        width: '65px',
                       }}
                     >
                       {s.sc}
                     </div>
-                    –<div>{s.explanation}</div>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>{s.explanation}</div>
                   </div>
                 ))}
               </div>
