@@ -59,6 +59,41 @@
   margin: 0 7px;
 }
 
+.drawing-settings {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-left: var(--main-border);
+  padding-left: 8px;
+}
+
+.drawing-settings .field {
+  width: 88px;
+}
+
+.drawing-settings input[type='number'] {
+  min-width: 28px;
+}
+
+.color-input {
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  border: var(--main-border);
+  border-radius: 9px;
+  padding: 2px;
+}
+
+.color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.color-input::-webkit-color-swatch {
+  border: none;
+  border-radius: 6px;
+}
+
 .bottom-toolbar {
   display: flex;
   justify-content: space-between;

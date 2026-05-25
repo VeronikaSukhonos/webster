@@ -15,6 +15,7 @@ export { default as DotsIcon } from './dots.svg?react';
 export { default as DownloadIcon } from './download.svg?react';
 export { default as EditIcon } from './edit.svg?react';
 export { default as EmailIcon } from './email.svg?react';
+export { default as EraserIcon } from './eraser.svg?react';
 export { default as EyeCloseIcon } from './eye-close.svg?react';
 export { default as EyeOpenIcon } from './eye-open.svg?react';
 export { default as FacebookIcon } from './facebook.svg?react';

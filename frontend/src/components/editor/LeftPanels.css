@@ -1,0 +1,93 @@
+.layers-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 230px;
+}
+
+.layers-empty {
+  color: var(--dark-blue);
+  font-weight: 700;
+  text-align: center;
+}
+
+.layer-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--transparent-gray);
+  border: var(--main-border);
+  border-radius: 12px;
+  padding: 5px;
+  transition:
+    background ease-in-out 0.2s,
+    border ease-in-out 0.2s;
+}
+
+.layer-item.selected {
+  background: var(--transparent-light-blue);
+  border: var(--active-border);
+}
+
+.layer-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  color: var(--main-font-color);
+  text-align: left;
+}
+
+.layer-icon {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.layer-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.layer-icon svg path,
+.layer-actions svg path {
+  fill: var(--accent-font-color);
+}
+
+.layer-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.layer-title,
+.layer-subtitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layer-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.layer-subtitle {
+  color: var(--dark-blue);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.layer-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.layer-actions .main-button {
+  width: 25px;
+  height: 25px;
+  padding: 2px;
+}

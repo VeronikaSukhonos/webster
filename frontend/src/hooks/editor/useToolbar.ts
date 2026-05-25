@@ -67,7 +67,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     else if (tool === Tools.Select)
       stage.container().style.cursor = `url(${selectCursor}), default`;
     else if (tool === Tools.Text) stage.container().style.cursor = 'crosshair';
-    else if (tool === Tools.Pencil)
+    else if (tool === Tools.Pencil || tool === Tools.Eraser)
       stage.container().style.cursor = `url(${pencilCursor}), pointer`;
     else if (tool === Tools.Marker)
       stage.container().style.cursor = `url(${markerCursor}), pointer`;
@@ -210,11 +210,15 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
 
       const p = stage.getRelativePointerPosition();
       if (!p) return;
+      const brushProps = DEFAULT_BRUSH_PROPS[tool as BrushType];
+      const isEraser = tool === Tools.Eraser;
       const el: Drawing = {
         id: crypto.randomUUID(),
         ...DEFAULT_PROPS.drawing,
-        ...DEFAULT_BRUSH_PROPS[tool as BrushType],
-        stroke: lastUsedStyle.stroke,
+        ...brushProps,
+        stroke: isEraser ? '#000000' : lastUsedStyle.stroke,
+        strokeWidth: lastUsedStyle.strokeWidth || brushProps.strokeWidth,
+        globalCompositeOperation: isEraser ? 'destination-out' : 'source-over',
         points: [p.x, p.y + (e.evt.type === 'mousedown' ? 16 : 0)],
       };
       drawingLine.current = el;
@@ -257,7 +261,12 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     isDrawing.current = false;
     dispatch(addCanvasElement(drawingLine.current));
     drawingLine.current = null;
-    drawingLineRef.current?.visible(false);
+    drawingLineRef.current?.setAttrs({
+      points: [],
+      visible: false,
+      globalCompositeOperation: 'source-over',
+    });
+    drawingLineRef.current?.getLayer()?.batchDraw();
   }, [stageRef.current, drawingLine.current, drawingLineRef.current, isDrawing.current]);
 
   const onWheel = (e: KonvaEventObject<WheelEvent>) => {
@@ -286,6 +295,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
         case Tools.Pencil:
         case Tools.Marker:
         case Tools.Brush:
+        case Tools.Eraser:
           startDrawing(e);
           break;
       }
@@ -346,6 +356,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
         case Tools.Pencil:
         case Tools.Marker:
         case Tools.Brush:
+        case Tools.Eraser:
           continueDrawing(e);
           break;
       }
@@ -375,6 +386,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
       case Tools.Pencil:
       case Tools.Marker:
       case Tools.Brush:
+      case Tools.Eraser:
         finishDrawing();
     }
   };
@@ -417,6 +429,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
         case Tools.Pencil:
         case Tools.Marker:
         case Tools.Brush:
+        case Tools.Eraser:
           startDrawing(e);
           break;
       }
@@ -442,6 +455,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
         case Tools.Pencil:
         case Tools.Marker:
         case Tools.Brush:
+        case Tools.Eraser:
           continueDrawing(e);
           break;
       }
@@ -475,6 +489,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
         case Tools.Pencil:
         case Tools.Marker:
         case Tools.Brush:
+        case Tools.Eraser:
           finishDrawing();
       }
     } else if (e.evt.button === 2) {

@@ -2,15 +2,16 @@ import { useMemo, useState } from 'react';
 
 import clsx from 'clsx';
 
-import { selectEditor, setLeftSheet, setTool } from '@store/editorSlice';
+import { selectEditor, setLeftSheet, setTool, updateLastUsedStyle } from '@store/editorSlice';
 
-import { SelectField, SelectLabel } from '@components/InputFields';
+import { NumberField, SelectField, SelectLabel } from '@components/InputFields';
 import { MainButton } from '@components/MainButton';
-import { ShapesPanel } from '@components/editor/LeftPanels';
+import { ImagesPanel, ShapesPanel } from '@components/editor/LeftPanels';
 import { Sheet } from '@components/editor/Sheet';
 
 import {
   BrushIcon,
+  EraserIcon,
   GrabIcon,
   ImageIcon,
   MarkerIcon,
@@ -27,14 +28,20 @@ import { capitalize } from '@utils/utils';
 
 import { BrushTypes, LeftSheets, Modes, Tools } from '@mytypes/editorTypes';
 
-export const Toolbar = () => {
+interface ToolbarProps {
+  onUploadImage?: () => void;
+}
+
+export const Toolbar = ({ onUploadImage }: ToolbarProps) => {
   const dispatch = useAppDispatch();
 
   const tool = useAppSelector(selectEditor.tool);
   const leftSheet = useAppSelector(selectEditor.leftSheet);
   const mode = useAppSelector(selectEditor.mode);
+  const lastUsedStyle = useAppSelector(selectEditor.lastUsedStyle);
 
   const [lastDrawingTool, setLastDrawingTool] = useState(BrushTypes.Pencil);
+  const isDrawingTool = Object.values(BrushTypes).some((brushTool) => brushTool === tool);
   const drawingTools = useMemo(
     () => ({
       [BrushTypes.Pencil]: (
@@ -45,6 +52,9 @@ export const Toolbar = () => {
       ),
       [BrushTypes.Brush]: (
         <BrushIcon className={clsx('own-color', tool === Tools.Brush && 'active')} />
+      ),
+      [BrushTypes.Eraser]: (
+        <EraserIcon className={clsx('own-color', tool === Tools.Eraser && 'active')} />
       ),
     }),
     [tool],
@@ -122,9 +132,44 @@ export const Toolbar = () => {
                   </SelectLabel>
                 ),
               },
+              {
+                value: BrushTypes.Eraser,
+                label: (
+                  <SelectLabel>
+                    <EraserIcon />
+                    {capitalize(BrushTypes.Eraser)}
+                  </SelectLabel>
+                ),
+              },
             ]}
             onlyChevron
           />
+          {isDrawingTool && (
+            <div className="drawing-settings">
+              {tool !== Tools.Eraser && (
+                <input
+                  className="color-input"
+                  type="color"
+                  value={lastUsedStyle.stroke}
+                  aria-label="Brush color"
+                  onChange={(e) => dispatch(updateLastUsedStyle({ stroke: e.target.value }))}
+                />
+              )}
+              <NumberField
+                name="brush-width"
+                value={lastUsedStyle.strokeWidth}
+                min={1}
+                max={80}
+                step={1}
+                onChange={(e) =>
+                  dispatch(updateLastUsedStyle({ strokeWidth: e.target.value ?? 1 }))
+                }
+                noStyle
+                mini
+                buttons
+              />
+            </div>
+          )}
           <div className="ver-hr"></div>
           <Sheet
             title={LeftSheets.Shapes}
@@ -156,10 +201,10 @@ export const Toolbar = () => {
               ),
             }}
           >
-            <ShapesPanel />
+            <ImagesPanel />
           </Sheet>
 
-          <MainButton color="transparent" tooltipId="upload">
+          <MainButton color="transparent" tooltipId="upload" onClick={onUploadImage}>
             <UploadIcon className={clsx('own-color')} />
           </MainButton>
         </>

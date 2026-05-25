@@ -57,6 +57,7 @@ export interface BaseCanvasElement extends Placement, BaseStyle {
   id: string;
   type: CanvasElementType;
   order?: number;
+  createdAt?: string;
   locked?: boolean;
 }
 
@@ -158,6 +159,7 @@ export const BrushTypes = {
   Pencil: 'pencil',
   Marker: 'marker',
   Brush: 'brush',
+  Eraser: 'eraser',
 } as const;
 
 export type BrushType = (typeof BrushTypes)[keyof typeof BrushTypes];
@@ -169,6 +171,7 @@ export interface Drawing extends BaseCanvasElement {
   tension: number;
   lineCap: LineCap;
   lineJoin: LineJoin;
+  globalCompositeOperation?: GlobalCompositeOperation;
 }
 
 export interface Image extends Omit<Rectangle, 'type'> {
@@ -218,6 +221,7 @@ export interface CanvasProps {
 export interface LastUsedStyle {
   fill: string;
   stroke: string;
+  strokeWidth: number;
 }
 
 export const Modes = {
@@ -236,6 +240,7 @@ export const Actions = {
   Stroke: 'changed stroke of',
   Shadow: 'changed shadow of',
   Font: 'changed font of',
+  Layer: 'changed layer of',
   Delete: 'deleted',
 } as const;
 

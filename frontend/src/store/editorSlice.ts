@@ -68,10 +68,19 @@ const initialState: EditorState = {
   selectedIds: [],
   hasUnsavedChanges: false,
   tool: Tools.Select,
-  lastUsedStyle: { fill: DEFAULT_FILL_COLOR, stroke: DEFAULT_STROKE_COLOR },
+  lastUsedStyle: { fill: DEFAULT_FILL_COLOR, stroke: DEFAULT_STROKE_COLOR, strokeWidth: 2 },
   leftSheet: null,
   rightSheet: null,
 };
+
+const normalizeElementOrder = (elements: CanvasElement[]) =>
+  elements.map((el, index) => ({ ...el, order: index }));
+
+const prepareCanvasElement = (element: CanvasElement, order: number): CanvasElement => ({
+  ...element,
+  createdAt: element.createdAt ?? new Date().toISOString(),
+  order,
+});
 
 const editorSlice = createSlice({
   name: 'editor',
@@ -98,7 +107,7 @@ const editorSlice = createSlice({
       ];
     },
     addCanvasElement: (state, action: PayloadAction<CanvasElement>) => {
-      const el = { ...action.payload, order: state.canvas.elements.length };
+      const el = prepareCanvasElement(action.payload, state.canvas.elements.length);
 
       state.canvas.elements = [...state.canvas.elements, el];
 
@@ -115,10 +124,9 @@ const editorSlice = createSlice({
     addCanvasElements: (state, action: PayloadAction<CanvasElement[]>) => {
       if (!action.payload.length) return;
 
-      const elements = action.payload.map((el, index) => ({
-        ...el,
-        order: state.canvas.elements.length + index,
-      }));
+      const elements = action.payload.map((el, index) =>
+        prepareCanvasElement(el, state.canvas.elements.length + index),
+      );
 
       state.canvas.elements = [...state.canvas.elements, ...elements];
       state.selectedIds = elements.map((el) => el.id);
@@ -144,7 +152,9 @@ const editorSlice = createSlice({
         current(state.canvas.elements).filter((el) => ids.includes(el.id)),
       );
 
-      state.canvas.elements = state.canvas.elements.filter((el) => !ids.includes(el.id));
+      state.canvas.elements = normalizeElementOrder(
+        state.canvas.elements.filter((el) => !ids.includes(el.id)),
+      );
       state.selectedIds = [];
 
       state.history = [
@@ -190,6 +200,77 @@ const editorSlice = createSlice({
         },
       ];
     },
+    translateCanvasElements: (
+      state,
+      action: PayloadAction<{ ids: string[]; moveX: number; moveY: number }>,
+    ) => {
+      const { ids, moveX, moveY } = action.payload;
+      if ((!moveX && !moveY) || !ids.length) return;
+
+      state.canvas.elements = state.canvas.elements.map((el) =>
+        ids.includes(el.id) ? { ...el, x: el.x + moveX, y: el.y + moveY } : el,
+      );
+    },
+    commitCanvasElementsMove: (
+      state,
+      action: PayloadAction<{ ids: string[]; from: CanvasElement[]; to: CanvasElement[] }>,
+    ) => {
+      const { ids, from, to } = action.payload;
+      if (!ids.length || !from.length || !to.length) return;
+
+      state.history = [
+        ...state.history,
+        {
+          ids,
+          from,
+          to,
+          action: Actions.Move,
+        },
+      ];
+    },
+    reorderCanvasElements: (
+      state,
+      action: PayloadAction<{ ids?: string[]; direction: 'backward' | 'forward' }>,
+    ) => {
+      const ids = action.payload.ids?.length ? action.payload.ids : state.selectedIds;
+      const selectedIds = ids.filter((id) => state.canvas.elements.some((el) => el.id === id));
+
+      if (!selectedIds.length) return;
+
+      const from = structuredClone(current(state.canvas.elements));
+      const movingIds = new Set(selectedIds);
+      const reordered = [...current(state.canvas.elements)];
+
+      if (action.payload.direction === 'forward') {
+        for (let i = reordered.length - 2; i >= 0; i--) {
+          if (!movingIds.has(reordered[i].id) || movingIds.has(reordered[i + 1].id)) continue;
+
+          [reordered[i], reordered[i + 1]] = [reordered[i + 1], reordered[i]];
+        }
+      } else {
+        for (let i = 1; i < reordered.length; i++) {
+          if (!movingIds.has(reordered[i].id) || movingIds.has(reordered[i - 1].id)) continue;
+
+          [reordered[i - 1], reordered[i]] = [reordered[i], reordered[i - 1]];
+        }
+      }
+
+      const to = normalizeElementOrder(reordered);
+      const hasChanged = from.some((el, index) => el.id !== to[index]?.id);
+
+      if (!hasChanged) return;
+
+      state.canvas.elements = to;
+      state.history = [
+        ...state.history,
+        {
+          ids: selectedIds,
+          from,
+          to,
+          action: Actions.Layer,
+        },
+      ];
+    },
     setHistory: (state, action: PayloadAction<History[]>) => {
       state.history = action.payload;
     },
@@ -232,6 +313,9 @@ const editorSlice = createSlice({
     updateTemplateData: (state, action: PayloadAction<Partial<Template>>) => {
       if (state.template) state.template = { ...state.template, ...action.payload };
     },
+    updateLastUsedStyle: (state, action: PayloadAction<Partial<LastUsedStyle>>) => {
+      state.lastUsedStyle = { ...state.lastUsedStyle, ...action.payload };
+    },
     setTool: (state, action: PayloadAction<Tool>) => {
       state.tool = state.tool === action.payload ? Tools.Select : action.payload;
     },
@@ -262,6 +346,9 @@ export const {
   addCanvasElements,
   deleteCanvasElements,
   moveCanvasElements,
+  translateCanvasElements,
+  commitCanvasElementsMove,
+  reorderCanvasElements,
   setHistory,
   setProject,
   setTemplate,
@@ -269,6 +356,7 @@ export const {
   setHasUnsavedChanges,
   updateProjectData,
   updateTemplateData,
+  updateLastUsedStyle,
   setTool,
   setSelectedIds,
   setLeftSheet,

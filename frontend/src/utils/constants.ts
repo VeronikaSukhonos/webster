@@ -172,6 +172,16 @@ export const DEFAULT_BRUSH_PROPS = {
     tension: 0.5,
     shadowBlur: 3,
   },
+  [BrushTypes.Eraser]: {
+    brushType: BrushTypes.Eraser,
+    lineCap: LineCaps.Round,
+    lineJoin: LineJoins.Round,
+    strokeWidth: 18,
+    opacity: 1,
+    tension: 0.5,
+    shadowBlur: 0,
+    globalCompositeOperation: 'destination-out' as GlobalCompositeOperation,
+  },
 };
 
 export const SIZE_TYPES = [

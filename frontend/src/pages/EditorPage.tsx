@@ -221,7 +221,7 @@ const EditorPage = () => {
     <>
       <EditorHeader stageRef={stageRef} backgroundRef={backgroundRef} />
       <main className="full-screen">
-        <Editor stageRef={stageRef} backgroundRef={backgroundRef} />
+        <Editor stageRef={stageRef} backgroundRef={backgroundRef} onSave={saveProject} />
       </main>
       <div
         style={{
