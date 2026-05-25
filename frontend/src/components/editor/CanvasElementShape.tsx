@@ -2,14 +2,11 @@ import { useMemo } from 'react';
 import { Image, Line, Rect } from 'react-konva';
 import { useImage } from 'react-konva-utils';
 
-import { selectEditor } from '@store/editorSlice';
-
 import { useImages } from '@hooks/useImages';
-import { useAppSelector } from '@hooks/utilHooks';
 
 import { DEFAULT_BORDER_COLOR } from '@utils/constants';
 
-import { type CanvasElement, CanvasElements, Tools } from '@mytypes/editorTypes';
+import { type CanvasElement, CanvasElements } from '@mytypes/editorTypes';
 
 interface CanvasImageProps {
   el: any;
@@ -48,19 +45,13 @@ interface CanvasElementShapeProps {
   preventDrag?: boolean;
 }
 
-export const CanvasElementShape = ({
-  element: el,
-  preventDrag = false,
-}: CanvasElementShapeProps) => {
+export const CanvasElementShape = ({ element: el }: CanvasElementShapeProps) => {
   // const dispatch = useAppDispatch();
 
-  const tool = useAppSelector(selectEditor.tool);
+  // const tool = useAppSelector(selectEditor.tool);
   // const selectedIds = useAppSelector(selectEditor.selected);
 
-  const baseProps = {
-    name: 'element',
-    draggable: preventDrag ? false : el.locked ? false : tool === Tools.Select,
-  };
+  const baseProps = { name: 'element' };
 
   switch (el.type) {
     case CanvasElements.Drawing:

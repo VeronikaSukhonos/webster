@@ -152,6 +152,7 @@ export const DEFAULT_BRUSH_PROPS = {
     strokeWidth: 2,
     opacity: 1,
     tension: 0.5,
+    shadowBlur: 0,
   },
   [BrushTypes.Marker]: {
     brushType: BrushTypes.Marker,
@@ -160,6 +161,7 @@ export const DEFAULT_BRUSH_PROPS = {
     strokeWidth: 16,
     opacity: 0.35,
     tension: 0.4,
+    shadowBlur: 0,
   },
   [BrushTypes.Brush]: {
     brushType: BrushTypes.Brush,

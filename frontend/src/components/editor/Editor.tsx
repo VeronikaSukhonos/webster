@@ -4,7 +4,7 @@ import { Group, Layer, Line, Rect, Stage, Transformer } from 'react-konva';
 import clsx from 'clsx';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
-import { selectEditor, setCanvasSize, setLeftSheet } from '@store/editorSlice';
+import { moveCanvasElements, selectEditor, setCanvasSize, setLeftSheet } from '@store/editorSlice';
 
 import { NumberField, SizeField } from '@components/InputFields';
 import { MainButton } from '@components/MainButton';
@@ -49,10 +49,13 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
     setStageZoom,
     selectRectProps,
     transformerRef,
-    selectGroupRef,
     backdropRef,
+    selectGroupRef,
+    selectGroupPos,
+    setSelectGroupPos,
     drawingLine,
     drawingLineRef,
+    // onTransformEnd,
     ...toolbarHandlers
   } = useToolbar(stageRef);
 
@@ -66,6 +69,7 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
       relativeTo: selectGroupRef.current,
     });
     backdropRef.current.setAttrs({ x, y, width, height });
+    selectGroupRef.current.position(selectGroupPos);
   }, [selectedIds, canvas.elements]);
 
   return (
@@ -134,6 +138,9 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
             id="select-group"
             ref={selectGroupRef}
             draggable={tool === Tools.Select}
+            onDragStart={(e: KonvaEventObject<DragEvent>) => {
+              setSelectGroupPos({ x: e.target.x(), y: e.target.y() });
+            }}
             onDragMove={() => {
               if (!selectGroupRef.current || !backdropRef.current) return;
               const { x, y } = selectGroupRef.current.getClientRect({
@@ -141,14 +148,23 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
               });
               backdropRef.current.setAttrs({ x, y });
             }}
+            onDragEnd={(e: KonvaEventObject<DragEvent>) => {
+              if (!stageRef.current) return;
+              const moveX = e.target.x() - selectGroupPos.x,
+                moveY = e.target.y() - selectGroupPos.x;
+
+              if (!moveX && !moveY) return;
+              dispatch(moveCanvasElements({ moveX, moveY }));
+            }}
           >
             {canvas.elements
               .filter((el) => selectedIds.includes(el.id))
               .map((el) => (
-                <CanvasElementShape key={el.id} element={el} preventDrag />
+                <CanvasElementShape key={el.id} element={el} />
               ))}
           </Group>
           <Transformer
+            name="excluded"
             ref={transformerRef}
             boundBoxFunc={(o, n) => (n.width < 1 || n.height < 1 ? o : n)}
             borderStroke={DEFAULT_BORDER_COLOR}
@@ -158,6 +174,7 @@ export const Editor = ({ stageRef, backgroundRef }: CanvasProps) => {
             anchorStrokeWidth={2}
             anchorSize={10}
             anchorCornerRadius={20}
+            // onTransformEnd={onTransformEnd}
           />
           <Rect {...selectRectProps} />
         </Layer>

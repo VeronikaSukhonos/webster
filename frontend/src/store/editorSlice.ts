@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, current } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 
 import { DEFAULT_CANVAS_SIZE, DEFAULT_FILL_COLOR, DEFAULT_STROKE_COLOR } from '@utils/constants';
@@ -99,6 +99,7 @@ const editorSlice = createSlice({
     },
     addCanvasElement: (state, action: PayloadAction<CanvasElement>) => {
       const el = { ...action.payload, order: state.canvas.elements.length };
+
       state.canvas.elements = [...state.canvas.elements, el];
 
       state.history = [
@@ -108,6 +109,51 @@ const editorSlice = createSlice({
           from: undefined,
           to: [el],
           action: Actions.Add,
+        },
+      ];
+    },
+    deleteCanvasElements: (state, _action: PayloadAction<undefined>) => {
+      const ids = [...state.selectedIds];
+      const from = structuredClone(
+        current(state.canvas.elements).filter((el) => ids.includes(el.id)),
+      );
+
+      state.canvas.elements = state.canvas.elements.filter((el) => !ids.includes(el.id));
+      state.selectedIds = [];
+
+      state.history = [
+        ...state.history,
+        {
+          ids,
+          from,
+          to: undefined,
+          action: Actions.Delete,
+        },
+      ];
+    },
+    moveCanvasElements: (state, action: PayloadAction<{ moveX: number; moveY: number }>) => {
+      const { moveX, moveY } = action.payload;
+      const ids = state.selectedIds;
+      const from = structuredClone(
+        current(state.canvas.elements).filter((el) => ids.includes(el.id)),
+      );
+      const to: typeof from = [];
+
+      state.canvas.elements = state.canvas.elements.map((el) => {
+        if (ids.includes(el.id)) {
+          const updated = { ...el, x: el.x + moveX, y: el.y + moveY };
+          to.push(updated);
+          return updated;
+        } else return el;
+      });
+
+      state.history = [
+        ...state.history,
+        {
+          ids,
+          from,
+          to,
+          action: Actions.Move,
         },
       ];
     },
@@ -180,6 +226,8 @@ const editorSlice = createSlice({
 export const {
   setCanvasSize,
   addCanvasElement,
+  deleteCanvasElements,
+  moveCanvasElements,
   setHistory,
   setProject,
   setTemplate,

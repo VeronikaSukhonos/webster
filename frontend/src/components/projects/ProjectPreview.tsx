@@ -29,9 +29,9 @@ export const ProjectPreview = ({ project, template }: ProjectPreviewProps) => {
       <div className="project-preview">
         <div className="image-and-size">
           <img
-            src={
+            src={`${
               project ? project.preview || DEFAULT_PREVIEW : template?.preview || DEFAULT_PREVIEW
-            }
+            }?t=${new Date()}`}
             alt={
               project
                 ? `Project ${project.title}'s preview`

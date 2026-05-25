@@ -37,15 +37,16 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
 
   const [stageScale, setStageScale] = useState(1);
   const [stagePos, setStagePos] = useState(defaultPosition);
-
-  const [selectRect, setSelectRect] = useState(initialSelectRect);
   const [isDragging, setIsDragging] = useState(false);
+  const [selectGroupPos, setSelectGroupPos] = useState(defaultPosition);
 
   const prevStateRef = useRef<{ dist: number; center: Placement | null }>(defaultState);
   const hasDragStoppedRef = useRef(false);
 
   const transformerRef = useRef<Konva.Transformer | null>(null);
   const backdropRef = useRef<Konva.Rect | null>(null);
+  const [selectRect, setSelectRect] = useState(initialSelectRect);
+  // const selectRectRef = useRef<Konva.Rect | null>(null);
   const selectGroupRef = useRef<Konva.Group | null>(null);
   const isSelectingRef = useRef(false);
   const isRightRef = useRef(false);
@@ -78,15 +79,8 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
 
     const selected = selectedIds.filter((id) => id !== 'background');
 
-    if (selected.length === 0) {
-      transformerRef.current.nodes([]);
-    } else if (selected.length === 1) {
-      const element = stageRef.current.findOne(`#${selected[0]}`);
-      if (!element) return;
-      transformerRef.current.nodes([element]);
-    } else if (selectGroupRef.current) {
-      transformerRef.current.nodes([selectGroupRef.current]);
-    }
+    if (selected.length === 0) transformerRef.current.nodes([]);
+    else if (selectGroupRef.current) transformerRef.current.nodes([selectGroupRef.current]);
   }, [selectedIds]);
 
   const calcSelectBox = useCallback(() => {
@@ -159,11 +153,17 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
 
   const resetSelectGroup = useCallback(() => {
     if (!selectGroupRef.current) return;
-    selectGroupRef.current.position({ x: 0, y: 0 });
+    selectGroupRef.current.position(defaultPosition);
     selectGroupRef.current.scaleX(1);
     selectGroupRef.current.scaleY(1);
     selectGroupRef.current.rotation(0);
+    setSelectGroupPos(defaultPosition);
   }, [selectGroupRef.current]);
+
+  const clearPrevSelection = useCallback((id?: string) => {
+    dispatch(setSelectedIds(id ? [id] : []));
+    resetSelectGroup();
+  }, []);
 
   const startSelectGroup = useCallback(
     (e: KonvaEventObject<TouchEvent | MouseEvent>) => {
@@ -171,7 +171,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
       const stage = stageRef.current;
       if (!stage) return;
 
-      if (e.target === stage) {
+      if (e.target === stage || e.target.id() === 'background') {
         const p = stage.getRelativePointerPosition();
         if (!p) return;
         clearPrevSelection();
@@ -190,22 +190,18 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     const box = calcSelectBox();
 
     if (box.width > 2 || box.height > 2) {
+      const stage = stageRef.current;
       const elements = stageRef.current.find('.element');
       const ids: string[] = [];
 
       elements.forEach((el: Konva.Node) => {
         const id = el.id();
-        if (Konva.Util.haveIntersection(box, el.getClientRect())) ids.push(id);
+        if (Konva.Util.haveIntersection(box, el.getClientRect({ relativeTo: stage }))) ids.push(id);
       });
       dispatch(setSelectedIds(ids));
     }
     setSelectRect(initialSelectRect);
   }, [calcSelectBox, stageRef.current]);
-
-  const clearPrevSelection = useCallback((id?: string) => {
-    dispatch(setSelectedIds(id ? [id] : []));
-    resetSelectGroup();
-  }, []);
 
   const startDrawing = useCallback(
     (e: KonvaEventObject<TouchEvent | MouseEvent>) => {
@@ -223,7 +219,6 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
       };
       drawingLine.current = el;
       drawingLineRef.current?.setAttrs(el);
-      drawingLineRef.current?.getLayer()?.batchDraw();
       isDrawing.current = true;
     },
     [
@@ -247,10 +242,9 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
       const tmp = drawingLine.current;
       drawingLine.current = {
         ...tmp,
-        points: [...tmp.points, p.x, p.y + (e.evt.type === 'mousedown' ? 16 : 0)],
+        points: [...tmp.points, p.x, p.y + (e.evt.type === 'mousemove' ? 16 : 0)],
       };
       drawingLineRef.current?.setAttrs(drawingLine.current);
-      drawingLineRef.current?.getLayer()?.batchDraw();
     },
     [stageRef.current, drawingLine.current, drawingLineRef.current, isDrawing.current],
   );
@@ -489,16 +483,23 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     }
   };
 
+  // const onTransformEnd = (e) => {
+
+  // };
+
   return {
     stagePos,
     stageZoom: stageScale,
     setStageZoom,
     selectRectProps,
     transformerRef,
-    selectGroupRef,
     backdropRef,
+    selectGroupRef,
+    selectGroupPos,
+    setSelectGroupPos,
     drawingLine,
     drawingLineRef,
+    // onTransformEnd,
     onWheel,
     onTouchStart,
     onTouchMove,
