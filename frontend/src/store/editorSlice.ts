@@ -112,8 +112,34 @@ const editorSlice = createSlice({
         },
       ];
     },
+    addCanvasElements: (state, action: PayloadAction<CanvasElement[]>) => {
+      if (!action.payload.length) return;
+
+      const elements = action.payload.map((el, index) => ({
+        ...el,
+        order: state.canvas.elements.length + index,
+      }));
+
+      state.canvas.elements = [...state.canvas.elements, ...elements];
+      state.selectedIds = elements.map((el) => el.id);
+
+      state.history = [
+        ...state.history,
+        {
+          ids: elements.map((el) => el.id),
+          from: undefined,
+          to: elements,
+          action: Actions.Add,
+        },
+      ];
+    },
     deleteCanvasElements: (state, _action: PayloadAction<undefined>) => {
-      const ids = [...state.selectedIds];
+      const ids = current(state.canvas.elements)
+        .filter((el) => state.selectedIds.includes(el.id))
+        .map((el) => el.id);
+
+      if (!ids.length) return;
+
       const from = structuredClone(
         current(state.canvas.elements).filter((el) => ids.includes(el.id)),
       );
@@ -133,7 +159,14 @@ const editorSlice = createSlice({
     },
     moveCanvasElements: (state, action: PayloadAction<{ moveX: number; moveY: number }>) => {
       const { moveX, moveY } = action.payload;
-      const ids = state.selectedIds;
+      if (!moveX && !moveY) return;
+
+      const ids = current(state.canvas.elements)
+        .filter((el) => state.selectedIds.includes(el.id))
+        .map((el) => el.id);
+
+      if (!ids.length) return;
+
       const from = structuredClone(
         current(state.canvas.elements).filter((el) => ids.includes(el.id)),
       );
@@ -226,6 +259,7 @@ const editorSlice = createSlice({
 export const {
   setCanvasSize,
   addCanvasElement,
+  addCanvasElements,
   deleteCanvasElements,
   moveCanvasElements,
   setHistory,
