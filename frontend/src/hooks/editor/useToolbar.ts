@@ -27,6 +27,10 @@ const defaultPosition = { x: 0, y: 0 };
 const defaultState = { dist: 0, center: null };
 const initialSelectRect = { x1: 0, y1: 0, x2: 0, y2: 0, visible: false };
 
+const getDrawingPreviewAttrs = (drawing: Drawing) => {
+  return { ...drawing, visible: true };
+};
+
 export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
   const dispatch = useAppDispatch();
 
@@ -38,6 +42,12 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
   const [stageScale, setStageScale] = useState(1);
   const [stagePos, setStagePos] = useState(defaultPosition);
   const [isDragging, setIsDragging] = useState(false);
+  const [eraserCursor, setEraserCursor] = useState({
+    x: 0,
+    y: 0,
+    diameter: 0,
+    visible: false,
+  });
   const [selectGroupPos, setSelectGroupPos] = useState(defaultPosition);
 
   const prevStateRef = useRef<{ dist: number; center: Placement | null }>(defaultState);
@@ -55,24 +65,59 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
   const drawingLineRef = useRef<Konva.Line | null>(null);
   const isDrawing = useRef(false);
 
+  const hideEraserCursor = useCallback(() => {
+    setEraserCursor((cursor) => (cursor.visible ? { ...cursor, visible: false } : cursor));
+  }, []);
+
   useEffect(() => {
     if (tool !== Tools.Select) dispatch(setSelectedIds([]));
     const stage = stageRef.current;
     if (!stage) return;
+    const container = stage.container();
 
     if (tool === Tools.Grab || isDragging)
-      stage.container().style.cursor = isDragging
+      container.style.cursor = isDragging
         ? `url(${grabbingCursor}), grabbing`
         : `url(${grabCursor}), grab`;
-    else if (tool === Tools.Select)
-      stage.container().style.cursor = `url(${selectCursor}), default`;
-    else if (tool === Tools.Text) stage.container().style.cursor = 'crosshair';
-    else if (tool === Tools.Pencil || tool === Tools.Eraser)
-      stage.container().style.cursor = `url(${pencilCursor}), pointer`;
-    else if (tool === Tools.Marker)
-      stage.container().style.cursor = `url(${markerCursor}), pointer`;
-    else if (tool === Tools.Brush) stage.container().style.cursor = `url(${brushCursor}), pointer`;
+    else if (tool === Tools.Select) container.style.cursor = `url(${selectCursor}), default`;
+    else if (tool === Tools.Text) container.style.cursor = 'crosshair';
+    else if (tool === Tools.Pencil) container.style.cursor = `url(${pencilCursor}), pointer`;
+    else if (tool === Tools.Eraser) container.style.cursor = 'none';
+    else if (tool === Tools.Marker) container.style.cursor = `url(${markerCursor}), pointer`;
+    else if (tool === Tools.Brush) container.style.cursor = `url(${brushCursor}), pointer`;
+
+    container.classList.toggle('eraser-stage-active', tool === Tools.Eraser);
   }, [tool, isDragging]);
+
+  useEffect(() => {
+    if (tool !== Tools.Eraser) hideEraserCursor();
+  }, [tool, hideEraserCursor]);
+
+  useEffect(() => {
+    return () => {
+      const stage = stageRef.current;
+      if (stage) {
+        stage.container().style.cursor = '';
+        stage.container().classList.remove('eraser-stage-active');
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const container = stage.container();
+    container.addEventListener('mouseleave', hideEraserCursor);
+    container.addEventListener('pointercancel', hideEraserCursor);
+    window.addEventListener('blur', hideEraserCursor);
+
+    return () => {
+      container.removeEventListener('mouseleave', hideEraserCursor);
+      container.removeEventListener('pointercancel', hideEraserCursor);
+      window.removeEventListener('blur', hideEraserCursor);
+    };
+  }, [stageRef.current, hideEraserCursor]);
 
   useEffect(() => {
     if (!stageRef.current || !transformerRef.current) return;
@@ -203,6 +248,30 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     setSelectRect(initialSelectRect);
   }, [calcSelectBox, stageRef.current]);
 
+  const updateEraserCursor = useCallback(
+    (evt?: MouseEvent | TouchEvent) => {
+      const stage = stageRef.current;
+      if (!stage || tool !== Tools.Eraser) return;
+
+      const touch = evt && 'touches' in evt ? evt.touches[0] || evt.changedTouches[0] : null;
+      const mouse = evt && 'clientX' in evt ? evt : null;
+      const pointer = stage.getPointerPosition();
+      const containerRect = stage.container().getBoundingClientRect();
+      const x = touch?.clientX ?? mouse?.clientX ?? (pointer ? containerRect.left + pointer.x : 0);
+      const y = touch?.clientY ?? mouse?.clientY ?? (pointer ? containerRect.top + pointer.y : 0);
+
+      if (!x && !y) return;
+
+      setEraserCursor({
+        x,
+        y,
+        diameter: Math.max(4, lastUsedStyle.strokeWidth * stageScale),
+        visible: true,
+      });
+    },
+    [stageRef.current, tool, lastUsedStyle.strokeWidth, stageScale],
+  );
+
   const startDrawing = useCallback(
     (e: KonvaEventObject<TouchEvent | MouseEvent>) => {
       const stage = stageRef.current;
@@ -212,6 +281,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
       if (!p) return;
       const brushProps = DEFAULT_BRUSH_PROPS[tool as BrushType];
       const isEraser = tool === Tools.Eraser;
+      const pointY = isEraser ? p.y : p.y + (e.evt.type === 'mousedown' ? 16 : 0);
       const el: Drawing = {
         id: crypto.randomUUID(),
         ...DEFAULT_PROPS.drawing,
@@ -219,10 +289,11 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
         stroke: isEraser ? '#000000' : lastUsedStyle.stroke,
         strokeWidth: lastUsedStyle.strokeWidth || brushProps.strokeWidth,
         globalCompositeOperation: isEraser ? 'destination-out' : 'source-over',
-        points: [p.x, p.y + (e.evt.type === 'mousedown' ? 16 : 0)],
+        points: [p.x, pointY],
       };
+      updateEraserCursor(e.evt);
       drawingLine.current = el;
-      drawingLineRef.current?.setAttrs({ ...el, visible: true });
+      drawingLineRef.current?.setAttrs(getDrawingPreviewAttrs(el));
       isDrawing.current = true;
     },
     [
@@ -232,6 +303,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
       drawingLine.current,
       drawingLineRef.current,
       isDrawing.current,
+      updateEraserCursor,
     ],
   );
 
@@ -243,14 +315,24 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
       const p = stage.getRelativePointerPosition();
       if (!isDrawing.current || !drawingLine.current || !p) return;
       e.evt.preventDefault();
+      updateEraserCursor(e.evt);
       const tmp = drawingLine.current;
+      const isEraser = tmp.brushType === Tools.Eraser;
+      const pointY = isEraser ? p.y : p.y + (e.evt.type === 'mousemove' ? 16 : 0);
+
       drawingLine.current = {
         ...tmp,
-        points: [...tmp.points, p.x, p.y + (e.evt.type === 'mousemove' ? 16 : 0)],
+        points: [...tmp.points, p.x, pointY],
       };
-      drawingLineRef.current?.setAttrs(drawingLine.current);
+      drawingLineRef.current?.setAttrs(getDrawingPreviewAttrs(drawingLine.current));
     },
-    [stageRef.current, drawingLine.current, drawingLineRef.current, isDrawing.current],
+    [
+      stageRef.current,
+      drawingLine.current,
+      drawingLineRef.current,
+      isDrawing.current,
+      updateEraserCursor,
+    ],
   );
 
   const finishDrawing = useCallback(() => {
@@ -296,6 +378,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
         case Tools.Marker:
         case Tools.Brush:
         case Tools.Eraser:
+          updateEraserCursor(e.evt);
           startDrawing(e);
           break;
       }
@@ -357,6 +440,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
         case Tools.Marker:
         case Tools.Brush:
         case Tools.Eraser:
+          updateEraserCursor(e.evt);
           continueDrawing(e);
           break;
       }
@@ -441,6 +525,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
 
   const onMouseMove = (e: KonvaEventObject<MouseEvent>) => {
     if (!stageRef.current) return;
+    updateEraserCursor(e.evt);
 
     if (isRightRef.current) {
       if (stageRef.current.isDragging()) setIsDragging(true);
@@ -499,6 +584,11 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     }
   };
 
+  const onMouseLeave = (e: KonvaEventObject<MouseEvent>) => {
+    hideEraserCursor();
+    onMouseUp(e);
+  };
+
   // const onTransformEnd = (e) => {
 
   // };
@@ -513,6 +603,15 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     selectGroupRef,
     selectGroupPos,
     setSelectGroupPos,
+    eraserCursorProps: {
+      style: {
+        left: eraserCursor.x,
+        top: eraserCursor.y,
+        width: eraserCursor.diameter,
+        height: eraserCursor.diameter,
+        display: eraserCursor.visible && tool === Tools.Eraser ? 'block' : 'none',
+      },
+    },
     drawingLineRef,
     // onTransformEnd,
     onWheel,
@@ -525,7 +624,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     onMouseDown,
     onMouseMove,
     onMouseUp,
-    onMouseLeave: onMouseUp,
+    onMouseLeave,
     onContextmenu: (e: KonvaEventObject<MouseEvent>) => e.evt.preventDefault(),
   };
 };

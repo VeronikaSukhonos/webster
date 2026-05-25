@@ -8,8 +8,10 @@ import {
   type Action,
   Actions,
   type Background,
+  BrushTypes,
   type Canvas,
   type CanvasElement,
+  CanvasElements,
   type LastUsedStyle,
   type LeftSheetType,
   type Mode,
@@ -81,6 +83,9 @@ const prepareCanvasElement = (element: CanvasElement, order: number): CanvasElem
   createdAt: element.createdAt ?? new Date().toISOString(),
   order,
 });
+
+const isHiddenLayerElement = (element: CanvasElement) =>
+  element.type === CanvasElements.Drawing && element.brushType === BrushTypes.Eraser;
 
 const editorSlice = createSlice({
   name: 'editor',
@@ -243,15 +248,33 @@ const editorSlice = createSlice({
 
       if (action.payload.direction === 'forward') {
         for (let i = reordered.length - 2; i >= 0; i--) {
-          if (!movingIds.has(reordered[i].id) || movingIds.has(reordered[i + 1].id)) continue;
+          if (!movingIds.has(reordered[i].id)) continue;
 
-          [reordered[i], reordered[i + 1]] = [reordered[i + 1], reordered[i]];
+          const nextVisibleIndex = reordered.findIndex(
+            (el, index) => index > i && !movingIds.has(el.id) && !isHiddenLayerElement(el),
+          );
+
+          if (nextVisibleIndex === -1) continue;
+
+          const [movingElement] = reordered.splice(i, 1);
+          reordered.splice(nextVisibleIndex, 0, movingElement);
         }
       } else {
         for (let i = 1; i < reordered.length; i++) {
-          if (!movingIds.has(reordered[i].id) || movingIds.has(reordered[i - 1].id)) continue;
+          if (!movingIds.has(reordered[i].id)) continue;
 
-          [reordered[i - 1], reordered[i]] = [reordered[i], reordered[i - 1]];
+          let prevVisibleIndex = -1;
+          for (let j = i - 1; j >= 0; j--) {
+            if (!movingIds.has(reordered[j].id) && !isHiddenLayerElement(reordered[j])) {
+              prevVisibleIndex = j;
+              break;
+            }
+          }
+
+          if (prevVisibleIndex === -1) continue;
+
+          const [movingElement] = reordered.splice(i, 1);
+          reordered.splice(prevVisibleIndex, 0, movingElement);
         }
       }
 

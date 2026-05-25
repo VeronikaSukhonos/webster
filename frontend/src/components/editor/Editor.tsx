@@ -48,6 +48,7 @@ import { createLocalImageItem } from '@utils/editorUtils';
 import { shortcuts } from '@utils/shortcuts';
 
 import {
+  BrushTypes,
   type CanvasElement,
   CanvasElements,
   type CanvasProps,
@@ -79,6 +80,36 @@ const cloneCanvasElement = (element: CanvasElement, offset = 0): CanvasElement =
 const areStringArraysEqual = (a: string[], b: string[]) =>
   a.length === b.length && a.every((value, index) => value === b[index]);
 
+const isEraserElement = (element: CanvasElement) =>
+  element.type === CanvasElements.Drawing && element.brushType === BrushTypes.Eraser;
+
+const getElementCreatedTime = (element: CanvasElement) => {
+  const createdTime = element.createdAt ? new Date(element.createdAt).getTime() : NaN;
+
+  return Number.isNaN(createdTime) ? 0 : createdTime;
+};
+
+const getCanvasPaintOrder = (elements: CanvasElement[]) => {
+  const orderedElements: CanvasElement[] = [];
+
+  elements.forEach((element) => {
+    if (!isEraserElement(element)) {
+      orderedElements.push(element);
+      return;
+    }
+
+    const eraserCreatedTime = getElementCreatedTime(element);
+    const firstNewerElementIndex = orderedElements.findIndex(
+      (el) => !isEraserElement(el) && getElementCreatedTime(el) > eraserCreatedTime,
+    );
+
+    if (firstNewerElementIndex === -1) orderedElements.push(element);
+    else orderedElements.splice(firstNewerElementIndex, 0, element);
+  });
+
+  return orderedElements;
+};
+
 interface EditorProps extends CanvasProps {
   onSave?: () => void | Promise<unknown>;
 }
@@ -99,9 +130,13 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
   const mode = useAppSelector(selectEditor.mode);
   const leftSheet = useAppSelector(selectEditor.leftSheet);
   const project = useAppSelector(selectEditor.project);
+  const canvasPaintElements = useMemo(
+    () => getCanvasPaintOrder(canvas.elements),
+    [canvas.elements],
+  );
   const selectedCanvasElements = canvas.elements.filter((el) => selectedIds.includes(el.id));
   const selectedElementIdsForRender = new Set(selectedCanvasElements.map((el) => el.id));
-  const selectedGroupRenderIndex = canvas.elements.reduce(
+  const selectedGroupRenderIndex = canvasPaintElements.reduce(
     (lastIndex, el, index) => (selectedElementIdsForRender.has(el.id) ? index : lastIndex),
     -1,
   );
@@ -116,6 +151,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
     selectGroupRef,
     selectGroupPos,
     setSelectGroupPos,
+    eraserCursorProps,
     drawingLineRef,
     // onTransformEnd,
     ...toolbarHandlers
@@ -406,7 +442,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
           </Group>
         </Layer>
         <Layer id="elements-layer" listening={mode !== Modes.View}>
-          {canvas.elements.map((el, index) => {
+          {canvasPaintElements.map((el, index) => {
             if (!selectedElementIdsForRender.has(el.id)) {
               return <CanvasElementShape key={el.id} element={el} />;
             }
@@ -445,9 +481,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
               </Group>
             );
           })}
-        </Layer>
-        <Layer id="drawing-layer" listening={false}>
-          <Line ref={drawingLineRef} />
+          <Line ref={drawingLineRef} listening={false} />
         </Layer>
         <Layer id="act-layer" listening={mode !== Modes.View}>
           <Rect
@@ -476,6 +510,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
           <Rect {...selectRectProps} />
         </Layer>
       </Stage>
+      <div className="eraser-cursor-overlay" {...eraserCursorProps} />
 
       <div className="bottom-toolbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

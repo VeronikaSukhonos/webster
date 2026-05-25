@@ -6,7 +6,7 @@ import { useImages } from '@hooks/useImages';
 
 import { DEFAULT_BORDER_COLOR } from '@utils/constants';
 
-import { type CanvasElement, CanvasElements } from '@mytypes/editorTypes';
+import { BrushTypes, type CanvasElement, CanvasElements } from '@mytypes/editorTypes';
 
 interface CanvasImageProps {
   el: any;
@@ -51,7 +51,12 @@ export const CanvasElementShape = ({ element: el }: CanvasElementShapeProps) => 
   // const tool = useAppSelector(selectEditor.tool);
   // const selectedIds = useAppSelector(selectEditor.selected);
 
-  const baseProps = { name: 'element' };
+  const baseProps = {
+    name:
+      el.type === CanvasElements.Drawing && el.brushType === BrushTypes.Eraser
+        ? 'excluded'
+        : 'element',
+  };
 
   switch (el.type) {
     case CanvasElements.Drawing:

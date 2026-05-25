@@ -94,6 +94,21 @@
   border-radius: 6px;
 }
 
+.eraser-cursor-overlay {
+  position: fixed;
+  z-index: 150;
+  pointer-events: none;
+  border: 2px solid var(--accent-font-color);
+  border-radius: 50%;
+  box-sizing: border-box;
+  transform: translate(-50%, -50%);
+}
+
+.eraser-stage-active,
+.eraser-stage-active * {
+  cursor: none !important;
+}
+
 .bottom-toolbar {
   display: flex;
   justify-content: space-between;
