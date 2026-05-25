@@ -1,4 +1,6 @@
 .image-and-size {
+  background: var(--container-color);
+  border-radius: 20px;
   align-items: center;
   display: flex;
   flex-direction: column;
@@ -29,10 +31,10 @@
 .project-preview img {
   border: 2px solid #fff;
   border-radius: 20px;
-  height: auto;
-  object-fit: cover;
+  object-fit: contain;
   object-position: 50% 50%;
   width: 250px;
+  height: 168px;
 }
 
 .project-preview-menu {

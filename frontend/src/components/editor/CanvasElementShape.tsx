@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Image, Line, Rect } from 'react-konva';
+import { Arrow, Ellipse, Image, Line, Rect, RegularPolygon, Star } from 'react-konva';
 import { useImage } from 'react-konva-utils';
 
 import { useImages } from '@hooks/useImages';
@@ -42,23 +42,29 @@ export const CanvasImage = ({ el, baseProps }: CanvasImageProps) => {
 
 interface CanvasElementShapeProps {
   element: CanvasElement;
-  preventDrag?: boolean;
 }
 
 export const CanvasElementShape = ({ element: el }: CanvasElementShapeProps) => {
-  // const dispatch = useAppDispatch();
-
-  // const tool = useAppSelector(selectEditor.tool);
-  // const selectedIds = useAppSelector(selectEditor.selected);
-
   const baseProps = {
     name:
       el.type === CanvasElements.Drawing && el.brushType === BrushTypes.Eraser
-        ? 'excluded'
+        ? 'eraser'
         : 'element',
   };
 
   switch (el.type) {
+    case CanvasElements.Rectangle:
+      return <Rect {...el} {...baseProps} />;
+    case CanvasElements.Ellipse:
+      return <Ellipse {...el} {...baseProps} />;
+    case CanvasElements.Polygon:
+      return <RegularPolygon {...el} {...baseProps} />;
+    case CanvasElements.Star:
+      return <Star {...el} {...baseProps} />;
+    case CanvasElements.Line:
+      return <Line {...el} {...baseProps} />;
+    case CanvasElements.Arrow:
+      return <Arrow {...el} {...baseProps} />;
     case CanvasElements.Drawing:
       return <Line {...el} {...baseProps} perfectDrawEnabled={false} />;
     case CanvasElements.Image:

@@ -50,3 +50,13 @@ export { default as TemplateIcon } from './template.svg?react';
 export { default as TextIcon } from './text.svg?react';
 export { default as UnlockIcon } from './unlock.svg?react';
 export { default as UploadIcon } from './upload.svg?react';
+
+export { default as RectangleShape } from './rectangle-shape.svg?react';
+export { default as EllipseShape } from './ellipse-shape.svg?react';
+export { default as PolygonShape } from './polygon-shape.svg?react';
+export { default as TriangleShape } from './triangle-shape.svg?react';
+export { default as PentagonShape } from './pentagon-shape.svg?react';
+export { default as StarShape } from './star-shape.svg?react';
+export { default as LineShape } from './line-shape.svg?react';
+export { default as ArrowShape } from './arrow-shape.svg?react';
+// export { default as TooltipShape } from './tooltip-shape.svg?react';

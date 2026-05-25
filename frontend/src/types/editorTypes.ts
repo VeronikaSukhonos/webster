@@ -35,13 +35,10 @@ export const CanvasElements = {
   Star: 'star',
   Line: 'line',
   Arrow: 'arrow',
-  BrokenLine: 'broken line',
   Tooltip: 'tooltip',
-  Path: 'path', // heart
   Text: 'text',
   Drawing: 'drawing',
   Image: 'image',
-  Group: 'group',
 } as const;
 
 export type CanvasElementType = (typeof CanvasElements)[keyof typeof CanvasElements];
@@ -110,13 +107,6 @@ export const LineJoins = {
 
 export type LineJoin = (typeof LineJoins)[keyof typeof LineJoins];
 
-export interface BrokenLine extends BaseCanvasElement {
-  type: typeof CanvasElements.BrokenLine;
-  points: number[];
-  tension: number; // 0 to 1
-  closed: boolean;
-}
-
 export const Directions = {
   Up: 'up',
   Down: 'down',
@@ -131,11 +121,6 @@ export interface Tooltip extends BaseCanvasElement {
   pointerDirection: Direction;
   pointerWidth: number;
   pointerHeight: number;
-}
-
-export interface Path extends BaseCanvasElement {
-  type: typeof CanvasElements.Path;
-  data: string;
 }
 
 export const Alignments = {
@@ -179,25 +164,17 @@ export interface Image extends Omit<Rectangle, 'type'> {
   image: string; // id
 }
 
-export interface Group extends BaseCanvasElement, Size {
-  type: typeof CanvasElements.Group;
-  children: CanvasElement[];
-}
-
 export type CanvasElement =
   | Rectangle
   | Ellipse
   | Polygon
   | Star
   | Line
-  | BrokenLine
   | Arrow
   | Tooltip
-  | Path
   | Text
   | Drawing
-  | Image
-  | Group;
+  | Image;
 
 export interface ImageItem {
   id: string;

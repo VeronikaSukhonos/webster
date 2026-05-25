@@ -4,7 +4,7 @@ import type Konva from 'konva';
 
 import ProjectsApi from '@api/projectsApi';
 
-import type { Project, Template } from '@store/editorSlice';
+import { type Project, type Template, selectEditor } from '@store/editorSlice';
 import { setModal, setProjectToDuplicate } from '@store/uiSlice';
 
 import { MenuItem } from '@components/Menu';
@@ -15,10 +15,11 @@ import {
   DownloadIcon,
   EditIcon,
   LinkIcon,
+  ProjectIcon,
   TemplateIcon,
 } from '@assets/index';
 
-import { useAppDispatch, useAuth } from '@hooks/utilHooks';
+import { useAppDispatch, useAppSelector, useAuth } from '@hooks/utilHooks';
 
 import { copyLink } from '@utils/utils';
 
@@ -28,13 +29,17 @@ export const ProjectMenu = ({
   project,
   stageRef,
   backgroundRef,
+  onSave,
 }: {
   project: Project;
   stageRef?: React.RefObject<Konva.Stage | null>;
   backgroundRef?: React.RefObject<Konva.Rect | null>;
+  onSave?: () => void | Promise<unknown>;
 }) => {
   const auth = useAuth();
   const dispatch = useAppDispatch();
+
+  const editorProject = useAppSelector(selectEditor.project);
 
   const duplicateProject = async function () {
     if (project) {
@@ -51,7 +56,20 @@ export const ProjectMenu = ({
 
   return (
     <>
-      <MenuItem>
+      {editorProject && auth && editorProject.author?.id === auth?.id && (
+        <MenuItem aria-label="Save">
+          <div
+            className="m-row"
+            onClick={() => {
+              if (onSave) onSave();
+            }}
+          >
+            <ProjectIcon />
+            <span>Save</span>
+          </div>
+        </MenuItem>
+      )}
+      <MenuItem aria-label="Export">
         <div
           className="m-row"
           onClick={() =>
@@ -70,7 +88,7 @@ export const ProjectMenu = ({
         </div>
       </MenuItem>
       {auth && auth.id === project.author?.id && (
-        <MenuItem>
+        <MenuItem aria-label="Settings">
           <div
             className="m-row"
             onClick={() =>
@@ -88,7 +106,7 @@ export const ProjectMenu = ({
         </MenuItem>
       )}
       {project.isPublic && (
-        <MenuItem>
+        <MenuItem aria-label="Copy">
           <div
             className="m-row"
             onClick={() => copyLink(window.location.href, project?.id as number)}
@@ -99,7 +117,7 @@ export const ProjectMenu = ({
         </MenuItem>
       )}
       {auth && auth.id === project.author?.id && (
-        <MenuItem>
+        <MenuItem aria-label="Duplicate">
           <div className="m-row" onClick={duplicateProject}>
             <CopyIcon />
             <span>Duplicate</span>
@@ -107,7 +125,7 @@ export const ProjectMenu = ({
         </MenuItem>
       )}
       {auth && auth.id === project.author?.id && (
-        <MenuItem>
+        <MenuItem className="Template">
           <div
             className="m-row"
             onClick={() =>
@@ -125,7 +143,7 @@ export const ProjectMenu = ({
         </MenuItem>
       )}
       {auth && auth.id === project.author?.id && (
-        <MenuItem>
+        <MenuItem className="Delete">
           <div
             className="m-row"
             onClick={() =>
@@ -152,7 +170,7 @@ export const TemplateMenu = ({ template }: { template: Template }) => {
 
   return (
     <>
-      <MenuItem>
+      <MenuItem aria-label="Use">
         <div
           className="m-row"
           onClick={() => dispatch(setModal({ type: 'createProject', template: template }))}
@@ -162,7 +180,7 @@ export const TemplateMenu = ({ template }: { template: Template }) => {
         </div>
       </MenuItem>
       {auth && auth.id === template.author?.id && (
-        <MenuItem>
+        <MenuItem aria-label="Settings">
           <div
             className="m-row"
             onClick={() => dispatch(setModal({ type: 'templateSettings', template: template }))}
@@ -173,7 +191,7 @@ export const TemplateMenu = ({ template }: { template: Template }) => {
         </MenuItem>
       )}
       {auth && auth.id === template.author?.id && (
-        <MenuItem>
+        <MenuItem className="Delete">
           <div
             className="m-row"
             onClick={() => dispatch(setModal({ type: 'deleteTemplate', template: template }))}

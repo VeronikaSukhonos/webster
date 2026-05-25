@@ -6,6 +6,7 @@ import type { KonvaEventObject } from 'konva/lib/Node';
 import { addCanvasElement, selectEditor, setSelectedIds } from '@store/editorSlice';
 
 import brushCursor from '@assets/brush.png';
+import eraserCursorIcon from '@assets/eraser.png';
 import grabCursor from '@assets/grab.png';
 import grabbingCursor from '@assets/grabbing.png';
 import markerCursor from '@assets/marker.png';
@@ -42,12 +43,6 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
   const [stageScale, setStageScale] = useState(1);
   const [stagePos, setStagePos] = useState(defaultPosition);
   const [isDragging, setIsDragging] = useState(false);
-  const [eraserCursor, setEraserCursor] = useState({
-    x: 0,
-    y: 0,
-    diameter: 0,
-    visible: false,
-  });
   const [selectGroupPos, setSelectGroupPos] = useState(defaultPosition);
 
   const prevStateRef = useRef<{ dist: number; center: Placement | null }>(defaultState);
@@ -56,7 +51,6 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
   const transformerRef = useRef<Konva.Transformer | null>(null);
   const backdropRef = useRef<Konva.Rect | null>(null);
   const [selectRect, setSelectRect] = useState(initialSelectRect);
-  // const selectRectRef = useRef<Konva.Rect | null>(null);
   const selectGroupRef = useRef<Konva.Group | null>(null);
   const isSelectingRef = useRef(false);
   const isRightRef = useRef(false);
@@ -64,9 +58,10 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
   const drawingLine = useRef<Drawing | null>(null);
   const drawingLineRef = useRef<Konva.Line | null>(null);
   const isDrawing = useRef(false);
+  const eraserCursorRef = useRef<HTMLDivElement | null>(null);
 
   const hideEraserCursor = useCallback(() => {
-    setEraserCursor((cursor) => (cursor.visible ? { ...cursor, visible: false } : cursor));
+    if (eraserCursorRef.current) eraserCursorRef.current.style.display = 'none';
   }, []);
 
   useEffect(() => {
@@ -85,7 +80,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     else if (tool === Tools.Eraser) container.style.cursor = 'none';
     else if (tool === Tools.Marker) container.style.cursor = `url(${markerCursor}), pointer`;
     else if (tool === Tools.Brush) container.style.cursor = `url(${brushCursor}), pointer`;
-
+    else if (tool === Tools.Eraser) container.style.cursor = `url(${eraserCursorIcon}), pointer`;
     container.classList.toggle('eraser-stage-active', tool === Tools.Eraser);
   }, [tool, isDragging]);
 
@@ -251,25 +246,32 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
   const updateEraserCursor = useCallback(
     (evt?: MouseEvent | TouchEvent) => {
       const stage = stageRef.current;
-      if (!stage || tool !== Tools.Eraser) return;
+      const cursorEl = eraserCursorRef.current;
+
+      if (!stage || tool !== Tools.Eraser || !cursorEl) {
+        if (cursorEl) cursorEl.style.display = 'none';
+        return;
+      }
 
       const touch = evt && 'touches' in evt ? evt.touches[0] || evt.changedTouches[0] : null;
       const mouse = evt && 'clientX' in evt ? evt : null;
       const pointer = stage.getPointerPosition();
       const containerRect = stage.container().getBoundingClientRect();
+
       const x = touch?.clientX ?? mouse?.clientX ?? (pointer ? containerRect.left + pointer.x : 0);
       const y = touch?.clientY ?? mouse?.clientY ?? (pointer ? containerRect.top + pointer.y : 0);
 
       if (!x && !y) return;
 
-      setEraserCursor({
-        x,
-        y,
-        diameter: Math.max(4, lastUsedStyle.strokeWidth * stageScale),
-        visible: true,
-      });
+      const diameter = Math.max(4, lastUsedStyle.strokeWidth * stageScale);
+
+      cursorEl.style.display = 'block';
+      cursorEl.style.left = `${x}px`;
+      cursorEl.style.top = `${y}px`;
+      cursorEl.style.width = `${diameter}px`;
+      cursorEl.style.height = `${diameter}px`;
     },
-    [stageRef.current, tool, lastUsedStyle.strokeWidth, stageScale],
+    [tool, lastUsedStyle.strokeWidth, stageScale],
   );
 
   const startDrawing = useCallback(
@@ -377,6 +379,8 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
         case Tools.Pencil:
         case Tools.Marker:
         case Tools.Brush:
+          startDrawing(e);
+          break;
         case Tools.Eraser:
           updateEraserCursor(e.evt);
           startDrawing(e);
@@ -439,6 +443,8 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
         case Tools.Pencil:
         case Tools.Marker:
         case Tools.Brush:
+          continueDrawing(e);
+          break;
         case Tools.Eraser:
           updateEraserCursor(e.evt);
           continueDrawing(e);
@@ -603,15 +609,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     selectGroupRef,
     selectGroupPos,
     setSelectGroupPos,
-    eraserCursorProps: {
-      style: {
-        left: eraserCursor.x,
-        top: eraserCursor.y,
-        width: eraserCursor.diameter,
-        height: eraserCursor.diameter,
-        display: eraserCursor.visible && tool === Tools.Eraser ? 'block' : 'none',
-      },
-    },
+    eraserCursorRef,
     drawingLineRef,
     // onTransformEnd,
     onWheel,

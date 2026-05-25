@@ -1,3 +1,49 @@
+.shapes-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 12px;
+}
+
+.shape-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  text-align: center;
+  user-select: none;
+}
+
+.shape-image-container {
+  display: flex;
+  place-content: center;
+  background: var(--white);
+  border: var(--main-border);
+  border-radius: 10px;
+  width: 100%;
+  transition: border 0.2s ease;
+}
+
+.shape-image-container:hover {
+  border: var(--active-border);
+}
+
+.shape-image {
+  height: 100px;
+  width: auto;
+  padding: 12px;
+  cursor: grab;
+}
+
+.shape-image:active {
+  cursor: grabbing;
+}
+
+.shape-label {
+  color: var(--main-font-color);
+  font-size: 15px;
+  font-weight: 500;
+}
+
 .layers-panel {
   display: flex;
   flex-direction: column;
@@ -22,6 +68,10 @@
   transition:
     background ease-in-out 0.2s,
     border ease-in-out 0.2s;
+}
+
+.layer-item:hover {
+  background: var(--gray);
 }
 
 .layer-item.selected {

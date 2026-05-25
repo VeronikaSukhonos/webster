@@ -14,6 +14,7 @@ import {
   setCanvasSize,
   setLeftSheet,
   setSelectedIds,
+  setTool,
   translateCanvasElements,
 } from '@store/editorSlice';
 
@@ -110,7 +111,7 @@ const getCanvasPaintOrder = (elements: CanvasElement[]) => {
   return orderedElements;
 };
 
-interface EditorProps extends CanvasProps {
+export interface EditorProps extends CanvasProps {
   onSave?: () => void | Promise<unknown>;
 }
 
@@ -151,7 +152,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
     selectGroupRef,
     selectGroupPos,
     setSelectGroupPos,
-    eraserCursorProps,
+    eraserCursorRef,
     drawingLineRef,
     // onTransformEnd,
     ...toolbarHandlers
@@ -192,6 +193,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
       const baseY = (stageSize.height - canvas.background.height) / 2 + 20;
 
       imagesCtx?.addLocalImageItems(imageItems);
+      dispatch(setTool(Tools.Select));
       dispatch(
         addCanvasElements(
           imageItems.map(
@@ -231,11 +233,11 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
       return;
     }
     const { x, y, width, height } = selectGroupRef.current.getClientRect({
-      relativeTo: stageRef.current,
+      relativeTo: selectGroupRef.current,
     });
     backdropRef.current.setAttrs({ x, y, width, height });
     selectGroupRef.current.position(selectGroupPos);
-  }, [selectedIds, canvas.elements, selectGroupPos, stageRef]);
+  }, [selectedIds, canvas.elements, stageRef.current]);
 
   useEffect(() => {
     if (mode !== Modes.Edit) return;
@@ -448,52 +450,53 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
             }
 
             if (index !== selectedGroupRenderIndex) return null;
-
             return (
-              <Group
-                key="selected-elements"
-                id="select-group"
-                ref={selectGroupRef}
-                draggable={tool === Tools.Select}
-                onDragStart={(e: KonvaEventObject<DragEvent>) => {
-                  setSelectGroupPos({ x: e.target.x(), y: e.target.y() });
-                }}
-                onDragMove={() => {
-                  if (!selectGroupRef.current || !backdropRef.current || !stageRef.current) return;
-                  const { x, y, width, height } = selectGroupRef.current.getClientRect({
-                    relativeTo: stageRef.current,
-                  });
-                  backdropRef.current.setAttrs({ x, y, width, height });
-                }}
-                onDragEnd={(e: KonvaEventObject<DragEvent>) => {
-                  if (!stageRef.current) return;
-                  flushKeyboardMove();
-                  const moveX = e.target.x() - selectGroupPos.x,
-                    moveY = e.target.y() - selectGroupPos.y;
+              <>
+                <Rect
+                  ref={backdropRef}
+                  fill="red"
+                  listening={selectedIds.length > 0}
+                  draggable
+                  onDragStart={(e: KonvaEventObject<DragEvent>) => {
+                    e.target.stopDrag();
+                    if (selectGroupRef.current) selectGroupRef.current.startDrag();
+                  }}
+                />
+                <Group
+                  key="selected-elements"
+                  id="select-group"
+                  ref={selectGroupRef}
+                  draggable={tool === Tools.Select}
+                  onDragStart={(e: KonvaEventObject<DragEvent>) => {
+                    setSelectGroupPos({ x: e.target.x(), y: e.target.y() });
+                  }}
+                  onDragMove={() => {
+                    if (!selectGroupRef.current || !backdropRef.current) return;
+                    const { x, y } = selectGroupRef.current.getClientRect({
+                      relativeTo: selectGroupRef.current,
+                    });
+                    backdropRef.current.setAttrs({ x, y });
+                  }}
+                  onDragEnd={(e: KonvaEventObject<DragEvent>) => {
+                    if (!stageRef.current) return;
+                    flushKeyboardMove();
+                    const moveX = e.target.x() - selectGroupPos.x;
+                    const moveY = e.target.y() - selectGroupPos.y;
 
-                  if (!moveX && !moveY) return;
-                  dispatch(moveCanvasElements({ moveX, moveY }));
-                }}
-              >
-                {selectedCanvasElements.map((el) => (
-                  <CanvasElementShape key={el.id} element={el} />
-                ))}
-              </Group>
+                    if (moveX === 0 && moveY === 0) return;
+                    dispatch(moveCanvasElements({ moveX, moveY }));
+                  }}
+                >
+                  {selectedCanvasElements.map((el) => (
+                    <CanvasElementShape key={el.id} element={el} />
+                  ))}
+                </Group>
+              </>
             );
           })}
           <Line ref={drawingLineRef} listening={false} />
         </Layer>
         <Layer id="act-layer" listening={mode !== Modes.View}>
-          <Rect
-            ref={backdropRef}
-            fill="transparent"
-            listening={selectedIds.length > 0}
-            draggable
-            onDragStart={(e: KonvaEventObject<DragEvent>) => {
-              e.target.stopDrag();
-              if (selectGroupRef.current) selectGroupRef.current.startDrag();
-            }}
-          />
           <Transformer
             name="excluded"
             ref={transformerRef}
@@ -505,12 +508,12 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
             anchorStrokeWidth={2}
             anchorSize={10}
             anchorCornerRadius={20}
-            // onTransformEnd={onTransformEnd}
+            // onTransformEnd={}
           />
           <Rect {...selectRectProps} />
         </Layer>
       </Stage>
-      <div className="eraser-cursor-overlay" {...eraserCursorProps} />
+      <div className="eraser-cursor-overlay" ref={eraserCursorRef} />
 
       <div className="bottom-toolbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

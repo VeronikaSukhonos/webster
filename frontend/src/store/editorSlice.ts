@@ -63,7 +63,7 @@ interface EditorState {
 const initialState: EditorState = {
   canvas: initCanvas({ width: DEFAULT_CANVAS_SIZE, height: DEFAULT_CANVAS_SIZE }),
   history: [],
-  historyTarget: -1, // last
+  historyTarget: 0, // last
   project: null,
   template: null,
   mode: Modes.Edit,
@@ -102,13 +102,13 @@ const editorSlice = createSlice({
         state.project.height = height;
       }
       state.history = [
-        ...state.history,
         {
           ids: [from.id],
           from: [from],
           to: [state.canvas.background],
           action: Actions.Resize,
         },
+        ...state.history,
       ];
     },
     addCanvasElement: (state, action: PayloadAction<CanvasElement>) => {
@@ -117,13 +117,13 @@ const editorSlice = createSlice({
       state.canvas.elements = [...state.canvas.elements, el];
 
       state.history = [
-        ...state.history,
         {
           ids: [action.payload.id],
           from: undefined,
           to: [el],
           action: Actions.Add,
         },
+        ...state.history,
       ];
     },
     addCanvasElements: (state, action: PayloadAction<CanvasElement[]>) => {
@@ -137,19 +137,18 @@ const editorSlice = createSlice({
       state.selectedIds = elements.map((el) => el.id);
 
       state.history = [
-        ...state.history,
         {
           ids: elements.map((el) => el.id),
           from: undefined,
           to: elements,
           action: Actions.Add,
         },
+        ...state.history,
       ];
     },
     deleteCanvasElements: (state, _action: PayloadAction<undefined>) => {
-      const ids = current(state.canvas.elements)
-        .filter((el) => state.selectedIds.includes(el.id))
-        .map((el) => el.id);
+      const existingIds = new Set(state.canvas.elements.map((el) => el.id));
+      const ids = state.selectedIds.filter((id) => existingIds.has(id));
 
       if (!ids.length) return;
 
@@ -163,22 +162,21 @@ const editorSlice = createSlice({
       state.selectedIds = [];
 
       state.history = [
-        ...state.history,
         {
           ids,
           from,
           to: undefined,
           action: Actions.Delete,
         },
+        ...state.history,
       ];
     },
     moveCanvasElements: (state, action: PayloadAction<{ moveX: number; moveY: number }>) => {
       const { moveX, moveY } = action.payload;
       if (!moveX && !moveY) return;
 
-      const ids = current(state.canvas.elements)
-        .filter((el) => state.selectedIds.includes(el.id))
-        .map((el) => el.id);
+      const existingIds = new Set(state.canvas.elements.map((el) => el.id));
+      const ids = state.selectedIds.filter((id) => existingIds.has(id));
 
       if (!ids.length) return;
 
@@ -196,13 +194,13 @@ const editorSlice = createSlice({
       });
 
       state.history = [
-        ...state.history,
         {
           ids,
           from,
           to,
           action: Actions.Move,
         },
+        ...state.history,
       ];
     },
     translateCanvasElements: (
@@ -224,13 +222,13 @@ const editorSlice = createSlice({
       if (!ids.length || !from.length || !to.length) return;
 
       state.history = [
-        ...state.history,
         {
           ids,
           from,
           to,
           action: Actions.Move,
         },
+        ...state.history,
       ];
     },
     reorderCanvasElements: (
@@ -285,17 +283,20 @@ const editorSlice = createSlice({
 
       state.canvas.elements = to;
       state.history = [
-        ...state.history,
         {
           ids: selectedIds,
           from,
           to,
           action: Actions.Layer,
         },
+        ...state.history,
       ];
     },
     setHistory: (state, action: PayloadAction<History[]>) => {
       state.history = action.payload;
+    },
+    setHistoryTarget: (state, action: PayloadAction<number>) => {
+      state.historyTarget = action.payload;
     },
     setProject: (
       state,
@@ -373,6 +374,7 @@ export const {
   commitCanvasElementsMove,
   reorderCanvasElements,
   setHistory,
+  setHistoryTarget,
   setProject,
   setTemplate,
   setMode,

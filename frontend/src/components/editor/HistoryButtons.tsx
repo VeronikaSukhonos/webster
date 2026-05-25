@@ -1,4 +1,4 @@
-import { selectEditor, setRightSheet } from '@store/editorSlice';
+import { selectEditor, setHistoryTarget, setRightSheet } from '@store/editorSlice';
 
 import { MainButton } from '@components/MainButton';
 import { HistoryPanel } from '@components/editor/RightPanels';
@@ -20,14 +20,16 @@ export const buttonProps = {
 export const HistoryButtons = () => {
   const dispatch = useAppDispatch();
 
+  const history = useAppSelector(selectEditor.history);
+  const historyTarget = useAppSelector(selectEditor.historyTarget);
   const rightSheet = useAppSelector(selectEditor.rightSheet);
 
   const undo = () => {
-    // TODO
+    dispatch(setHistoryTarget(historyTarget + 1));
   };
 
   const redo = () => {
-    // TODO
+    dispatch(setHistoryTarget(historyTarget - 1));
   };
 
   return (
@@ -46,10 +48,22 @@ export const HistoryButtons = () => {
         <HistoryPanel />
       </Sheet>
       <div className="row mini-gap" style={{ width: 'max-content' }}>
-        <MainButton onClick={undo} {...buttonProps} aria-label="Undo" tooltipId="undo">
+        <MainButton
+          onClick={undo}
+          {...buttonProps}
+          aria-label="Undo"
+          tooltipId="undo"
+          disabled={historyTarget === history.length - 1}
+        >
           <ArrowIcon />
         </MainButton>
-        <MainButton onClick={redo} {...buttonProps} aria-label="Redo" tooltipId="redo">
+        <MainButton
+          onClick={redo}
+          {...buttonProps}
+          aria-label="Redo"
+          tooltipId="redo"
+          disabled={historyTarget === 0}
+        >
           <ArrowIcon style={{ transform: 'rotate(180deg)' }} />
         </MainButton>
       </div>

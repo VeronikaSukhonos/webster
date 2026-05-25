@@ -91,13 +91,6 @@ export const DEFAULT_PROPS = {
     pointerWidth: 10,
     ...BASE_STYLE_LINE,
   },
-  // [CanvasElements.BrokenLine]: {
-  //   type: CanvasElements.BrokenLine,
-  //   points: [],
-  //   tension: 0,
-  //   closed: false,
-  //   ...BASE_STYLE_LINE,
-  // },
   [CanvasElements.Tooltip]: {
     type: CanvasElements.Tooltip,
     pointerDirection: Directions.Up,
@@ -105,11 +98,6 @@ export const DEFAULT_PROPS = {
     pointerHeight: 10,
     ...BASE_STYLE,
   },
-  // [CanvasElements.Path]: {
-  //   type: CanvasElements.Path,
-  //   data: '',
-  //   ...BASE_STYLE,
-  // },
   [CanvasElements.Text]: {
     type: CanvasElements.Text,
     width: DEFAULT_ELEMENT_SIZE * 2,
@@ -137,11 +125,6 @@ export const DEFAULT_PROPS = {
     ...BASE_STYLE,
     fill: 'transparent',
   },
-  // [CanvasElements.Group]: {
-  //   type: CanvasElements.Group,
-  //   ...BASE_STYLE,
-  //   fill: 'transparent',
-  // },
 };
 
 export const DEFAULT_BRUSH_PROPS = {

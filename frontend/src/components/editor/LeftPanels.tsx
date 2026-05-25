@@ -4,16 +4,133 @@ import { reorderCanvasElements, selectEditor, setSelectedIds } from '@store/edit
 
 import { MainButton } from '@components/MainButton';
 
-import { ArrowIcon, ImageIcon, LayerIcon, PencilIcon } from '@assets/index';
+import arrow from '@assets/arrow.png';
+import ellipse from '@assets/ellipse.png';
+import {
+  ArrowIcon,
+  ArrowShape,
+  BrushIcon,
+  EllipseShape,
+  ImageIcon,
+  LayerIcon,
+  LineShape,
+  MarkerIcon,
+  PencilIcon,
+  PentagonShape,
+  PolygonShape,
+  RectangleShape,
+  StarShape,
+  TextIcon,
+  TriangleShape,
+} from '@assets/index';
+import line from '@assets/line.png';
+import pentagon from '@assets/pentagon.png';
+import polygon from '@assets/polygon.png';
+import rectangle from '@assets/rectangle.png';
+import star from '@assets/star.png';
+// import tooltip from '@assets/tooltip.png';
+import triangle from '@assets/triangle.png';
 
 import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
+
+import { DEFAULT_PROPS } from '@utils/constants';
+import { formatDate } from '@utils/utils';
 
 import { BrushTypes, type CanvasElement, CanvasElements } from '@mytypes/editorTypes';
 
 import './LeftPanels.css';
 
-export const ShapesPanel = () => {
-  return <div>ShapesPanel</div>;
+const SHAPES_PANEL_ITEMS = [
+  {
+    type: CanvasElements.Rectangle,
+    label: 'Rectangle',
+    image: rectangle,
+  },
+  {
+    type: CanvasElements.Ellipse,
+    label: 'Ellipse',
+    image: ellipse,
+  },
+  {
+    type: CanvasElements.Polygon,
+    label: 'Triangle',
+    image: triangle,
+    sides: 3,
+  },
+  {
+    type: CanvasElements.Polygon,
+    label: 'Pentagon',
+    image: pentagon,
+    sides: 5,
+  },
+  {
+    type: CanvasElements.Polygon,
+    label: 'Polygon',
+    image: polygon,
+    sides: 6,
+  },
+  {
+    type: CanvasElements.Star,
+    label: 'Star',
+    image: star,
+  },
+  {
+    type: CanvasElements.Line,
+    label: 'Line',
+    image: line,
+  },
+  {
+    type: CanvasElements.Arrow,
+    label: 'Arrow',
+    image: arrow,
+  },
+  // {
+  //   type: CanvasElements.Tooltip,
+  //   label: 'Tooltip',
+  //   image: tooltip,
+  // },
+];
+
+interface ShapesPanelProps {
+  onDragStartFromPanel?: (e: React.DragEvent, blueprintJson: string) => void;
+}
+
+export const ShapesPanel = ({ onDragStartFromPanel }: ShapesPanelProps) => {
+  const onDragStart = (e: React.DragEvent, el: (typeof SHAPES_PANEL_ITEMS)[number]) => {
+    const blueprint = JSON.stringify({
+      ...DEFAULT_PROPS[el.type],
+      ...('sides' in el ? { sides: el.sides } : {}),
+    });
+
+    e.dataTransfer.setData('application/json/canvas-element', blueprint);
+    e.dataTransfer.effectAllowed = 'move';
+
+    if (onDragStartFromPanel) onDragStartFromPanel(e, blueprint);
+  };
+
+  return (
+    <div className="col">
+      <p className="t-ital" style={{ fontSize: '0.95rem' }}>
+        Drag a shape directly onto the canvas:
+      </p>
+      <div className="shapes-container">
+        {SHAPES_PANEL_ITEMS.map((sh) => (
+          <div key={`${sh.label}-${sh.sides}`} className="shape-item">
+            <div className="shape-image-container">
+              <img
+                src={sh.image}
+                alt={sh.label}
+                className="shape-image"
+                draggable
+                onDragStart={(e) => onDragStart(e, sh)}
+              />
+            </div>
+            <span className="shape-label">{sh.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 };
 
 export const ImagesPanel = () => {
@@ -22,14 +139,9 @@ export const ImagesPanel = () => {
 
 const formatLayerDate = (createdAt?: string) => {
   if (!createdAt) return 'date unknown';
-
   const date = new Date(createdAt);
   if (Number.isNaN(date.getTime())) return 'date unknown';
-
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(date);
+  return formatDate(date.toString(), true);
 };
 
 const getLayerTypeKey = (element: CanvasElement) => {
@@ -54,6 +166,29 @@ const getLayerTypeTitle = (element: CanvasElement) => {
         default:
           return 'Pencil drawing';
       }
+    case CanvasElements.Rectangle:
+      return 'Rectangle';
+    case CanvasElements.Ellipse:
+      return 'Ellipse';
+    case CanvasElements.Polygon:
+      switch (element.sides) {
+        case 3:
+          return 'Triangle';
+        case 5:
+          return 'Pentagon';
+        default:
+          return 'Polygon';
+      }
+    case CanvasElements.Star:
+      return 'Star';
+    case CanvasElements.Line:
+      return 'Line';
+    case CanvasElements.Arrow:
+      return 'Arrow';
+    // case CanvasElements.Tooltip:
+    //   return 'Tooltip';
+    case CanvasElements.Arrow:
+      return 'Text';
     default:
       return element.type;
   }
@@ -64,7 +199,38 @@ const getLayerIcon = (element: CanvasElement) => {
     case CanvasElements.Image:
       return <ImageIcon />;
     case CanvasElements.Drawing:
-      return <PencilIcon />;
+      switch (element.brushType) {
+        case BrushTypes.Brush:
+          return <BrushIcon />;
+        case BrushTypes.Marker:
+          return <MarkerIcon />;
+        case BrushTypes.Pencil:
+        default:
+          return <PencilIcon />;
+      }
+    case CanvasElements.Rectangle:
+      return <RectangleShape />;
+    case CanvasElements.Ellipse:
+      return <EllipseShape />;
+    case CanvasElements.Polygon:
+      switch (element.sides) {
+        case 3:
+          return <TriangleShape />;
+        case 5:
+          return <PentagonShape />;
+        default:
+          return <PolygonShape />;
+      }
+    case CanvasElements.Star:
+      return <StarShape />;
+    case CanvasElements.Line:
+      return <LineShape />;
+    case CanvasElements.Arrow:
+      return <ArrowShape />;
+    // case CanvasElements.Tooltip:
+    //   return <TooltipShape />;
+    case CanvasElements.Text:
+      return <TextIcon />;
     default:
       return <LayerIcon />;
   }
@@ -95,7 +261,7 @@ export const LayersPanel = () => {
     });
 
   if (!visibleElements.length) {
-    return <p className="layers-empty">No layers yet</p>;
+    return <p className="feedback t-ital">No layers yet</p>;
   }
 
   return (

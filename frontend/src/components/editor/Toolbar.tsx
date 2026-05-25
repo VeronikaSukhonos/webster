@@ -61,154 +61,155 @@ export const Toolbar = ({ onUploadImage }: ToolbarProps) => {
   );
 
   return (
-    <div className="main-toolbar tool-container">
-      {mode !== Modes.View && (
+    <>
+      <div className="main-toolbar tool-container">
+        {mode !== Modes.View && (
+          <MainButton
+            color="transparent"
+            tooltipId={Tools.Select}
+            onClick={() => dispatch(setTool(Tools.Select))}
+          >
+            <SelectIcon className={clsx('own-color', tool === Tools.Select && 'active')} />
+          </MainButton>
+        )}
         <MainButton
           color="transparent"
-          tooltipId={Tools.Select}
-          onClick={() => dispatch(setTool(Tools.Select))}
+          tooltipId={Tools.Grab}
+          onClick={() => {
+            if (mode !== Modes.View) dispatch(setTool(Tools.Grab));
+          }}
         >
-          <SelectIcon className={clsx('own-color', tool === Tools.Select && 'active')} />
+          <GrabIcon className={clsx('own-color', tool === Tools.Grab && 'active')} />
         </MainButton>
-      )}
-      <MainButton
-        color="transparent"
-        tooltipId={Tools.Grab}
-        onClick={() => {
-          if (mode !== Modes.View) dispatch(setTool(Tools.Grab));
-        }}
-      >
-        <GrabIcon className={clsx('own-color', tool === Tools.Grab && 'active')} />
-      </MainButton>
 
-      {mode !== Modes.View && (
-        <>
-          <MainButton
-            color="transparent"
-            tooltipId={Tools.Text}
-            onClick={() => dispatch(setTool(Tools.Text))}
-          >
-            <TextIcon className={clsx('own-color', tool === Tools.Text && 'active')} />
-          </MainButton>
-          <MainButton
-            color="transparent"
-            tooltipId={lastDrawingTool}
-            onClick={() => dispatch(setTool(lastDrawingTool))}
-          >
-            {drawingTools[lastDrawingTool]}
-          </MainButton>
-          <SelectField
-            name="drawing-tool"
-            value={lastDrawingTool}
-            onChange={(e) => {
-              setLastDrawingTool(e.target.value);
-              dispatch(setTool(e.target.value));
-            }}
-            options={[
-              {
-                value: BrushTypes.Pencil,
-                label: (
-                  <SelectLabel>
-                    <PencilIcon />
-                    {capitalize(BrushTypes.Pencil)}
-                  </SelectLabel>
+        {mode !== Modes.View && (
+          <>
+            <MainButton
+              color="transparent"
+              tooltipId={Tools.Text}
+              onClick={() => dispatch(setTool(Tools.Text))}
+            >
+              <TextIcon className={clsx('own-color', tool === Tools.Text && 'active')} />
+            </MainButton>
+            <MainButton
+              color="transparent"
+              tooltipId={lastDrawingTool}
+              onClick={() => dispatch(setTool(lastDrawingTool))}
+            >
+              {drawingTools[lastDrawingTool]}
+            </MainButton>
+            <SelectField
+              name="drawing-tool"
+              value={lastDrawingTool}
+              onChange={(e) => {
+                setLastDrawingTool(e.target.value);
+                dispatch(setTool(e.target.value));
+              }}
+              options={[
+                {
+                  value: BrushTypes.Pencil,
+                  label: (
+                    <SelectLabel>
+                      <PencilIcon />
+                      {capitalize(BrushTypes.Pencil)}
+                    </SelectLabel>
+                  ),
+                },
+                {
+                  value: BrushTypes.Marker,
+                  label: (
+                    <SelectLabel>
+                      <MarkerIcon />
+                      {capitalize(BrushTypes.Marker)}
+                    </SelectLabel>
+                  ),
+                },
+                {
+                  value: BrushTypes.Brush,
+                  label: (
+                    <SelectLabel>
+                      <BrushIcon />
+                      {capitalize(BrushTypes.Brush)}
+                    </SelectLabel>
+                  ),
+                },
+                {
+                  value: BrushTypes.Eraser,
+                  label: (
+                    <SelectLabel>
+                      <EraserIcon />
+                      {capitalize(BrushTypes.Eraser)}
+                    </SelectLabel>
+                  ),
+                },
+              ]}
+              onlyChevron
+            />
+            <div className="ver-hr"></div>
+            <Sheet
+              title={LeftSheets.Shapes}
+              isOpen={leftSheet?.type === LeftSheets.Shapes}
+              setIsOpen={() => dispatch(setLeftSheet(LeftSheets.Shapes))}
+              buttonProps={{
+                color: 'transparent' as const,
+                tooltipId: LeftSheets.Shapes,
+                children: (
+                  <ShapeIcon
+                    className={clsx('own-color', leftSheet?.type === LeftSheets.Shapes && 'active')}
+                  />
                 ),
-              },
-              {
-                value: BrushTypes.Marker,
-                label: (
-                  <SelectLabel>
-                    <MarkerIcon />
-                    {capitalize(BrushTypes.Marker)}
-                  </SelectLabel>
+              }}
+            >
+              <ShapesPanel />
+            </Sheet>
+            <Sheet
+              title={LeftSheets.Images}
+              isOpen={leftSheet?.type === LeftSheets.Images}
+              setIsOpen={() => dispatch(setLeftSheet(LeftSheets.Images))}
+              buttonProps={{
+                color: 'transparent' as const,
+                tooltipId: LeftSheets.Images,
+                children: (
+                  <ImageIcon
+                    className={clsx('own-color', leftSheet?.type === LeftSheets.Images && 'active')}
+                  />
                 ),
-              },
-              {
-                value: BrushTypes.Brush,
-                label: (
-                  <SelectLabel>
-                    <BrushIcon />
-                    {capitalize(BrushTypes.Brush)}
-                  </SelectLabel>
-                ),
-              },
-              {
-                value: BrushTypes.Eraser,
-                label: (
-                  <SelectLabel>
-                    <EraserIcon />
-                    {capitalize(BrushTypes.Eraser)}
-                  </SelectLabel>
-                ),
-              },
-            ]}
-            onlyChevron
-          />
-          {isDrawingTool && (
-            <div className="drawing-settings">
-              {tool !== Tools.Eraser && (
-                <input
-                  className="color-input"
-                  type="color"
-                  value={lastUsedStyle.stroke}
-                  aria-label="Brush color"
-                  onChange={(e) => dispatch(updateLastUsedStyle({ stroke: e.target.value }))}
-                />
-              )}
-              <NumberField
-                name="brush-width"
-                value={lastUsedStyle.strokeWidth}
-                min={1}
-                max={80}
-                step={1}
-                onChange={(e) =>
-                  dispatch(updateLastUsedStyle({ strokeWidth: e.target.value ?? 1 }))
-                }
-                noStyle
-                mini
-                buttons
-              />
-            </div>
+              }}
+            >
+              <ImagesPanel />
+            </Sheet>
+
+            <MainButton color="transparent" tooltipId="upload" onClick={onUploadImage}>
+              <UploadIcon className={clsx('own-color')} />
+            </MainButton>
+          </>
+        )}
+      </div>
+      {isDrawingTool && (
+        <div className="drawing-settings tool-container">
+          {tool !== Tools.Eraser && (
+            <input
+              className="color-input"
+              type="color"
+              value={lastUsedStyle.stroke}
+              aria-label="Brush color"
+              onChange={(e) => dispatch(updateLastUsedStyle({ stroke: e.target.value }))}
+            />
           )}
-          <div className="ver-hr"></div>
-          <Sheet
-            title={LeftSheets.Shapes}
-            isOpen={leftSheet?.type === LeftSheets.Shapes}
-            setIsOpen={() => dispatch(setLeftSheet(LeftSheets.Shapes))}
-            buttonProps={{
-              color: 'transparent' as const,
-              tooltipId: LeftSheets.Shapes,
-              children: (
-                <ShapeIcon
-                  className={clsx('own-color', leftSheet?.type === LeftSheets.Shapes && 'active')}
-                />
-              ),
-            }}
-          >
-            <ShapesPanel />
-          </Sheet>
-          <Sheet
-            title={LeftSheets.Images}
-            isOpen={leftSheet?.type === LeftSheets.Images}
-            setIsOpen={() => dispatch(setLeftSheet(LeftSheets.Images))}
-            buttonProps={{
-              color: 'transparent' as const,
-              tooltipId: LeftSheets.Images,
-              children: (
-                <ImageIcon
-                  className={clsx('own-color', leftSheet?.type === LeftSheets.Images && 'active')}
-                />
-              ),
-            }}
-          >
-            <ImagesPanel />
-          </Sheet>
-
-          <MainButton color="transparent" tooltipId="upload" onClick={onUploadImage}>
-            <UploadIcon className={clsx('own-color')} />
-          </MainButton>
-        </>
+          <NumberField
+            name="brush-width"
+            value={lastUsedStyle.strokeWidth}
+            min={1}
+            max={50}
+            step={1}
+            onChange={(e) => dispatch(updateLastUsedStyle({ strokeWidth: e.target.value ?? 1 }))}
+            noStyle
+            mini
+            buttons
+            align="center"
+          />
+        </div>
       )}
-    </div>
+    </>
   );
 };
