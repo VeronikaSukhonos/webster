@@ -237,9 +237,8 @@ const getLayerSizeInfo = (element: CanvasElement) => {
   }
 };
 
-const getLayerDetails = (element: CanvasElement, visibleIndex: number) => {
+const getLayerDetails = (element: CanvasElement) => {
   return [
-    `layer ${visibleIndex + 1}`,
     getLayerSizeInfo(element),
     `${Math.round(element.rotation)}°`,
     `${Math.round(element.opacity * 100)}%`,
@@ -308,7 +307,7 @@ export const LayersPanel = () => {
               <span className="layer-text">
                 <span className="layer-title">{title}</span>
                 <span className="layer-subtitle">{formatLayerDate(element.createdAt)}</span>
-                <span className="layer-details">{getLayerDetails(element, visibleIndex)}</span>
+                <span className="layer-details">{getLayerDetails(element)}</span>
               </span>
             </button>
             <div className="layer-actions">

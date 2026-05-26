@@ -120,8 +120,16 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     const selected = selectedIds.filter((id) => id !== 'background');
 
     if (selected.length === 0) transformerRef.current.nodes([]);
-    else if (selectGroupRef.current) transformerRef.current.nodes([selectGroupRef.current]);
-  }, [selectedIds]);
+    else if (selectGroupRef.current) {
+      const selectedNodes = selectGroupRef.current
+        .find('.element')
+        .filter((node) => selected.includes(node.id()));
+
+      transformerRef.current.nodes(
+        selectedNodes.length === 1 ? [selectedNodes[0]] : [selectGroupRef.current],
+      );
+    }
+  }, [selectedIds, stageRef.current, selectGroupRef.current]);
 
   const calcSelectBox = useCallback(() => {
     return {
