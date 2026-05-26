@@ -330,7 +330,7 @@ export const ElementPanel = ({
             name="fontFamily"
             label="Font family"
             value={element.fontFamily}
-            onChange={(e) => updateElement({ fontFamily: e.target.value }, Actions.Font)}
+            onChange={(e) => updateElement({ fontFamily: e.target.value }, Actions.TextFont)}
             mini
           />
           <div className="element-panel-section">
@@ -339,7 +339,7 @@ export const ElementPanel = ({
               label="Font size"
               value={Math.round(element.fontSize)}
               onChange={(e) =>
-                updateElement({ fontSize: e.target.value ?? element.fontSize }, Actions.Font)
+                updateElement({ fontSize: e.target.value ?? element.fontSize }, Actions.TextFont)
               }
               min={1}
               max={300}
@@ -351,7 +351,7 @@ export const ElementPanel = ({
               label="Padding"
               value={Math.round(element.padding)}
               onChange={(e) =>
-                updateElement({ padding: e.target.value ?? element.padding }, Actions.Font)
+                updateElement({ padding: e.target.value ?? element.padding }, Actions.TextFont)
               }
               min={0}
               max={300}
