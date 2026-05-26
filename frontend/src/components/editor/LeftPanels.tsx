@@ -1,8 +1,15 @@
+import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
+
+import axios from 'axios';
 import clsx from 'clsx';
 
 import { reorderCanvasElements, selectEditor, setSelectedIds } from '@store/editorSlice';
 
+import { TextField } from '@components/InputFields';
+import { Load } from '@components/Load';
 import { MainButton } from '@components/MainButton';
+import { Pagination } from '@components/Pagination';
 
 import arrow from '@assets/arrow.png';
 import ellipse from '@assets/ellipse.png';
@@ -19,6 +26,7 @@ import {
   PentagonShape,
   PolygonShape,
   RectangleShape,
+  SearchIcon,
   StarShape,
   TextIcon,
   TriangleShape,
@@ -31,7 +39,7 @@ import star from '@assets/star.png';
 // import tooltip from '@assets/tooltip.png';
 import triangle from '@assets/triangle.png';
 
-import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
+import { useAppDispatch, useAppSelector, useFeedback, usePage, useTotal } from '@hooks/utilHooks';
 
 import { DEFAULT_PROPS } from '@utils/constants';
 import { capitalize, formatDate } from '@utils/utils';
@@ -135,8 +143,113 @@ export const ShapesPanel = () => {
   );
 };
 
-export const ImagesPanel = () => {
-  return <div>ImagesPanel</div>;
+export const ImagesPanel = ({
+  fileInputRef,
+}: {
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+}) => {
+  const UNSPLASH_API_KEY = import.meta.env.VITE_UNSPLASH_API_KEY;
+  const { searchParams, setSearchParams, getPage } = usePage();
+  const [areImagesLoading, setAreImagesLoading] = useState(false);
+  const [imagesFeedback, setImagesFeedback] = useFeedback();
+  const [images, setImages] = useState([]);
+  const [search, setSearch] = useState(searchParams.get('search') ?? '');
+  const { total, setTotal } = useTotal();
+
+  const searchImages = function (e: React.SubmitEvent) {
+    e.preventDefault();
+    setSearchParams(search && { search });
+  };
+
+  const loadImage = (e: React.MouseEvent<HTMLImageElement>) => {
+    if (fileInputRef && fileInputRef.current) {
+      axios
+        .get(e.currentTarget.src, { responseType: 'blob' })
+        .then(({ data: res }) => {
+          const file = new File([res], e.currentTarget.id, { type: res.type });
+          const transferFile = new DataTransfer();
+          transferFile.items.add(file);
+          const nativeSetter = Object.getOwnPropertyDescriptor(
+            window.HTMLInputElement.prototype,
+            'value',
+          )?.set;
+          nativeSetter?.call(fileInputRef.current, '');
+          const event = new Event('change', { bubbles: true });
+          if (fileInputRef.current !== null) {
+            fileInputRef.current.files = transferFile.files;
+            fileInputRef.current.dispatchEvent(event);
+          }
+        })
+        .catch((err) => {
+          toast(err.message);
+        });
+    }
+  };
+
+  useEffect(() => {
+    setAreImagesLoading(true);
+    axios
+      .get(
+        `https://api.unsplash.com/search/photos?client_id=${UNSPLASH_API_KEY}&query=${search === '' ? 'all' : search}&page=${getPage()}`,
+      )
+      .then(({ data: res }) => {
+        setAreImagesLoading(false);
+        setImagesFeedback('Fetched images successfully', 'ok');
+        setImages(res.results);
+        setTotal(res.total, Math.ceil(res.total / res.total_pages));
+      })
+      .catch((err) => {
+        setAreImagesLoading(false);
+        setImagesFeedback(err.message, 'fail');
+        setImages([]);
+        setTotal();
+      });
+  }, [searchParams]);
+
+  return (
+    <>
+      <p className="t-ital" style={{ fontSize: '0.95rem', marginBottom: 5 + 'px' }}>
+        Click on images to add them to the canvas:
+      </p>
+      <form onSubmit={searchImages} style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
+        <TextField
+          name="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search images..."
+          disabled={areImagesLoading}
+        />
+        <MainButton type="submit" color="white" disabled={areImagesLoading}>
+          <SearchIcon />
+        </MainButton>
+      </form>
+      {areImagesLoading || !imagesFeedback.status ? (
+        <Load spinner />
+      ) : imagesFeedback.status === 'fail' ? (
+        <p className="feedback t-ital">{imagesFeedback.message}</p>
+      ) : imagesFeedback.status === 'ok' && !images.length ? (
+        <p className="feedback t-ital">No images</p>
+      ) : (
+        <div style={{ display: 'flex', flexFlow: 'row wrap' }}>
+          {images.length === 0 ? (
+            <p>No images</p>
+          ) : (
+            images.map((image: { id: string; urls: { raw: string }; alt_description: string }) => (
+              <img
+                key={image.id}
+                src={image.urls.raw}
+                alt={image.alt_description}
+                style={{ height: 40 + '%', padding: 5 + 'px', width: 40 + '%' }}
+                onClick={loadImage}
+                id={image.id}
+              />
+            ))
+          )}
+        </div>
+      )}
+      <Pagination totalPages={total.totalPages} disabled={areImagesLoading} />
+    </>
+  );
 };
 
 const formatLayerDate = (createdAt?: string) => {

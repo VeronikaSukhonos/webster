@@ -30,9 +30,10 @@ import { BrushTypes, LeftSheets, Modes, Tools } from '@mytypes/editorTypes';
 
 interface ToolbarProps {
   onUploadImage?: () => void;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
-export const Toolbar = ({ onUploadImage }: ToolbarProps) => {
+export const Toolbar = ({ onUploadImage, fileInputRef }: ToolbarProps) => {
   const dispatch = useAppDispatch();
 
   const tool = useAppSelector(selectEditor.tool);
@@ -176,7 +177,7 @@ export const Toolbar = ({ onUploadImage }: ToolbarProps) => {
                 ),
               }}
             >
-              <ImagesPanel />
+              <ImagesPanel fileInputRef={fileInputRef} />
             </Sheet>
 
             <MainButton color="transparent" tooltipId="upload" onClick={onUploadImage}>

@@ -883,7 +883,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
         hidden
         onChange={handleBackgroundImageUpload}
       />
-      <Toolbar onUploadImage={() => fileInputRef.current?.click()} />
+      <Toolbar onUploadImage={() => fileInputRef.current?.click()} fileInputRef={fileInputRef} />
       <Stage
         {...stageSize}
         {...toolbarHandlers}
