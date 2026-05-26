@@ -210,6 +210,42 @@ const getLayerIcon = (element: CanvasElement) => {
   }
 };
 
+const getLayerSizeInfo = (element: CanvasElement) => {
+  const scaleX = Math.abs(element.scaleX || 1);
+  const scaleY = Math.abs(element.scaleY || 1);
+
+  switch (element.type) {
+    case CanvasElements.Rectangle:
+    case CanvasElements.Image:
+    case CanvasElements.Text:
+      return `${Math.round(element.width * scaleX)} x ${Math.round(element.height * scaleY)}`;
+    case CanvasElements.Ellipse:
+      return `${Math.round(element.radiusX * 2 * scaleX)} x ${Math.round(element.radiusY * 2 * scaleY)}`;
+    case CanvasElements.Triangle:
+    case CanvasElements.Pentagon:
+    case CanvasElements.Polygon:
+      return `${Math.round(element.radius * 2 * scaleX)} x ${Math.round(element.radius * 2 * scaleY)}`;
+    case CanvasElements.Star:
+      return `${Math.round(element.outerRadius * 2 * scaleX)} x ${Math.round(element.outerRadius * 2 * scaleY)}`;
+    case CanvasElements.Line:
+    case CanvasElements.Arrow:
+      return `${Math.round(element.strokeWidth)}px stroke`;
+    case CanvasElements.Drawing:
+      return `${element.points.length / 2} points`;
+    default:
+      return 'size unknown';
+  }
+};
+
+const getLayerDetails = (element: CanvasElement, visibleIndex: number) => {
+  return [
+    `layer ${visibleIndex + 1}`,
+    getLayerSizeInfo(element),
+    `${Math.round(element.rotation)}°`,
+    `${Math.round(element.opacity * 100)}%`,
+  ].join(' · ');
+};
+
 export const LayersPanel = () => {
   const dispatch = useAppDispatch();
   const elements = useAppSelector(selectEditor.canvas).elements;
@@ -243,19 +279,36 @@ export const LayersPanel = () => {
       {[...visibleElements].reverse().map((element) => {
         const visibleIndex = visibleElements.findIndex((el) => el.id === element.id);
         const isSelected = selectedIds.includes(element.id);
-        const title = `${getLayerTypeTitle(element)} #${layerNumbersById.get(element.id) ?? 1}`;
+        const title = `${getLayerTypeTitle(element)} #${
+          element.layerNumber ?? layerNumbersById.get(element.id) ?? 1
+        }`;
 
         return (
           <div key={element.id} className={clsx('layer-item', isSelected && 'selected')}>
             <button
               className="layer-select"
               type="button"
-              onClick={() => dispatch(setSelectedIds([element.id]))}
+              aria-pressed={isSelected}
+              onClick={(e) => {
+                if (e.ctrlKey || e.metaKey) {
+                  dispatch(
+                    setSelectedIds(
+                      isSelected
+                        ? selectedIds.filter((id) => id !== element.id)
+                        : [...selectedIds, element.id],
+                    ),
+                  );
+                  return;
+                }
+
+                dispatch(setSelectedIds([element.id]));
+              }}
             >
               <span className="layer-icon">{getLayerIcon(element)}</span>
               <span className="layer-text">
                 <span className="layer-title">{title}</span>
                 <span className="layer-subtitle">{formatLayerDate(element.createdAt)}</span>
+                <span className="layer-details">{getLayerDetails(element, visibleIndex)}</span>
               </span>
             </button>
             <div className="layer-actions">

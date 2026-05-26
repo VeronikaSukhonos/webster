@@ -1,0 +1,19 @@
+.element-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 240px;
+}
+
+.element-panel-section {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.element-panel-title {
+  color: var(--accent-font-color);
+  font-size: 0.9rem;
+  font-weight: 900;
+  margin: 4px 0 -4px;
+}

@@ -15,9 +15,11 @@ import {
   selectEditor,
   setCanvasSize,
   setLeftSheet,
+  setRightSheet,
   setSelectedIds,
   setTool,
   translateCanvasElements,
+  updateCanvasElements,
 } from '@store/editorSlice';
 
 import { NumberField, SizeField } from '@components/InputFields';
@@ -25,12 +27,13 @@ import { MainButton } from '@components/MainButton';
 import { Popover } from '@components/Menu';
 import { CanvasElementShape, CanvasImage } from '@components/editor/CanvasElementShape';
 import { LayersPanel } from '@components/editor/LeftPanels';
+import { ElementPanel } from '@components/editor/RightPanels';
 import { Sheet } from '@components/editor/Sheet';
 import { Toolbar } from '@components/editor/Toolbar';
 
 import grabCursor from '@assets/grab.png';
 import grabbingCursor from '@assets/grabbing.png';
-import { LayerIcon, QuestionIcon } from '@assets/index';
+import { LayerIcon, QuestionIcon, SettingsIcon } from '@assets/index';
 import selectCursor from '@assets/select.png';
 
 import { useStageSize } from '@hooks/editor/useStageSize';
@@ -55,12 +58,14 @@ import { createLocalImageItem } from '@utils/editorUtils';
 import { shortcuts } from '@utils/shortcuts';
 
 import {
+  Actions,
   BrushTypes,
   type CanvasElement,
   CanvasElements,
   type CanvasProps,
   LeftSheets,
   Modes,
+  RightSheets,
   Tools,
 } from '@mytypes/editorTypes';
 
@@ -78,6 +83,7 @@ const cloneCanvasElement = (element: CanvasElement, offset = 0): CanvasElement =
   return {
     ...clone,
     id: crypto.randomUUID(),
+    layerNumber: undefined,
     x: clone.x + offset,
     y: clone.y + offset,
     createdAt: new Date().toISOString(),
@@ -117,6 +123,12 @@ const getCanvasPaintOrder = (elements: CanvasElement[]) => {
   return orderedElements;
 };
 
+const normalizeRotation = (rotation: number) => {
+  const normalized = rotation % 360;
+
+  return normalized < 0 ? normalized + 360 : normalized;
+};
+
 export interface EditorProps extends CanvasProps {
   onSave?: () => void | Promise<unknown>;
 }
@@ -136,6 +148,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
   const tool = useAppSelector(selectEditor.tool);
   const mode = useAppSelector(selectEditor.mode);
   const leftSheet = useAppSelector(selectEditor.leftSheet);
+  const rightSheet = useAppSelector(selectEditor.rightSheet);
   const project = useAppSelector(selectEditor.project);
   const canvasPaintElements = useMemo(
     () => getCanvasPaintOrder(canvas.elements),
@@ -245,6 +258,50 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
       toast(ERROR_TYPES.SWW);
     }
   };
+
+  const resetSelectGroupTransform = useCallback(() => {
+    const group = selectGroupRef.current;
+    if (!group) return;
+
+    group.position({ x: 0, y: 0 });
+    group.scale({ x: 1, y: 1 });
+    group.rotation(0);
+    setSelectGroupPos({ x: 0, y: 0 });
+  }, [selectGroupRef, setSelectGroupPos]);
+
+  const handleTransformEnd = useCallback(() => {
+    const stage = stageRef.current;
+    const group = selectGroupRef.current;
+    if (!stage || !group) return;
+
+    const updates = group
+      .find('.element')
+      .map((node) => {
+        const id = node.id();
+        if (!selectedIds.includes(id)) return null;
+
+        const transform = node.getAbsoluteTransform(stage).decompose();
+
+        return {
+          id,
+          changes: {
+            x: transform.x,
+            y: transform.y,
+            rotation: normalizeRotation(transform.rotation),
+            scaleX: transform.scaleX,
+            scaleY: transform.scaleY,
+          },
+        };
+      })
+      .filter((update): update is NonNullable<typeof update> => !!update);
+
+    setisTransforming(false);
+    resetSelectGroupTransform();
+
+    if (updates.length) {
+      dispatch(updateCanvasElements({ updates, action: Actions.Resize }));
+    }
+  }, [dispatch, resetSelectGroupTransform, selectedIds, stageRef, selectGroupRef]);
 
   useEffect(() => {
     canvasElementsRef.current = canvas.elements;
@@ -558,7 +615,8 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
             anchorStrokeWidth={2}
             anchorSize={10}
             anchorCornerRadius={20}
-            // onTransformEnd={}
+            onTransformStart={() => setisTransforming(true)}
+            onTransformEnd={handleTransformEnd}
           />
           <Rect {...selectRectProps} />
         </Layer>
@@ -602,7 +660,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
         </div>
         {mode !== Modes.View && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div className="tool-container mini" style={{ maxWidth: '215px', marginRight: 42 }}>
+            <div className="tool-container mini canvas-size-toolbar">
               <SizeField
                 name="canvas-size"
                 value={{ width: canvas.background.width, height: canvas.background.height }}
@@ -615,14 +673,30 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
                 mini
               />
             </div>
+            <Sheet
+              title={RightSheets.Element}
+              isOpen={rightSheet?.type === RightSheets.Element}
+              setIsOpen={() => dispatch(setRightSheet(RightSheets.Element))}
+              side="right"
+              buttonProps={{
+                noStyle: true,
+                className: 'tool-container mini square',
+                tooltipId: RightSheets.Element,
+                children: (
+                  <SettingsIcon
+                    className={clsx(
+                      'own-color',
+                      rightSheet?.type === RightSheets.Element && 'active',
+                    )}
+                  />
+                ),
+              }}
+            >
+              <ElementPanel />
+            </Sheet>
             <Popover
               button={
-                <MainButton
-                  noStyle
-                  className="tool-container mini square"
-                  style={{ position: 'fixed', bottom: 10, right: 10 }}
-                  tooltipId="help"
-                >
+                <MainButton noStyle className="tool-container mini square" tooltipId="help">
                   <QuestionIcon />
                 </MainButton>
               }

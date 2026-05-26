@@ -1,10 +1,21 @@
-import { selectEditor, setHistoryTarget } from '@store/editorSlice';
+import { selectEditor, setHistoryTarget, updateCanvasElements } from '@store/editorSlice';
 
+import { FieldWrapper, NumberField, SizeField, TextField } from '@components/InputFields';
 import { Menu, MenuItem } from '@components/Menu';
 
 import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
 
 import { capitalize } from '@utils/utils';
+
+import {
+  type Action,
+  Actions,
+  type CanvasElement,
+  CanvasElements,
+  type Size,
+} from '@mytypes/editorTypes';
+
+import './RightPanels.css';
 
 export const HistoryPanel = () => {
   const dispatch = useAppDispatch();
@@ -33,5 +44,372 @@ export const HistoryPanel = () => {
         );
       })}
     </Menu>
+  );
+};
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+const getElementTitle = (element: CanvasElement) => {
+  if (element.type === CanvasElements.Drawing) return `${capitalize(element.brushType)} drawing`;
+
+  return capitalize(element.type);
+};
+
+const getElementSize = (element: CanvasElement): Size | null => {
+  const scaleX = Math.abs(element.scaleX || 1);
+  const scaleY = Math.abs(element.scaleY || 1);
+
+  switch (element.type) {
+    case CanvasElements.Rectangle:
+    case CanvasElements.Image:
+    case CanvasElements.Text:
+      return {
+        width: Math.round(element.width * scaleX),
+        height: Math.round(element.height * scaleY),
+      };
+    case CanvasElements.Ellipse:
+      return {
+        width: Math.round(element.radiusX * 2 * scaleX),
+        height: Math.round(element.radiusY * 2 * scaleY),
+      };
+    case CanvasElements.Triangle:
+    case CanvasElements.Pentagon:
+    case CanvasElements.Polygon:
+      return {
+        width: Math.round(element.radius * 2 * scaleX),
+        height: Math.round(element.radius * 2 * scaleY),
+      };
+    case CanvasElements.Star:
+      return {
+        width: Math.round(element.outerRadius * 2 * scaleX),
+        height: Math.round(element.outerRadius * 2 * scaleY),
+      };
+    default:
+      return null;
+  }
+};
+
+const getSizeChanges = (element: CanvasElement, size: Size): Partial<CanvasElement> | null => {
+  const scaleX = Math.abs(element.scaleX || 1);
+  const scaleY = Math.abs(element.scaleY || 1);
+  const width = Math.max(1, size.width);
+  const height = Math.max(1, size.height);
+
+  switch (element.type) {
+    case CanvasElements.Rectangle:
+    case CanvasElements.Image:
+    case CanvasElements.Text:
+      return {
+        width: width / scaleX,
+        height: height / scaleY,
+      } as Partial<CanvasElement>;
+    case CanvasElements.Ellipse:
+      return {
+        radiusX: width / scaleX / 2,
+        radiusY: height / scaleY / 2,
+      } as Partial<CanvasElement>;
+    case CanvasElements.Triangle:
+    case CanvasElements.Pentagon:
+    case CanvasElements.Polygon:
+      return { radius: Math.min(width / scaleX, height / scaleY) / 2 } as Partial<CanvasElement>;
+    case CanvasElements.Star:
+      return {
+        outerRadius: Math.min(width / scaleX, height / scaleY) / 2,
+        innerRadius: Math.min(width / scaleX, height / scaleY) / 4,
+      } as Partial<CanvasElement>;
+    default:
+      return null;
+  }
+};
+
+const canUseFill = (element: CanvasElement) =>
+  ![CanvasElements.Line, CanvasElements.Arrow, CanvasElements.Drawing, CanvasElements.Image].some(
+    (type) => type === element.type,
+  );
+
+const canUseBorderRadius = (element: CanvasElement) =>
+  element.type === CanvasElements.Rectangle || element.type === CanvasElements.Image;
+
+const getBorderRadius = (element: CanvasElement) => {
+  if (!canUseBorderRadius(element) || !('cornerRadius' in element)) return 0;
+
+  return element.cornerRadius[0] ?? 0;
+};
+
+const getShadowOffset = (element: CanvasElement, axis: 'x' | 'y') =>
+  element.shadowOffset?.[axis] ?? 0;
+
+const getCornerRadiusChanges = (radius: number): Partial<CanvasElement> => {
+  return {
+    cornerRadius: [radius, radius, radius, radius],
+  } as Partial<CanvasElement>;
+};
+
+export const ElementPanel = () => {
+  const dispatch = useAppDispatch();
+  const elements = useAppSelector(selectEditor.canvas).elements;
+  const selectedIds = useAppSelector(selectEditor.selected);
+  const selectedElements = elements.filter((element) => selectedIds.includes(element.id));
+
+  if (!selectedElements.length) {
+    return <p className="feedback t-ital">Select an element to edit its properties</p>;
+  }
+
+  if (selectedElements.length > 1) {
+    return (
+      <div className="element-panel">
+        <h3 className="content-title mini">{selectedElements.length} elements selected</h3>
+        <p className="feedback t-ital">
+          Group transform is available on canvas. Detailed editing is available for one element.
+        </p>
+      </div>
+    );
+  }
+
+  const element = selectedElements[0];
+
+  const updateElement = (changes: Partial<CanvasElement>, action: Action = Actions.Resize) => {
+    dispatch(updateCanvasElements({ updates: [{ id: element.id, changes }], action }));
+  };
+
+  const size = getElementSize(element);
+
+  return (
+    <div className="element-panel">
+      <h3 className="content-title mini">{getElementTitle(element)}</h3>
+
+      <h4 className="element-panel-title">Placement</h4>
+      <div className="element-panel-section">
+        <NumberField
+          name="x"
+          label="X"
+          value={Math.round(element.x)}
+          onChange={(e) => updateElement({ x: e.target.value ?? element.x })}
+          step={1}
+          mini
+        />
+        <NumberField
+          name="y"
+          label="Y"
+          value={Math.round(element.y)}
+          onChange={(e) => updateElement({ y: e.target.value ?? element.y })}
+          step={1}
+          mini
+        />
+      </div>
+
+      <div className="element-panel-section">
+        <NumberField
+          name="rotation"
+          label="Rotation"
+          value={Math.round(element.rotation)}
+          onChange={(e) => updateElement({ rotation: e.target.value ?? element.rotation })}
+          min={0}
+          max={360}
+          step={1}
+          mini
+        />
+        <NumberField
+          name="opacity"
+          label="Opacity"
+          value={Math.round(element.opacity * 100)}
+          onChange={(e) =>
+            updateElement({ opacity: clamp((e.target.value ?? element.opacity * 100) / 100, 0, 1) })
+          }
+          min={0}
+          max={100}
+          step={1}
+          mini
+        />
+      </div>
+
+      {size && (
+        <>
+          <h4 className="element-panel-title">Size</h4>
+          <SizeField
+            name="element-size"
+            value={size}
+            onChange={(e) => {
+              const changes = getSizeChanges(element, e.target.value);
+              if (changes) updateElement(changes);
+            }}
+            min={1}
+            step={1}
+            innerLabels
+            mini
+          />
+        </>
+      )}
+
+      {element.type === CanvasElements.Text && (
+        <>
+          <h4 className="element-panel-title">Fonts</h4>
+          <TextField
+            name="fontFamily"
+            label="Font family"
+            value={element.fontFamily}
+            onChange={(e) => updateElement({ fontFamily: e.target.value }, Actions.Font)}
+            mini
+          />
+          <div className="element-panel-section">
+            <NumberField
+              name="fontSize"
+              label="Font size"
+              value={Math.round(element.fontSize)}
+              onChange={(e) =>
+                updateElement({ fontSize: e.target.value ?? element.fontSize }, Actions.Font)
+              }
+              min={1}
+              max={300}
+              step={1}
+              mini
+            />
+            <NumberField
+              name="padding"
+              label="Padding"
+              value={Math.round(element.padding)}
+              onChange={(e) =>
+                updateElement({ padding: e.target.value ?? element.padding }, Actions.Font)
+              }
+              min={0}
+              max={300}
+              step={1}
+              mini
+            />
+          </div>
+        </>
+      )}
+
+      <h4 className="element-panel-title">Colors</h4>
+      <div className="element-panel-section">
+        {canUseFill(element) && (
+          <FieldWrapper label="Fill" mini>
+            <input
+              className="color-input"
+              type="color"
+              value={element.fill}
+              onChange={(e) => updateElement({ fill: e.target.value }, Actions.Fill)}
+            />
+          </FieldWrapper>
+        )}
+      </div>
+
+      <h4 className="element-panel-title">Borders</h4>
+      <div className="element-panel-section">
+        <FieldWrapper label="Stroke" mini>
+          <input
+            className="color-input"
+            type="color"
+            value={element.stroke}
+            onChange={(e) => updateElement({ stroke: e.target.value }, Actions.Stroke)}
+          />
+        </FieldWrapper>
+        <NumberField
+          name="strokeWidth"
+          label="Stroke width"
+          value={Math.round(element.strokeWidth)}
+          onChange={(e) =>
+            updateElement({ strokeWidth: e.target.value ?? element.strokeWidth }, Actions.Stroke)
+          }
+          min={0}
+          max={120}
+          step={1}
+          mini
+        />
+      </div>
+
+      {canUseBorderRadius(element) && (
+        <NumberField
+          name="cornerRadius"
+          label="Corner radius"
+          value={getBorderRadius(element)}
+          onChange={(e) =>
+            updateElement(
+              getCornerRadiusChanges(e.target.value ?? getBorderRadius(element)),
+              Actions.Stroke,
+            )
+          }
+          min={0}
+          max={500}
+          step={1}
+          mini
+        />
+      )}
+
+      <h4 className="element-panel-title">Shadows</h4>
+      <div className="element-panel-section">
+        <FieldWrapper label="Color" mini>
+          <input
+            className="color-input"
+            type="color"
+            value={element.shadowColor ?? '#000000'}
+            onChange={(e) => updateElement({ shadowColor: e.target.value }, Actions.Shadow)}
+          />
+        </FieldWrapper>
+        <NumberField
+          name="shadowOpacity"
+          label="Opacity"
+          value={Math.round((element.shadowOpacity ?? 0) * 100)}
+          onChange={(e) =>
+            updateElement(
+              { shadowOpacity: clamp((e.target.value ?? 0) / 100, 0, 1) },
+              Actions.Shadow,
+            )
+          }
+          min={0}
+          max={100}
+          step={1}
+          mini
+        />
+      </div>
+      <div className="element-panel-section">
+        <NumberField
+          name="shadowBlur"
+          label="Blur"
+          value={Math.round(element.shadowBlur ?? 0)}
+          onChange={(e) => updateElement({ shadowBlur: e.target.value ?? 0 }, Actions.Shadow)}
+          min={0}
+          max={200}
+          step={1}
+          mini
+        />
+        <NumberField
+          name="shadowOffsetX"
+          label="Offset X"
+          value={Math.round(getShadowOffset(element, 'x'))}
+          onChange={(e) =>
+            updateElement(
+              {
+                shadowOffset: {
+                  x: e.target.value ?? 0,
+                  y: getShadowOffset(element, 'y'),
+                },
+              },
+              Actions.Shadow,
+            )
+          }
+          step={1}
+          mini
+        />
+      </div>
+      <NumberField
+        name="shadowOffsetY"
+        label="Offset Y"
+        value={Math.round(getShadowOffset(element, 'y'))}
+        onChange={(e) =>
+          updateElement(
+            {
+              shadowOffset: {
+                x: getShadowOffset(element, 'x'),
+                y: e.target.value ?? 0,
+              },
+            },
+            Actions.Shadow,
+          )
+        }
+        step={1}
+        mini
+      />
+    </div>
   );
 };

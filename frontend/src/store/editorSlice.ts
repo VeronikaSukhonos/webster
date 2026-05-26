@@ -84,11 +84,46 @@ const initialState: EditorState = {
 const normalizeElementOrder = (elements: CanvasElement[]) =>
   elements.map((el, index) => ({ ...el, order: index }));
 
-const prepareCanvasElement = (element: CanvasElement, order: number): CanvasElement => ({
+const getElementLayerTypeKey = (element: CanvasElement) => {
+  if (element.type === CanvasElements.Drawing && 'brushType' in element) {
+    return `${element.type}:${element.brushType}`;
+  }
+
+  return element.type;
+};
+
+const getNextLayerNumber = (elements: CanvasElement[], element: CanvasElement) => {
+  const key = getElementLayerTypeKey(element);
+  const sameTypeElements = elements.filter((el) => getElementLayerTypeKey(el) === key);
+  const maxLayerNumber = sameTypeElements.reduce(
+    (max, el, index) => Math.max(max, el.layerNumber ?? index + 1),
+    0,
+  );
+
+  return maxLayerNumber + 1;
+};
+
+const prepareCanvasElement = (
+  element: CanvasElement,
+  order: number,
+  existingElements: CanvasElement[],
+): CanvasElement => ({
   ...element,
   createdAt: element.createdAt ?? new Date().toISOString(),
+  layerNumber: element.layerNumber ?? getNextLayerNumber(existingElements, element),
   order,
 });
+
+const normalizeLayerNumbers = (elements: CanvasElement[]) => {
+  const preparedElements: CanvasElement[] = [];
+
+  return elements.map((element, index) => {
+    const prepared = prepareCanvasElement(element, element.order ?? index, preparedElements);
+
+    preparedElements.push(prepared);
+    return prepared;
+  });
+};
 
 const isHiddenLayerElement = (element: CanvasElement) =>
   element.type === CanvasElements.Drawing && element.brushType === BrushTypes.Eraser;
@@ -132,7 +167,11 @@ const editorSlice = createSlice({
       });
     },
     addCanvasElement: (state, action: PayloadAction<CanvasElement>) => {
-      const el = prepareCanvasElement(action.payload, state.canvas.elements.length);
+      const el = prepareCanvasElement(
+        action.payload,
+        state.canvas.elements.length,
+        state.canvas.elements,
+      );
 
       state.canvas.elements = [...state.canvas.elements, el];
 
@@ -146,9 +185,17 @@ const editorSlice = createSlice({
     addCanvasElements: (state, action: PayloadAction<CanvasElement[]>) => {
       if (!action.payload.length) return;
 
-      const elements = action.payload.map((el, index) =>
-        prepareCanvasElement(el, state.canvas.elements.length + index),
-      );
+      let existingElements = [...state.canvas.elements];
+      const elements = action.payload.map((el, index) => {
+        const prepared = prepareCanvasElement(
+          el,
+          state.canvas.elements.length + index,
+          existingElements,
+        );
+
+        existingElements = [...existingElements, prepared];
+        return prepared;
+      });
 
       state.canvas.elements = [...state.canvas.elements, ...elements];
       state.selectedIds = elements.map((el) => el.id);
@@ -220,6 +267,41 @@ const editorSlice = createSlice({
       if (!ids.length || !from.length || !to.length) return;
 
       addToHistory(state, { ids, from, to, action: Actions.Move });
+    },
+    updateCanvasElements: (
+      state,
+      action: PayloadAction<{
+        updates: { id: string; changes: Partial<CanvasElement> }[];
+        action?: Action;
+      }>,
+    ) => {
+      if (!action.payload.updates.length) return;
+
+      const updates = new Map(
+        action.payload.updates.map((update) => [update.id, update.changes] as const),
+      );
+      const from = structuredClone(
+        current(state.canvas.elements).filter((el) => updates.has(el.id)),
+      );
+      const to: CanvasElement[] = [];
+
+      if (!from.length) return;
+
+      state.canvas.elements = state.canvas.elements.map((el) => {
+        const changes = updates.get(el.id);
+        if (!changes) return el;
+
+        const updated = { ...el, ...changes } as CanvasElement;
+        to.push(updated);
+        return updated;
+      });
+
+      addToHistory(state, {
+        ids: to.map((el) => el.id),
+        from,
+        to,
+        action: action.payload.action ?? Actions.Resize,
+      });
     },
     reorderCanvasElements: (
       state,
@@ -293,7 +375,10 @@ const editorSlice = createSlice({
 
       Object.assign(state, initialState);
       if (content) {
-        state.canvas = content;
+        state.canvas = {
+          ...content,
+          elements: normalizeLayerNumbers(content.elements),
+        };
         state.project = project;
         state.mode = action.payload.mode;
       }
@@ -303,7 +388,10 @@ const editorSlice = createSlice({
 
       Object.assign(state, initialState);
       if (content) {
-        state.canvas = content;
+        state.canvas = {
+          ...content,
+          elements: normalizeLayerNumbers(content.elements),
+        };
         state.template = template;
         state.mode = Modes.View;
         state.tool = Tools.Grab;
@@ -356,6 +444,7 @@ export const {
   moveCanvasElements,
   translateCanvasElements,
   commitCanvasElementsMove,
+  updateCanvasElements,
   reorderCanvasElements,
   setHistory,
   setHistoryTarget,

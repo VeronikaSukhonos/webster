@@ -114,7 +114,8 @@
 }
 
 .layer-title,
-.layer-subtitle {
+.layer-subtitle,
+.layer-details {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -129,6 +130,13 @@
   color: var(--dark-blue);
   font-size: 0.75rem;
   font-weight: 700;
+}
+
+.layer-details {
+  color: var(--main-font-color);
+  font-size: 0.72rem;
+  font-weight: 600;
+  opacity: 0.75;
 }
 
 .layer-actions {

@@ -94,6 +94,11 @@
   border-radius: 6px;
 }
 
+.canvas-size-toolbar {
+  margin-left: 56px;
+  max-width: 215px;
+}
+
 .eraser-cursor-overlay {
   position: fixed;
   z-index: 150;

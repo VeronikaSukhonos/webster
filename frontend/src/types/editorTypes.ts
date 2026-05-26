@@ -56,6 +56,7 @@ export interface BaseCanvasElement extends Placement, BaseStyle {
   id: string;
   type: CanvasElementType;
   order?: number;
+  layerNumber?: number;
   createdAt?: string;
   locked?: boolean;
 }
