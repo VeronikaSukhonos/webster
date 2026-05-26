@@ -33,6 +33,7 @@ export const AuthMenu = ({ stageRef, backgroundRef }: Partial<CanvasProps>) => {
   const hasUnsavedChanges = useAppSelector(selectEditor.hasUnsavedChanges);
   const canvas = useAppSelector(selectEditor.canvas);
   const project = useAppSelector(selectEditor.project);
+  const mode = useAppSelector(selectEditor.mode);
 
   const logout = (nav: boolean = false) => {
     setIsLoading(true);
@@ -52,6 +53,8 @@ export const AuthMenu = ({ stageRef, backgroundRef }: Partial<CanvasProps>) => {
   const saveAndlogout = async () => {
     if (auth && project && project.id && project.author?.id === auth.id) {
       if (hasUnsavedChanges) {
+        const m = mode;
+
         setIsLoading(true);
         dispatch(setMode(Modes.Load));
 
@@ -82,7 +85,7 @@ export const AuthMenu = ({ stageRef, backgroundRef }: Partial<CanvasProps>) => {
             logout();
           })
           .catch((err) => {
-            dispatch(setMode(Modes.Edit));
+            dispatch(setMode(m === Modes.HalfEdit ? Modes.HalfEdit : Modes.Edit));
             setIsLoading(false);
             toast(err.message);
           });

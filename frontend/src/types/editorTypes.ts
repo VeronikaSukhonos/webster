@@ -217,6 +217,7 @@ export interface LastUsedStyle {
 
 export const Modes = {
   Edit: 'edit',
+  HalfEdit: 'halfedit',
   View: 'view',
   Load: 'load',
 } as const;

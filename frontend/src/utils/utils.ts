@@ -8,7 +8,7 @@ export const formatDate = (date: string, withTime: boolean = false) => {
   const d = new Date(date);
 
   if (!date) return '';
-  if (withTime) return format(d, 'd MMM yyyy HH:mm');
+  if (withTime) return format(d, "d MMM yyyy 'at' HH:mm");
   return differenceInDays(new Date(), d) < 7
     ? formatDistanceToNow(d, { addSuffix: true })
     : format(d, 'd MMM yyyy');

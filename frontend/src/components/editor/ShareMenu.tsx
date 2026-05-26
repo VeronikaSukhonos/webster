@@ -28,6 +28,7 @@ export const ShareMenu = ({ stageRef, backgroundRef }: CanvasProps) => {
   const project = useAppSelector(selectEditor.project);
   const canvas = useAppSelector(selectEditor.canvas);
   const hasUnsavedChanges = useAppSelector(selectEditor.hasUnsavedChanges);
+  const mode = useAppSelector(selectEditor.mode);
 
   const getPublicProjectUrl = (projectId: number) =>
     `${window.location.origin}/editor?projectId=${projectId}`;
@@ -87,6 +88,7 @@ export const ShareMenu = ({ stageRef, backgroundRef }: CanvasProps) => {
 
     const alreadyShareableProject = getAlreadyShareableProject();
     if (alreadyShareableProject) return alreadyShareableProject;
+    const m = mode;
 
     try {
       dispatch(setMode(Modes.Load));
@@ -138,7 +140,7 @@ export const ShareMenu = ({ stageRef, backgroundRef }: CanvasProps) => {
       toast(getErrorMessage(err));
       return;
     } finally {
-      dispatch(setMode(Modes.Edit));
+      dispatch(setMode(m === Modes.HalfEdit ? Modes.HalfEdit : Modes.Edit));
     }
   };
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import clsx from 'clsx';
 
@@ -59,11 +59,16 @@ export const Toolbar = ({ onUploadImage }: ToolbarProps) => {
     }),
     [tool],
   );
+  const limited = mode === Modes.HalfEdit || mode === Modes.View;
+
+  useEffect(() => {
+    if (limited && tool !== Tools.Grab) dispatch(setTool(Tools.Grab));
+  }, [mode]);
 
   return (
     <>
       <div className="main-toolbar tool-container">
-        {mode !== Modes.View && (
+        {!limited && (
           <MainButton
             color="transparent"
             tooltipId={Tools.Select}
@@ -76,13 +81,13 @@ export const Toolbar = ({ onUploadImage }: ToolbarProps) => {
           color="transparent"
           tooltipId={Tools.Grab}
           onClick={() => {
-            if (mode !== Modes.View) dispatch(setTool(Tools.Grab));
+            if (!limited) dispatch(setTool(Tools.Grab));
           }}
         >
           <GrabIcon className={clsx('own-color', tool === Tools.Grab && 'active')} />
         </MainButton>
 
-        {mode !== Modes.View && (
+        {!limited && (
           <>
             <MainButton
               color="transparent"
@@ -185,7 +190,7 @@ export const Toolbar = ({ onUploadImage }: ToolbarProps) => {
           </>
         )}
       </div>
-      {isDrawingTool && (
+      {!limited && isDrawingTool && (
         <div className="drawing-settings tool-container">
           {tool !== Tools.Eraser && (
             <input

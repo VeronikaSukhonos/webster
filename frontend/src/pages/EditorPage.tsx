@@ -181,12 +181,14 @@ const EditorPage = () => {
       else blocker.reset();
     } else {
       (async () => {
+        const m = mode;
+
         dispatch(setMode(Modes.Load));
         if (await saveProject()) {
           blocker.proceed();
           return;
         }
-        dispatch(setMode(Modes.Edit));
+        dispatch(setMode(m === Modes.HalfEdit ? Modes.HalfEdit : Modes.Edit));
 
         const confirmLeave = window.confirm(
           'We could not save your last changes. Do you really want to leave?',
