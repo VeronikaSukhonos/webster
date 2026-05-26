@@ -4,6 +4,7 @@ import { Portal } from 'react-konva-utils';
 import { toast } from 'react-toastify';
 
 import clsx from 'clsx';
+import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
 import {
@@ -19,6 +20,7 @@ import {
   setSelectedIds,
   setTool,
   translateCanvasElements,
+  updateCanvasBackground,
   updateCanvasElements,
 } from '@store/editorSlice';
 
@@ -54,7 +56,7 @@ import {
   SCALE_FACTOR,
   SUPPORTED_UPLOADS,
 } from '@utils/constants';
-import { createLocalImageItem } from '@utils/editorUtils';
+import { createLocalImageItem, fitSize, getImageSize } from '@utils/editorUtils';
 import { shortcuts } from '@utils/shortcuts';
 
 import {
@@ -138,6 +140,8 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
   const imagesCtx = useImages();
   const clipboardRef = useRef<CanvasElement[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const backgroundFileInputRef = useRef<HTMLInputElement | null>(null);
+  const backdropGroupRef = useRef<Konva.Group | null>(null);
   const canvasElementsRef = useRef<CanvasElement[]>([]);
   const keyboardMoveRef = useRef<{ ids: string[]; from: CanvasElement[] } | null>(null);
   const [keyboardMoveTick, setKeyboardMoveTick] = useState(0);
@@ -199,7 +203,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
   }, [dispatch]);
 
   const handleImageUpload = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
+    async (e: ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(e.target.files ?? []).filter(
         (file) => SUPPORTED_UPLOADS.includes(file.type) && file.size <= MAX_FILE_SIZE,
       );
@@ -209,29 +213,70 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
         return;
       }
 
-      const imageItems = files.map((file) => createLocalImageItem(file, true));
-      const baseX = (stageSize.width - canvas.background.width) / 2 + 20;
-      const baseY = (stageSize.height - canvas.background.height) / 2 + 20;
+      try {
+        const imageItems = files.map((file) => createLocalImageItem(file, true));
+        const imagesWithSize = await Promise.all(
+          imageItems.map(async (image) => ({
+            image,
+            size: fitSize(await getImageSize(image.url), {
+              width: canvas.background.width * 0.9,
+              height: canvas.background.height * 0.9,
+            }),
+          })),
+        );
+        const baseX = (stageSize.width - canvas.background.width) / 2 + 20;
+        const baseY = (stageSize.height - canvas.background.height) / 2 + 20;
 
-      imagesCtx?.addLocalImageItems(imageItems);
-      dispatch(setTool(Tools.Select));
-      dispatch(
-        addCanvasElements(
-          imageItems.map(
-            (image, index) =>
-              ({
-                ...DEFAULT_PROPS[CanvasElements.Image],
-                id: crypto.randomUUID(),
-                x: baseX + index * 20,
-                y: baseY + index * 20,
-                image: image.id,
-              }) as CanvasElement,
+        imagesCtx?.addLocalImageItems(imageItems);
+        dispatch(setTool(Tools.Select));
+        dispatch(
+          addCanvasElements(
+            imagesWithSize.map(
+              ({ image, size }, index) =>
+                ({
+                  ...DEFAULT_PROPS[CanvasElements.Image],
+                  id: crypto.randomUUID(),
+                  x: baseX + index * 20,
+                  y: baseY + index * 20,
+                  width: size.width,
+                  height: size.height,
+                  image: image.id,
+                }) as CanvasElement,
+            ),
           ),
-        ),
-      );
+        );
+      } catch {
+        toast(ERROR_TYPES.SWW);
+      }
       e.target.value = '';
     },
     [canvas.background.height, canvas.background.width, dispatch, imagesCtx, stageSize],
+  );
+
+  const handleBackgroundImageUpload = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const file = Array.from(e.target.files ?? []).find(
+        (item) => SUPPORTED_UPLOADS.includes(item.type) && item.size <= MAX_FILE_SIZE,
+      );
+
+      if (!file) {
+        e.target.value = '';
+        return;
+      }
+
+      const imageItem = createLocalImageItem(file, true);
+
+      if (canvas.background.image) imagesCtx?.deleteFileTmp(canvas.background.image);
+      imagesCtx?.addLocalImageItems([imageItem]);
+      dispatch(
+        updateCanvasBackground({
+          changes: { image: imageItem.id },
+          action: Actions.Fill,
+        }),
+      );
+      e.target.value = '';
+    },
+    [canvas.background.image, dispatch, imagesCtx],
   );
 
   const handleDrop = (e: React.DragEvent) => {
@@ -268,6 +313,38 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
     group.rotation(0);
     setSelectGroupPos({ x: 0, y: 0 });
   }, [selectGroupRef, setSelectGroupPos]);
+
+  const syncBackdropTransform = useCallback(() => {
+    const stage = stageRef.current;
+    const backdrop = backdropRef.current;
+    const backdropGroup = backdropGroupRef.current;
+    const transformer = transformerRef.current;
+    const node = transformer?.nodes()[0] ?? selectGroupRef.current;
+
+    if (!stage || !backdrop || !backdropGroup || !node || selectedIds.length === 0) {
+      backdropGroup?.setAttrs({ x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 });
+      backdrop?.setAttrs({ x: 0, y: 0, width: 0, height: 0 });
+      return;
+    }
+
+    const box = node.getClientRect({ skipTransform: true });
+    const transform = node.getAbsoluteTransform(stage).decompose();
+
+    backdropGroup.setAttrs({
+      x: transform.x,
+      y: transform.y,
+      rotation: transform.rotation,
+      scaleX: transform.scaleX,
+      scaleY: transform.scaleY,
+    });
+    backdrop.setAttrs({
+      x: box.x,
+      y: box.y,
+      width: box.width,
+      height: box.height,
+    });
+    backdrop.getLayer()?.batchDraw();
+  }, [backdropRef, selectedIds.length, selectGroupRef, stageRef, transformerRef]);
 
   const handleTransformEnd = useCallback(() => {
     const stage = stageRef.current;
@@ -317,17 +394,9 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
   useEffect(() => () => flushKeyboardMove(), [flushKeyboardMove]);
 
   useEffect(() => {
-    if (!backdropRef.current || !stageRef.current) return;
-    if (!selectGroupRef.current || selectedIds.length === 0) {
-      backdropRef.current.setAttrs({ x: 0, y: 0, width: 0, height: 0 });
-      return;
-    }
-    const { x, y, width, height } = selectGroupRef.current.getClientRect({
-      relativeTo: selectGroupRef.current,
-    });
-    backdropRef.current.setAttrs({ x, y, width, height });
-    selectGroupRef.current.position(selectGroupPos);
-  }, [selectedIds, canvas.elements, stageRef.current]);
+    selectGroupRef.current?.position(selectGroupPos);
+    syncBackdropTransform();
+  }, [canvas.elements, selectGroupPos, selectedIds, syncBackdropTransform]);
 
   useEffect(() => {
     if (mode !== Modes.Edit) return;
@@ -494,6 +563,13 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
         hidden
         onChange={handleImageUpload}
       />
+      <input
+        ref={backgroundFileInputRef}
+        type="file"
+        accept={SUPPORTED_UPLOADS.join(',')}
+        hidden
+        onChange={handleBackgroundImageUpload}
+      />
       <Toolbar onUploadImage={() => fileInputRef.current?.click()} />
       <Stage
         {...stageSize}
@@ -541,24 +617,26 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
             if (index !== selectedGroupRenderIndex) return null;
             return (
               <Portal selector="#act-layer" enabled={isTransforming}>
-                <Rect
-                  ref={backdropRef}
-                  fill="red"
-                  listening={selectedIds.length > 0}
-                  draggable
-                  onDragStart={(e: KonvaEventObject<DragEvent>) => {
-                    e.target.stopDrag();
-                    if (selectGroupRef.current) selectGroupRef.current.startDrag();
-                  }}
-                  onMouseOver={() => {
-                    if (stageRef.current && tool === Tools.Select)
-                      stageRef.current.container().style.cursor = `url(${grabCursor}), grab`;
-                  }}
-                  onMouseLeave={() => {
-                    if (stageRef.current && tool === Tools.Select)
-                      stageRef.current.container().style.cursor = `url(${selectCursor}), default`;
-                  }}
-                />
+                <Group ref={backdropGroupRef}>
+                  <Rect
+                    ref={backdropRef}
+                    fill="red"
+                    listening={selectedIds.length > 0}
+                    draggable
+                    onDragStart={(e: KonvaEventObject<DragEvent>) => {
+                      e.target.stopDrag();
+                      if (selectGroupRef.current) selectGroupRef.current.startDrag();
+                    }}
+                    onMouseOver={() => {
+                      if (stageRef.current && tool === Tools.Select)
+                        stageRef.current.container().style.cursor = `url(${grabCursor}), grab`;
+                    }}
+                    onMouseLeave={() => {
+                      if (stageRef.current && tool === Tools.Select)
+                        stageRef.current.container().style.cursor = `url(${selectCursor}), default`;
+                    }}
+                  />
+                </Group>
                 <Group
                   key="selected-elements"
                   id="select-group"
@@ -569,11 +647,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
                     setisTransforming(true);
                   }}
                   onDragMove={() => {
-                    if (!selectGroupRef.current || !backdropRef.current) return;
-                    const { x, y } = selectGroupRef.current.getClientRect({
-                      relativeTo: selectGroupRef.current,
-                    });
-                    backdropRef.current.setAttrs({ x, y });
+                    syncBackdropTransform();
                     if (stageRef.current)
                       stageRef.current.container().style.cursor = `url(${grabbingCursor}), grabbing`;
                   }}
@@ -615,7 +689,11 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
             anchorStrokeWidth={2}
             anchorSize={10}
             anchorCornerRadius={20}
-            onTransformStart={() => setisTransforming(true)}
+            onTransformStart={() => {
+              setisTransforming(true);
+              syncBackdropTransform();
+            }}
+            onTransform={syncBackdropTransform}
             onTransformEnd={handleTransformEnd}
           />
           <Rect {...selectRectProps} />
@@ -692,7 +770,9 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
                 ),
               }}
             >
-              <ElementPanel />
+              <ElementPanel
+                onUploadBackgroundImage={() => backgroundFileInputRef.current?.click()}
+              />
             </Sheet>
             <Popover
               button={

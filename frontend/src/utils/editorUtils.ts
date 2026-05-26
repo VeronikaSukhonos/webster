@@ -29,6 +29,28 @@ export const createServerImageItem = (file: ImageResponse): ImageItem => ({
   deleted: false,
 });
 
+export const getImageSize = (url: string): Promise<Size> =>
+  new Promise((resolve, reject) => {
+    const image = document.createElement('img');
+
+    image.onload = () =>
+      resolve({
+        width: image.naturalWidth || image.width,
+        height: image.naturalHeight || image.height,
+      });
+    image.onerror = () => reject(new Error(ERROR_TYPES.SWW));
+    image.src = url;
+  });
+
+export const fitSize = (size: Size, maxSize: Size): Size => {
+  const scale = Math.min(maxSize.width / size.width, maxSize.height / size.height, 1);
+
+  return {
+    width: Math.max(1, Math.round(size.width * scale)),
+    height: Math.max(1, Math.round(size.height * scale)),
+  };
+};
+
 export const initCanvas = (size: Size, image?: ImageItem) => {
   const background: Background = {
     ...DEFAULT_PROPS.background,
@@ -67,7 +89,7 @@ interface ExportFileProps extends CanvasProps {
   format: ExportType;
   width?: number;
   height?: number;
-  preview?: boolean,
+  preview?: boolean;
 }
 
 export const exportFile = async ({
@@ -99,7 +121,7 @@ export const exportFile = async ({
     y,
     width: back.width() * stage.scaleX(),
     height: back.height() * stage.scaleX(),
-    pixelRatio: scale * (format === 'pdf' ? 2 : 1) / (preview ? 1 : stage.scaleX()),
+    pixelRatio: (scale * (format === 'pdf' ? 2 : 1)) / (preview ? 1 : stage.scaleX()),
   });
   if (format === 'pdf') {
     const pdf = new jsPDF('l', 'px', [canvas.width, canvas.height]);

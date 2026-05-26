@@ -1,8 +1,15 @@
-import { selectEditor, setHistoryTarget, updateCanvasElements } from '@store/editorSlice';
+import {
+  selectEditor,
+  setHistoryTarget,
+  updateCanvasBackground,
+  updateCanvasElements,
+} from '@store/editorSlice';
 
 import { FieldWrapper, NumberField, SizeField, TextField } from '@components/InputFields';
+import { MainButton } from '@components/MainButton';
 import { Menu, MenuItem } from '@components/Menu';
 
+import { useImages } from '@hooks/useImages';
 import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
 
 import { capitalize } from '@utils/utils';
@@ -145,14 +152,60 @@ const getCornerRadiusChanges = (radius: number): Partial<CanvasElement> => {
   } as Partial<CanvasElement>;
 };
 
-export const ElementPanel = () => {
+interface ElementPanelProps {
+  onUploadBackgroundImage?: () => void;
+}
+
+export const ElementPanel = ({ onUploadBackgroundImage }: ElementPanelProps) => {
   const dispatch = useAppDispatch();
-  const elements = useAppSelector(selectEditor.canvas).elements;
+  const imagesCtx = useImages();
+  const canvas = useAppSelector(selectEditor.canvas);
+  const elements = canvas.elements;
   const selectedIds = useAppSelector(selectEditor.selected);
   const selectedElements = elements.filter((element) => selectedIds.includes(element.id));
 
-  if (!selectedElements.length) {
-    return <p className="feedback t-ital">Select an element to edit its properties</p>;
+  if (!selectedElements.length || selectedIds.includes(CanvasElements.Background)) {
+    return (
+      <div className="element-panel">
+        <h3 className="content-title mini">Canvas background</h3>
+        <h4 className="element-panel-title">Colors</h4>
+        <FieldWrapper label="Fill" mini>
+          <input
+            className="color-input"
+            type="color"
+            value={canvas.background.fill === 'transparent' ? '#ffffff' : canvas.background.fill}
+            onChange={(e) =>
+              dispatch(
+                updateCanvasBackground({
+                  changes: { fill: e.target.value },
+                  action: Actions.Fill,
+                }),
+              )
+            }
+          />
+        </FieldWrapper>
+        <h4 className="element-panel-title">Image</h4>
+        <div className="element-panel-actions">
+          <MainButton onClick={() => onUploadBackgroundImage?.()}>Upload image</MainButton>
+          {canvas.background.image && (
+            <MainButton
+              color="transparent"
+              onClick={() => {
+                imagesCtx?.deleteFileTmp(canvas.background.image ?? '');
+                dispatch(
+                  updateCanvasBackground({
+                    changes: { image: undefined },
+                    action: Actions.Fill,
+                  }),
+                );
+              }}
+            >
+              Clear image
+            </MainButton>
+          )}
+        </div>
+      </div>
+    );
   }
 
   if (selectedElements.length > 1) {

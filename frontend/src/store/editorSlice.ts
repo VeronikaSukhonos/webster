@@ -166,6 +166,21 @@ const editorSlice = createSlice({
         action: Actions.Resize,
       });
     },
+    updateCanvasBackground: (
+      state,
+      action: PayloadAction<{ changes: Partial<Background>; action?: Action }>,
+    ) => {
+      const from = structuredClone({ ...state.canvas.background });
+
+      state.canvas.background = { ...state.canvas.background, ...action.payload.changes };
+
+      addToHistory(state, {
+        ids: [state.canvas.background.id],
+        from: [from],
+        to: [state.canvas.background],
+        action: action.payload.action ?? Actions.Fill,
+      });
+    },
     addCanvasElement: (state, action: PayloadAction<CanvasElement>) => {
       const el = prepareCanvasElement(
         action.payload,
@@ -438,6 +453,7 @@ const editorSlice = createSlice({
 
 export const {
   setCanvasSize,
+  updateCanvasBackground,
   addCanvasElement,
   addCanvasElements,
   deleteCanvasElements,

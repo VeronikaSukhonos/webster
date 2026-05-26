@@ -6,7 +6,6 @@ import type { KonvaEventObject } from 'konva/lib/Node';
 import { addCanvasElement, selectEditor, setSelectedIds } from '@store/editorSlice';
 
 import brushCursor from '@assets/brush.png';
-import eraserCursorIcon from '@assets/eraser.png';
 import grabCursor from '@assets/grab.png';
 import grabbingCursor from '@assets/grabbing.png';
 import markerCursor from '@assets/marker.png';
@@ -80,7 +79,6 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     else if (tool === Tools.Eraser) container.style.cursor = 'none';
     else if (tool === Tools.Marker) container.style.cursor = `url(${markerCursor}), pointer`;
     else if (tool === Tools.Brush) container.style.cursor = `url(${brushCursor}), pointer`;
-    else if (tool === Tools.Eraser) container.style.cursor = `url(${eraserCursorIcon}), pointer`;
     container.classList.toggle('eraser-stage-active', tool === Tools.Eraser);
   }, [tool, isDragging]);
 
@@ -486,6 +484,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
       case Tools.Brush:
       case Tools.Eraser:
         finishDrawing();
+        break;
     }
   };
 
@@ -590,6 +589,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
         case Tools.Brush:
         case Tools.Eraser:
           finishDrawing();
+          break;
       }
     } else if (e.evt.button === 2) {
       setIsDragging(false);

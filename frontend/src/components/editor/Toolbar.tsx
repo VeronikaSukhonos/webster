@@ -53,9 +53,6 @@ export const Toolbar = ({ onUploadImage }: ToolbarProps) => {
       [BrushTypes.Brush]: (
         <BrushIcon className={clsx('own-color', tool === Tools.Brush && 'active')} />
       ),
-      [BrushTypes.Eraser]: (
-        <EraserIcon className={clsx('own-color', tool === Tools.Eraser && 'active')} />
-      ),
     }),
     [tool],
   );
@@ -138,18 +135,16 @@ export const Toolbar = ({ onUploadImage }: ToolbarProps) => {
                     </SelectLabel>
                   ),
                 },
-                {
-                  value: BrushTypes.Eraser,
-                  label: (
-                    <SelectLabel>
-                      <EraserIcon />
-                      {capitalize(BrushTypes.Eraser)}
-                    </SelectLabel>
-                  ),
-                },
               ]}
               onlyChevron
             />
+            <MainButton
+              color="transparent"
+              tooltipId={Tools.Eraser}
+              onClick={() => dispatch(setTool(Tools.Eraser))}
+            >
+              <EraserIcon className={clsx('own-color', tool === Tools.Eraser && 'active')} />
+            </MainButton>
             <div className="ver-hr"></div>
             <Sheet
               title={LeftSheets.Shapes}
