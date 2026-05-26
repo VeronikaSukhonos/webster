@@ -113,7 +113,7 @@ export const ImagesContextProvider = ({ children }: { children: React.ReactNode 
         URL.revokeObjectURL(f.url);
       });
     };
-  }, [files]);
+  }, []);
 
   const presentFiles = useMemo(() => files.filter((f) => !f.deleted), [files]);
 
