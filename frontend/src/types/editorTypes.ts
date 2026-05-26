@@ -228,7 +228,7 @@ export const Actions = {
   Add: 'added',
   Move: 'moved',
   Resize: 'resized',
-  Rotated: 'rotated',
+  Rotate: 'rotated',
   Fill: 'changed color of',
   Stroke: 'changed border of',
   Shadow: 'changed shadow of',
