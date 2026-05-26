@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
@@ -26,6 +26,9 @@ Konva.dragButtons = [0, 2];
 const defaultPosition = { x: 0, y: 0 };
 const defaultState = { dist: 0, center: null };
 const initialSelectRect = { x1: 0, y1: 0, x2: 0, y2: 0, visible: false };
+
+const isMultiSelectEvent = (event: MouseEvent | TouchEvent) =>
+  'ctrlKey' in event && (event.ctrlKey || event.metaKey);
 
 const getDrawingPreviewAttrs = (drawing: Drawing) => {
   return { ...drawing, visible: true };
@@ -112,7 +115,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     };
   }, [stageRef.current, hideEraserCursor]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!stageRef.current || !transformerRef.current) return;
 
     const selected = selectedIds.filter((id) => id !== 'background');
@@ -127,6 +130,9 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
         selectedNodes.length === 1 ? [selectedNodes[0]] : [selectGroupRef.current],
       );
     }
+
+    transformerRef.current.forceUpdate();
+    transformerRef.current.getLayer()?.batchDraw();
   }, [selectedIds, stageRef.current, selectGroupRef.current]);
 
   const calcSelectBox = useCallback(() => {
@@ -211,11 +217,25 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     resetSelectGroup();
   }, []);
 
+  const toggleSelection = useCallback(
+    (id: string) => {
+      const idsWithoutBackground = selectedIds.filter((selectedId) => selectedId !== 'background');
+      const nextIds = idsWithoutBackground.includes(id)
+        ? idsWithoutBackground.filter((selectedId) => selectedId !== id)
+        : [...idsWithoutBackground, id];
+
+      dispatch(setSelectedIds(nextIds));
+      resetSelectGroup();
+    },
+    [dispatch, resetSelectGroup, selectedIds],
+  );
+
   const startSelectGroup = useCallback(
     (e: KonvaEventObject<TouchEvent | MouseEvent>) => {
       if (e.target.getParent() === transformerRef.current) return;
       const stage = stageRef.current;
       if (!stage) return;
+      if (isMultiSelectEvent(e.evt)) return;
 
       if (e.target === stage || e.target.id() === 'background') {
         const p = stage.getRelativePointerPosition();
@@ -498,8 +518,14 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     if (!stageRef.current) return;
 
     if (tool === Tools.Select) {
+      const id = e.target.id();
+
+      if (id && e.target !== stageRef.current && id !== 'background' && isMultiSelectEvent(e.evt)) {
+        toggleSelection(id);
+        return;
+      }
+
       if (e.target.getParent() === selectGroupRef.current) {
-        const id = e.target.id();
         if (id) clearPrevSelection(id);
       }
     }

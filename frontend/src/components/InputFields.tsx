@@ -208,7 +208,7 @@ export const NumberField = ({
   const props = {
     name,
     id: id ?? name,
-    onChange: (val: number | undefined) => onChange({ target: { name, value: val || null } }),
+    onChange: (val: number | undefined) => onChange({ target: { name, value: val ?? null } }),
     isDisabled: disabled,
     placeholder,
     minValue: min,
@@ -220,7 +220,7 @@ export const NumberField = ({
   return (
     <FieldWrapper labelFor={id ?? name} {...wrapperProps}>
       <RACNumberField
-        value={value || NaN}
+        value={value ?? NaN}
         {...props}
         aria-label={props.id}
         className="row mini-gap ver-center"
@@ -230,7 +230,7 @@ export const NumberField = ({
             noStyle
             className="icon-button left"
             slot="decrement"
-            disabled={!!(value && min && value <= min)}
+            disabled={value != null && min != null && value <= min}
           >
             <MinusIcon />
           </MainButton>
@@ -241,7 +241,7 @@ export const NumberField = ({
             noStyle
             className="icon-button"
             slot="increment"
-            disabled={!!(value && max && value >= max)}
+            disabled={value != null && max != null && value >= max}
           >
             <PlusIcon />
           </MainButton>

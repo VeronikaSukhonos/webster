@@ -14,10 +14,15 @@ import type { ImageResponse } from '@mytypes/responseTypes';
 
 export type ExportType = (typeof EXPORT_TYPES)[number]['value'];
 
-export const createLocalImageItem = (file: File, storeFile: boolean = false): ImageItem => ({
+export const createLocalImageItem = (
+  file: File,
+  storeFile: boolean = false,
+  naturalSize?: Size,
+): ImageItem => ({
   id: crypto.randomUUID(),
   url: URL.createObjectURL(file),
   urlSource: 'local',
+  ...(naturalSize && { naturalWidth: naturalSize.width, naturalHeight: naturalSize.height }),
   ...(storeFile && { file }),
   deleted: false,
 });
@@ -49,6 +54,15 @@ export const fitSize = (size: Size, maxSize: Size): Size => {
     width: Math.max(1, Math.round(size.width * scale)),
     height: Math.max(1, Math.round(size.height * scale)),
   };
+};
+
+export const getImageItemSize = async (image?: ImageItem): Promise<Size | null> => {
+  if (!image) return null;
+  if (image.naturalWidth && image.naturalHeight) {
+    return { width: image.naturalWidth, height: image.naturalHeight };
+  }
+
+  return getImageSize(image.url);
 };
 
 export const initCanvas = (size: Size, image?: ImageItem) => {

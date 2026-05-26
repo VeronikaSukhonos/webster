@@ -193,6 +193,8 @@ export interface ImageItem {
   id: string;
   url: string;
   urlSource: 'local' | 'server';
+  naturalWidth?: number;
+  naturalHeight?: number;
   file?: File;
   deleted: boolean;
 }

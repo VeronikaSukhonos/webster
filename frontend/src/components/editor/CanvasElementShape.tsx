@@ -26,13 +26,14 @@ export const CanvasImage = ({ el, baseProps }: CanvasImageProps) => {
     () => imagesCtx?.findImageItem(el.image ?? '')?.url ?? '',
     [el.image, imagesCtx],
   );
-  const [image] = useImage(url, 'anonymous');
+  const [image] = useImage(url, url.startsWith('blob:') ? undefined : 'anonymous');
 
   if (!image) {
     if (el.type === CanvasElements.Background) return;
     return (
       <Rect
         {...el}
+        {...baseProps}
         fill="transparent"
         stroke={DEFAULT_BORDER_COLOR}
         dash={[2, 2]}

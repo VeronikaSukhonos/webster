@@ -9,7 +9,6 @@ import { FieldWrapper, NumberField, SizeField, TextField } from '@components/Inp
 import { MainButton } from '@components/MainButton';
 import { Menu, MenuItem } from '@components/Menu';
 
-import { useImages } from '@hooks/useImages';
 import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
 
 import { capitalize } from '@utils/utils';
@@ -55,6 +54,21 @@ export const HistoryPanel = () => {
 };
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+const normalizeRotation = (rotation: number) => {
+  const normalized = rotation % 360;
+
+  return normalized < 0 ? normalized + 360 : normalized;
+};
+
+const getSignedRotation = (rotation: number) => {
+  const normalized = normalizeRotation(rotation);
+
+  return normalized > 180 ? normalized - 360 : normalized;
+};
+
+const getColorInputValue = (color: string | undefined, fallback = '#000000') =>
+  /^#[0-9a-f]{6}$/i.test(color ?? '') ? (color as string) : fallback;
 
 const getElementTitle = (element: CanvasElement) => {
   if (element.type === CanvasElements.Drawing) return `${capitalize(element.brushType)} drawing`;
@@ -154,11 +168,18 @@ const getCornerRadiusChanges = (radius: number): Partial<CanvasElement> => {
 
 interface ElementPanelProps {
   onUploadBackgroundImage?: () => void;
+  onBackgroundImageToObject?: () => void;
+  onImageToBackground?: (element: CanvasElement) => void;
+  onClearBackgroundImage?: () => void;
 }
 
-export const ElementPanel = ({ onUploadBackgroundImage }: ElementPanelProps) => {
+export const ElementPanel = ({
+  onUploadBackgroundImage,
+  onBackgroundImageToObject,
+  onImageToBackground,
+  onClearBackgroundImage,
+}: ElementPanelProps) => {
   const dispatch = useAppDispatch();
-  const imagesCtx = useImages();
   const canvas = useAppSelector(selectEditor.canvas);
   const elements = canvas.elements;
   const selectedIds = useAppSelector(selectEditor.selected);
@@ -188,20 +209,14 @@ export const ElementPanel = ({ onUploadBackgroundImage }: ElementPanelProps) => 
         <div className="element-panel-actions">
           <MainButton onClick={() => onUploadBackgroundImage?.()}>Upload image</MainButton>
           {canvas.background.image && (
-            <MainButton
-              color="transparent"
-              onClick={() => {
-                imagesCtx?.deleteFileTmp(canvas.background.image ?? '');
-                dispatch(
-                  updateCanvasBackground({
-                    changes: { image: undefined },
-                    action: Actions.Fill,
-                  }),
-                );
-              }}
-            >
-              Clear image
-            </MainButton>
+            <>
+              <MainButton color="transparent" onClick={() => onBackgroundImageToObject?.()}>
+                Use as object
+              </MainButton>
+              <MainButton color="transparent" onClick={() => onClearBackgroundImage?.()}>
+                Clear image
+              </MainButton>
+            </>
           )}
         </div>
       </div>
@@ -255,10 +270,17 @@ export const ElementPanel = ({ onUploadBackgroundImage }: ElementPanelProps) => 
         <NumberField
           name="rotation"
           label="Rotation"
-          value={Math.round(element.rotation)}
-          onChange={(e) => updateElement({ rotation: e.target.value ?? element.rotation })}
-          min={0}
-          max={360}
+          value={Math.round(getSignedRotation(element.rotation))}
+          onChange={(e) =>
+            updateElement(
+              {
+                rotation: normalizeRotation(e.target.value ?? getSignedRotation(element.rotation)),
+              },
+              Actions.Rotate,
+            )
+          }
+          min={-179}
+          max={180}
           step={1}
           mini
         />
@@ -291,6 +313,13 @@ export const ElementPanel = ({ onUploadBackgroundImage }: ElementPanelProps) => 
             innerLabels
             mini
           />
+        </>
+      )}
+
+      {element.type === CanvasElements.Image && (
+        <>
+          <h4 className="element-panel-title">Image</h4>
+          <MainButton onClick={() => onImageToBackground?.(element)}>Use as background</MainButton>
         </>
       )}
 
@@ -340,7 +369,7 @@ export const ElementPanel = ({ onUploadBackgroundImage }: ElementPanelProps) => 
             <input
               className="color-input"
               type="color"
-              value={element.fill}
+              value={getColorInputValue(element.fill, '#ffffff')}
               onChange={(e) => updateElement({ fill: e.target.value }, Actions.Fill)}
             />
           </FieldWrapper>
@@ -353,7 +382,7 @@ export const ElementPanel = ({ onUploadBackgroundImage }: ElementPanelProps) => 
           <input
             className="color-input"
             type="color"
-            value={element.stroke}
+            value={getColorInputValue(element.stroke)}
             onChange={(e) => updateElement({ stroke: e.target.value }, Actions.Stroke)}
           />
         </FieldWrapper>
@@ -395,7 +424,7 @@ export const ElementPanel = ({ onUploadBackgroundImage }: ElementPanelProps) => 
           <input
             className="color-input"
             type="color"
-            value={element.shadowColor ?? '#000000'}
+            value={getColorInputValue(element.shadowColor)}
             onChange={(e) => updateElement({ shadowColor: e.target.value }, Actions.Shadow)}
           />
         </FieldWrapper>

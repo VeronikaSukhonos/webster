@@ -1,4 +1,12 @@
-import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type ChangeEvent,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Group, Layer, Line, Rect, Stage, Transformer } from 'react-konva';
 import { Portal } from 'react-konva-utils';
 import { toast } from 'react-toastify';
@@ -56,7 +64,7 @@ import {
   SCALE_FACTOR,
   SUPPORTED_UPLOADS,
 } from '@utils/constants';
-import { createLocalImageItem, fitSize, getImageSize } from '@utils/editorUtils';
+import { createLocalImageItem, fitSize, getImageItemSize, getImageSize } from '@utils/editorUtils';
 import { shortcuts } from '@utils/shortcuts';
 
 import {
@@ -131,6 +139,41 @@ const normalizeRotation = (rotation: number) => {
   return normalized < 0 ? normalized + 360 : normalized;
 };
 
+const isImageElement = (
+  element: CanvasElement,
+): element is Extract<CanvasElement, { type: typeof CanvasElements.Image }> =>
+  element.type === CanvasElements.Image;
+
+interface PendingGroupTransform {
+  ids: string[];
+  elements: CanvasElement[];
+}
+
+interface TransformModifiers {
+  shift: boolean;
+  ctrl: boolean;
+}
+
+interface ModifierKeysEvent {
+  shiftKey?: boolean;
+  ctrlKey?: boolean;
+  metaKey?: boolean;
+}
+
+const hasSameIds = (left: string[], right: string[]) =>
+  left.length === right.length && left.every((id) => right.includes(id));
+
+const TRANSFORM_ROTATION_SNAPS = Array.from({ length: 73 }, (_, index) => index * 5);
+
+const getTransformModifiers = (event?: Event): TransformModifiers => {
+  const modifierEvent = event as ModifierKeysEvent | undefined;
+
+  return {
+    shift: !!modifierEvent?.shiftKey,
+    ctrl: !!(modifierEvent?.ctrlKey || modifierEvent?.metaKey),
+  };
+};
+
 export interface EditorProps extends CanvasProps {
   onSave?: () => void | Promise<unknown>;
 }
@@ -158,14 +201,27 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
     () => getCanvasPaintOrder(canvas.elements),
     [canvas.elements],
   );
+  const selectedElementIds = selectedIds.filter((id) => id !== CanvasElements.Background);
   const selectedCanvasElements = canvas.elements.filter((el) => selectedIds.includes(el.id));
-  const selectedElementIdsForRender = new Set(selectedCanvasElements.map((el) => el.id));
+  const [isTransforming, setisTransforming] = useState(false);
+  const [transformModifiers, setTransformModifiers] = useState<TransformModifiers>({
+    shift: false,
+    ctrl: false,
+  });
+  const [pendingGroupTransform, setPendingGroupTransform] = useState<PendingGroupTransform | null>(
+    null,
+  );
+  const hasPendingGroupTransform = !!(
+    pendingGroupTransform && hasSameIds(pendingGroupTransform.ids, selectedElementIds)
+  );
+  const selectedCanvasElementsForRender = hasPendingGroupTransform
+    ? pendingGroupTransform.elements
+    : selectedCanvasElements;
+  const selectedElementIdsForRender = new Set(selectedElementIds);
   const selectedGroupRenderIndex = canvasPaintElements.reduce(
     (lastIndex, el, index) => (selectedElementIdsForRender.has(el.id) ? index : lastIndex),
     -1,
   );
-
-  const [isTransforming, setisTransforming] = useState(false);
 
   const { stageSize } = useStageSize();
   const {
@@ -182,6 +238,16 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
     // onTransformEnd,
     ...toolbarHandlers
   } = useToolbar(stageRef);
+
+  const updateTransformModifiers = useCallback((event?: Event) => {
+    const nextModifiers = getTransformModifiers(event);
+
+    setTransformModifiers((currentModifiers) =>
+      currentModifiers.shift === nextModifiers.shift && currentModifiers.ctrl === nextModifiers.ctrl
+        ? currentModifiers
+        : nextModifiers,
+    );
+  }, []);
 
   const flushKeyboardMove = useCallback(() => {
     const pendingMove = keyboardMoveRef.current;
@@ -214,20 +280,28 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
       }
 
       try {
-        const imageItems = files.map((file) => createLocalImageItem(file, true));
         const imagesWithSize = await Promise.all(
-          imageItems.map(async (image) => ({
-            image,
-            size: fitSize(await getImageSize(image.url), {
-              width: canvas.background.width * 0.9,
-              height: canvas.background.height * 0.9,
-            }),
-          })),
+          files.map(async (file) => {
+            const image = createLocalImageItem(file, true);
+            const naturalSize = await getImageSize(image.url);
+
+            return {
+              image: {
+                ...image,
+                naturalWidth: naturalSize.width,
+                naturalHeight: naturalSize.height,
+              },
+              size: fitSize(naturalSize, {
+                width: canvas.background.width * 0.9,
+                height: canvas.background.height * 0.9,
+              }),
+            };
+          }),
         );
         const baseX = (stageSize.width - canvas.background.width) / 2 + 20;
         const baseY = (stageSize.height - canvas.background.height) / 2 + 20;
 
-        imagesCtx?.addLocalImageItems(imageItems);
+        imagesCtx?.addLocalImageItems(imagesWithSize.map(({ image }) => image));
         dispatch(setTool(Tools.Select));
         dispatch(
           addCanvasElements(
@@ -253,8 +327,34 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
     [canvas.background.height, canvas.background.width, dispatch, imagesCtx, stageSize],
   );
 
+  const isImageUsedByElements = useCallback(
+    (imageId: string, ignoredElementIds: string[] = []) =>
+      canvas.elements.some(
+        (element) =>
+          isImageElement(element) &&
+          element.image === imageId &&
+          !ignoredElementIds.includes(element.id),
+      ),
+    [canvas.elements],
+  );
+
+  const deleteImageIfUnused = useCallback(
+    (
+      imageId: string | undefined,
+      options: { ignoreBackground?: boolean; ignoredElementIds?: string[] } = {},
+    ) => {
+      if (!imageId) return;
+
+      const isUsedByBackground = !options.ignoreBackground && canvas.background.image === imageId;
+      const isUsedByElement = isImageUsedByElements(imageId, options.ignoredElementIds);
+
+      if (!isUsedByBackground && !isUsedByElement) imagesCtx?.deleteFileTmp(imageId);
+    },
+    [canvas.background.image, imagesCtx, isImageUsedByElements],
+  );
+
   const handleBackgroundImageUpload = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
+    async (e: ChangeEvent<HTMLInputElement>) => {
       const file = Array.from(e.target.files ?? []).find(
         (item) => SUPPORTED_UPLOADS.includes(item.type) && item.size <= MAX_FILE_SIZE,
       );
@@ -264,20 +364,126 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
         return;
       }
 
-      const imageItem = createLocalImageItem(file, true);
+      try {
+        const imageItem = createLocalImageItem(file, true);
+        const naturalSize = await getImageSize(imageItem.url);
+        const imageWithSize = {
+          ...imageItem,
+          naturalWidth: naturalSize.width,
+          naturalHeight: naturalSize.height,
+        };
 
-      if (canvas.background.image) imagesCtx?.deleteFileTmp(canvas.background.image);
-      imagesCtx?.addLocalImageItems([imageItem]);
-      dispatch(
-        updateCanvasBackground({
-          changes: { image: imageItem.id },
-          action: Actions.Fill,
-        }),
-      );
+        deleteImageIfUnused(canvas.background.image, { ignoreBackground: true });
+        imagesCtx?.addLocalImageItems([imageWithSize]);
+        dispatch(
+          updateCanvasBackground({
+            changes: { image: imageWithSize.id },
+            action: Actions.Fill,
+          }),
+        );
+      } catch {
+        toast(ERROR_TYPES.SWW);
+      }
       e.target.value = '';
     },
-    [canvas.background.image, dispatch, imagesCtx],
+    [canvas.background.image, deleteImageIfUnused, dispatch, imagesCtx],
   );
+
+  const createImageElement = useCallback(
+    async (imageId: string, fallbackSize?: { width: number; height: number }) => {
+      const imageItem = imagesCtx?.findImageItem(imageId);
+      if (!imageItem) return null;
+
+      let naturalSize = fallbackSize;
+
+      try {
+        naturalSize = (await getImageItemSize(imageItem)) ?? fallbackSize;
+      } catch {
+        naturalSize = fallbackSize;
+      }
+
+      if (!naturalSize) return null;
+
+      return {
+        ...DEFAULT_PROPS[CanvasElements.Image],
+        id: crypto.randomUUID(),
+        x: (stageSize.width - canvas.background.width) / 2 + 20,
+        y: (stageSize.height - canvas.background.height) / 2 + 20,
+        width: naturalSize.width,
+        height: naturalSize.height,
+        image: imageId,
+      } as CanvasElement;
+    },
+    [
+      canvas.background.height,
+      canvas.background.width,
+      imagesCtx,
+      stageSize.height,
+      stageSize.width,
+    ],
+  );
+
+  const handleBackgroundImageToObject = useCallback(async () => {
+    const imageId = canvas.background.image;
+    if (!imageId) return;
+
+    try {
+      if (!imagesCtx || !imagesCtx.findImageItem(imageId)) {
+        toast(ERROR_TYPES.SWW);
+        return;
+      }
+
+      imagesCtx.restoreFile(imageId);
+      const imageElement = await createImageElement(imageId, {
+        width: canvas.background.width,
+        height: canvas.background.height,
+      });
+
+      if (!imageElement) return;
+
+      dispatch(addCanvasElements([imageElement]));
+      dispatch(updateCanvasBackground({ changes: { image: undefined }, action: Actions.Fill }));
+    } catch {
+      toast(ERROR_TYPES.SWW);
+    }
+  }, [
+    canvas.background.height,
+    canvas.background.image,
+    canvas.background.width,
+    createImageElement,
+    dispatch,
+    imagesCtx,
+  ]);
+
+  const handleImageToBackground = useCallback(
+    (element: CanvasElement) => {
+      if (!isImageElement(element)) return;
+
+      if (!imagesCtx || !imagesCtx.findImageItem(element.image)) {
+        toast(ERROR_TYPES.SWW);
+        return;
+      }
+
+      const previousBackgroundImage = canvas.background.image;
+      if (previousBackgroundImage && previousBackgroundImage !== element.image) {
+        deleteImageIfUnused(previousBackgroundImage, { ignoreBackground: true });
+      }
+
+      imagesCtx.restoreFile(element.image);
+      dispatch(updateCanvasBackground({ changes: { image: element.image }, action: Actions.Fill }));
+      dispatch(setSelectedIds([element.id]));
+      dispatch(deleteCanvasElements());
+    },
+    [canvas.background.image, deleteImageIfUnused, dispatch, imagesCtx],
+  );
+
+  const handleClearBackgroundImage = useCallback(() => {
+    const imageId = canvas.background.image;
+    if (!imageId) return;
+
+    deleteImageIfUnused(imageId, { ignoreBackground: true });
+    dispatch(updateCanvasBackground({ changes: { image: undefined }, action: Actions.Fill }));
+  }, [canvas.background.image, deleteImageIfUnused, dispatch]);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -351,6 +557,14 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
     const group = selectGroupRef.current;
     if (!stage || !group) return;
 
+    const selectedIdsForTransform = selectedIds.filter((id) => id !== CanvasElements.Background);
+    const selectedElementsBeforeTransform = (
+      hasPendingGroupTransform
+        ? pendingGroupTransform?.elements
+        : canvasElementsRef.current.filter((element) =>
+            selectedIdsForTransform.includes(element.id),
+          )
+    )?.map((element) => structuredClone(element));
     const updates = group
       .find('.element')
       .map((node) => {
@@ -372,15 +586,56 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
       })
       .filter((update): update is NonNullable<typeof update> => !!update);
 
+    if (updates.length) {
+      const hasRotationChange = updates.some((update) => {
+        const elementBeforeTransform = selectedElementsBeforeTransform?.find(
+          (element) => element.id === update.id,
+        );
+        if (!elementBeforeTransform) return false;
+
+        const previousRotation = normalizeRotation(elementBeforeTransform.rotation);
+        const nextRotation = normalizeRotation(update.changes.rotation);
+
+        return Math.abs(previousRotation - nextRotation) > 0.01;
+      });
+
+      dispatch(
+        updateCanvasElements({
+          updates,
+          action: hasRotationChange ? Actions.Rotate : Actions.Resize,
+        }),
+      );
+    }
+
+    if (updates.length && selectedIdsForTransform.length > 1 && selectedElementsBeforeTransform) {
+      setPendingGroupTransform({
+        ids: selectedIdsForTransform,
+        elements: selectedElementsBeforeTransform,
+      });
+      setisTransforming(true);
+      window.requestAnimationFrame(() => {
+        transformerRef.current?.forceUpdate();
+        syncBackdropTransform();
+      });
+      return;
+    }
+
+    setPendingGroupTransform(null);
     setisTransforming(false);
     resetSelectGroupTransform();
+  }, [
+    dispatch,
+    hasPendingGroupTransform,
+    pendingGroupTransform?.elements,
+    resetSelectGroupTransform,
+    selectedIds,
+    selectGroupRef,
+    stageRef,
+    syncBackdropTransform,
+    transformerRef,
+  ]);
 
-    if (updates.length) {
-      dispatch(updateCanvasElements({ updates, action: Actions.Resize }));
-    }
-  }, [dispatch, resetSelectGroupTransform, selectedIds, stageRef, selectGroupRef]);
-
-  useEffect(() => {
+  useLayoutEffect(() => {
     canvasElementsRef.current = canvas.elements;
 
     transformerRef.current?.forceUpdate();
@@ -388,15 +643,73 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
   }, [canvas.elements, selectedIds, transformerRef]);
 
   useEffect(() => {
+    const handleModifierKey = (event: KeyboardEvent) => updateTransformModifiers(event);
+    const resetModifierKeys = () => updateTransformModifiers();
+
+    window.addEventListener('keydown', handleModifierKey);
+    window.addEventListener('keyup', handleModifierKey);
+    window.addEventListener('blur', resetModifierKeys);
+
+    return () => {
+      window.removeEventListener('keydown', handleModifierKey);
+      window.removeEventListener('keyup', handleModifierKey);
+      window.removeEventListener('blur', resetModifierKeys);
+    };
+  }, [updateTransformModifiers]);
+
+  useEffect(() => {
     flushKeyboardMove();
   }, [debouncedKeyboardMoveTick, flushKeyboardMove]);
 
   useEffect(() => () => flushKeyboardMove(), [flushKeyboardMove]);
 
-  useEffect(() => {
-    selectGroupRef.current?.position(selectGroupPos);
+  useLayoutEffect(() => {
+    if (!hasPendingGroupTransform) selectGroupRef.current?.position(selectGroupPos);
     syncBackdropTransform();
-  }, [canvas.elements, selectGroupPos, selectedIds, syncBackdropTransform]);
+  }, [
+    canvas.elements,
+    hasPendingGroupTransform,
+    selectGroupPos,
+    selectedIds,
+    syncBackdropTransform,
+  ]);
+
+  useLayoutEffect(() => {
+    if (!pendingGroupTransform || hasPendingGroupTransform) return;
+
+    setPendingGroupTransform(null);
+    setisTransforming(false);
+    resetSelectGroupTransform();
+  }, [hasPendingGroupTransform, pendingGroupTransform, resetSelectGroupTransform]);
+
+  useEffect(() => {
+    if (!hasPendingGroupTransform) return;
+
+    setPendingGroupTransform((currentPendingTransform) => {
+      if (!currentPendingTransform) return currentPendingTransform;
+
+      let hasChanges = false;
+      const nextElements = currentPendingTransform.elements.map((element) => {
+        const latestElement = canvas.elements.find((item) => item.id === element.id);
+
+        if (!latestElement) return element;
+
+        hasChanges = true;
+        return {
+          ...latestElement,
+          x: element.x,
+          y: element.y,
+          rotation: element.rotation,
+          scaleX: element.scaleX,
+          scaleY: element.scaleY,
+        } as CanvasElement;
+      });
+
+      return hasChanges
+        ? { ...currentPendingTransform, elements: nextElements }
+        : currentPendingTransform;
+    });
+  }, [canvas.elements, hasPendingGroupTransform]);
 
   useEffect(() => {
     if (mode !== Modes.Edit) return;
@@ -659,7 +972,8 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
 
                     if (moveX === 0 && moveY === 0) return;
                     dispatch(moveCanvasElements({ moveX, moveY }));
-                    setisTransforming(false);
+                    setisTransforming(hasPendingGroupTransform);
+                    syncBackdropTransform();
                     if (stageRef.current)
                       stageRef.current.container().style.cursor = `url(${grabCursor}), grab`;
                   }}
@@ -668,7 +982,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
                       stageRef.current.container().style.cursor = `url(${grabCursor}), grab`;
                   }}
                 >
-                  {selectedCanvasElements.map((el) => (
+                  {selectedCanvasElementsForRender.map((el) => (
                     <CanvasElementShape key={el.id} element={el} />
                   ))}
                 </Group>
@@ -682,6 +996,10 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
             name="excluded"
             ref={transformerRef}
             boundBoxFunc={(o, n) => (n.width < 1 || n.height < 1 ? o : n)}
+            keepRatio={false}
+            centeredScaling={transformModifiers.ctrl}
+            rotationSnaps={transformModifiers.shift ? TRANSFORM_ROTATION_SNAPS : []}
+            rotationSnapTolerance={5}
             borderStroke={DEFAULT_BORDER_COLOR}
             borderStrokeWidth={1}
             anchorFill="white"
@@ -689,11 +1007,15 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
             anchorStrokeWidth={2}
             anchorSize={10}
             anchorCornerRadius={20}
-            onTransformStart={() => {
+            onTransformStart={(e) => {
+              updateTransformModifiers(e.evt);
               setisTransforming(true);
               syncBackdropTransform();
             }}
-            onTransform={syncBackdropTransform}
+            onTransform={(e) => {
+              updateTransformModifiers(e.evt);
+              syncBackdropTransform();
+            }}
             onTransformEnd={handleTransformEnd}
           />
           <Rect {...selectRectProps} />
@@ -772,6 +1094,9 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
             >
               <ElementPanel
                 onUploadBackgroundImage={() => backgroundFileInputRef.current?.click()}
+                onBackgroundImageToObject={() => void handleBackgroundImageToObject()}
+                onImageToBackground={handleImageToBackground}
+                onClearBackgroundImage={handleClearBackgroundImage}
               />
             </Sheet>
             <Popover
