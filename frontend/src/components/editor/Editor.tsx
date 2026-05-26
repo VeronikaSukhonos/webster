@@ -541,25 +541,25 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
                     <CanvasElementShape key={el.id} element={el} />
                   ))}
                 </Group>
-                <Transformer
-                  name="excluded"
-                  ref={transformerRef}
-                  boundBoxFunc={(o, n) => (n.width < 1 || n.height < 1 ? o : n)}
-                  borderStroke={DEFAULT_BORDER_COLOR}
-                  borderStrokeWidth={1}
-                  anchorFill="white"
-                  anchorStroke={DEFAULT_BORDER_COLOR}
-                  anchorStrokeWidth={2}
-                  anchorSize={10}
-                  anchorCornerRadius={20}
-                  // onTransformEnd={}
-                />
               </Portal>
             );
           })}
           <Line ref={drawingLineRef} listening={false} />
         </Layer>
         <Layer id="act-layer" listening={mode !== Modes.View}>
+          <Transformer
+            name="excluded"
+            ref={transformerRef}
+            boundBoxFunc={(o, n) => (n.width < 1 || n.height < 1 ? o : n)}
+            borderStroke={DEFAULT_BORDER_COLOR}
+            borderStrokeWidth={1}
+            anchorFill="white"
+            anchorStroke={DEFAULT_BORDER_COLOR}
+            anchorStrokeWidth={2}
+            anchorSize={10}
+            anchorCornerRadius={20}
+            // onTransformEnd={}
+          />
           <Rect {...selectRectProps} />
         </Layer>
       </Stage>
