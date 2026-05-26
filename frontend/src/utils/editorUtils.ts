@@ -76,7 +76,7 @@ export const initCanvas = (size: Size, image?: ImageItem) => {
   return {
     background,
     elements: [],
-    images: { ...(image && { [image.id]: ['background'] }) },
+    // images: { ...(image && { [image.id]: ['background'] }) },
   } as Canvas;
 };
 

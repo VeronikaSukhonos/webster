@@ -50,6 +50,7 @@ interface EditorState {
   canvas: Canvas;
   history: History[];
   historyTarget: number;
+  historyPreview: Canvas | null;
   project: Project | null;
   template: Template | null;
   mode: Mode;
@@ -65,6 +66,7 @@ const initialState: EditorState = {
   canvas: initCanvas({ width: DEFAULT_CANVAS_SIZE, height: DEFAULT_CANVAS_SIZE }),
   history: [],
   historyTarget: -1, // no history
+  historyPreview: null,
   project: null,
   template: null,
   mode: Modes.Edit,
@@ -131,6 +133,9 @@ const isHiddenLayerElement = (element: CanvasElement) =>
 const addToHistory = (state: any, history: Omit<History, 'time'>) => {
   const { ids, from, to, action } = history;
 
+  if (state.historyTarget !== state.history.length - 1)
+    state.history = state.history.slice(0, state.historyTarget + 1);
+
   state.history = [
     ...state.history,
     {
@@ -144,13 +149,99 @@ const addToHistory = (state: any, history: Omit<History, 'time'>) => {
   state.historyTarget++;
 };
 
+const showProjectAt = (state: EditorState, idx: number): boolean => {
+  if (idx < -1 || idx > state.history.length - 1) return false;
+  const currentTarget = state.historyTarget;
+  if (currentTarget === idx) return false;
+
+  let background = state.historyPreview
+    ? structuredClone(current(state.historyPreview.background))
+    : structuredClone(current(state.canvas.background));
+  let elements = state.historyPreview
+    ? structuredClone(current(state.historyPreview.elements))
+    : structuredClone(current(state.canvas.elements));
+
+  const forward = idx > currentTarget;
+  const prop = forward ? 'to' : 'from';
+  let cur = forward ? currentTarget + 1 : currentTarget;
+
+  while (forward ? cur <= idx : cur >= idx + 1) {
+    const h = state.history[cur];
+
+    switch (h.action) {
+      case Actions.Add:
+        if (prop === 'to') {
+          if (h.to) elements = [...elements, ...(h.to as CanvasElement[])];
+        } else {
+          elements = elements.filter((el) => !h.ids.includes(el.id));
+        }
+        break;
+      case Actions.Move:
+      case Actions.Rotate:
+      case Actions.Stroke:
+      case Actions.Shadow:
+      case Actions.TextFont:
+      case Actions.TextContent:
+      case Actions.TextSize:
+      case Actions.TextAlignment:
+      case Actions.ImageCrop:
+        elements = elements.map((el) => {
+          const i = h.ids.indexOf(el.id);
+          return i !== -1 && h[prop] ? (h[prop] as CanvasElement[])[i] : el;
+        });
+        break;
+      case Actions.Fill:
+      case Actions.Resize:
+        if (h.ids.includes(background.id) && h[prop]) {
+          const bgIdx = h.ids.indexOf(background.id);
+          background = h[prop][bgIdx] as Background;
+        }
+        elements = elements.map((el) => {
+          const i = h.ids.indexOf(el.id);
+          return i !== -1 && h[prop] ? (h[prop] as CanvasElement[])[i] : el;
+        });
+        break;
+      case Actions.AddBgImage:
+      case Actions.RemoveBgImage:
+        if (h.ids.includes(background.id) && h[prop]) {
+          const bgIdx = h.ids.indexOf(background.id);
+          background = h[prop][bgIdx] as Background;
+        }
+        break;
+      case Actions.Layer:
+        if (h[prop]) elements = h[prop] as CanvasElement[];
+        break;
+      case Actions.Delete:
+        if (prop === 'to') {
+          elements = elements.filter((el) => !h.ids.includes(el.id));
+        } else {
+          if (h.from) elements = [...elements, ...(h.from as CanvasElement[])];
+        }
+        break;
+      default:
+        break;
+    }
+    cur += forward ? 1 : -1;
+  }
+
+  if (!state.historyPreview) {
+    state.historyPreview = { background, elements };
+  } else {
+    state.historyPreview.background = background;
+    state.historyPreview.elements = elements;
+  }
+
+  state.historyTarget = idx;
+  return true;
+};
+
 const editorSlice = createSlice({
   name: 'editor',
   initialState,
   reducers: {
     setCanvasSize: (state, action: PayloadAction<Size>) => {
       const { width, height } = action.payload;
-      const from = structuredClone({ ...state.canvas.background });
+      const from = current(state.canvas.background);
 
       state.canvas.background.width = width;
       state.canvas.background.height = height;
@@ -170,7 +261,7 @@ const editorSlice = createSlice({
       state,
       action: PayloadAction<{ changes: Partial<Background>; action?: Action }>,
     ) => {
-      const from = structuredClone({ ...state.canvas.background });
+      const from = current(state.canvas.background);
 
       state.canvas.background = { ...state.canvas.background, ...action.payload.changes };
 
@@ -374,10 +465,32 @@ const editorSlice = createSlice({
     setHistory: (state, action: PayloadAction<History[]>) => {
       state.history = action.payload;
     },
+    restoreProjectAt: (state, action: PayloadAction<number>) => {
+      const idx = action.payload;
+      if (idx === state.historyTarget && state.historyPreview) {
+        state.canvas.background = state.historyPreview.background;
+        state.canvas.elements = state.historyPreview.elements;
+        state.history = state.history.slice(0, idx + 1);
+        state.historyPreview = null;
+        return;
+      }
+      if (showProjectAt(state, idx) && state.historyPreview) {
+        state.canvas.background = state.historyPreview.background;
+        state.canvas.elements = state.historyPreview.elements;
+        state.history = state.history.slice(0, idx + 1);
+        state.historyPreview = null;
+      }
+    },
     setHistoryTarget: (state, action: PayloadAction<number>) => {
-      if (action.payload < -1 || action.payload > history.length - 1)
-        state.historyTarget = history.length - 1;
-      state.historyTarget = action.payload;
+      showProjectAt(state, action.payload);
+    },
+    handleUndoRedo: (state, action: PayloadAction<number>) => {
+      if (showProjectAt(state, action.payload) && state.historyPreview) {
+        state.canvas.background = state.historyPreview.background;
+        state.canvas.elements = state.historyPreview.elements;
+        state.historyPreview = null;
+        state.history = [...state.history];
+      }
     },
     setProject: (
       state,
@@ -463,6 +576,8 @@ export const {
   updateCanvasElements,
   reorderCanvasElements,
   setHistory,
+  restoreProjectAt,
+  handleUndoRedo,
   setHistoryTarget,
   setProject,
   setTemplate,
@@ -479,7 +594,7 @@ export const {
 } = editorSlice.actions;
 
 export const selectEditor = {
-  canvas: (state: RootState) => state.editor.canvas,
+  canvas: (state: RootState) => state.editor.historyPreview || state.editor.canvas,
   selected: (state: RootState) => state.editor.selectedIds,
   tool: (state: RootState) => state.editor.tool,
   history: (state: RootState) => state.editor.history,

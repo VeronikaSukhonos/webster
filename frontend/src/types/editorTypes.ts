@@ -202,7 +202,7 @@ export interface ImageItem {
 export interface Canvas {
   background: Background;
   elements: CanvasElement[];
-  images: { [imageId: string]: string[] };
+  // images: { [imageId: string]: string[] };
 }
 
 export interface CanvasProps {
@@ -234,11 +234,13 @@ export const Actions = {
   Fill: 'changed color of',
   Stroke: 'changed border of',
   Shadow: 'changed shadow of',
-  TextFont: 'changed font of text',
-  TextContent: 'changed content of text',
-  TextSize: 'changed size of text',
-  TextAlignment: 'changed alignment of text',
+  TextFont: 'changed font of',
+  TextContent: 'changed content of',
+  TextSize: 'changed size of',
+  TextAlignment: 'changed alignment of',
   ImageCrop: 'cropped image',
+  AddBgImage: 'added image on',
+  RemoveBgImage: 'removed image from',
   Layer: 'changed layer of',
   Delete: 'deleted',
 } as const;
