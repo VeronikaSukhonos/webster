@@ -1,5 +1,7 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Group, Layer, Line, Rect, Stage, Transformer } from 'react-konva';
+import { Portal } from 'react-konva-utils';
+import { toast } from 'react-toastify';
 
 import clsx from 'clsx';
 import type { KonvaEventObject } from 'konva/lib/Node';
@@ -26,7 +28,10 @@ import { LayersPanel } from '@components/editor/LeftPanels';
 import { Sheet } from '@components/editor/Sheet';
 import { Toolbar } from '@components/editor/Toolbar';
 
+import grabCursor from '@assets/grab.png';
+import grabbingCursor from '@assets/grabbing.png';
 import { LayerIcon, QuestionIcon } from '@assets/index';
+import selectCursor from '@assets/select.png';
 
 import { useStageSize } from '@hooks/editor/useStageSize';
 import { useToolbar } from '@hooks/editor/useToolbar';
@@ -37,6 +42,7 @@ import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
 import {
   DEFAULT_BORDER_COLOR,
   DEFAULT_PROPS,
+  ERROR_TYPES,
   MAX_CANVAS_SIZE,
   MAX_FILE_SIZE,
   MAX_SCALE,
@@ -142,6 +148,8 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
     -1,
   );
 
+  const [isTransforming, setisTransforming] = useState(false);
+
   const { stageSize } = useStageSize();
   const {
     stageZoom,
@@ -212,6 +220,31 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
     },
     [canvas.background.height, canvas.background.width, dispatch, imagesCtx, stageSize],
   );
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const stage = stageRef.current;
+    if (!stage) return;
+    stage.setPointersPositions(e);
+    const p = stage.getRelativePointerPosition();
+    if (!p) return;
+
+    try {
+      const data = e.dataTransfer.getData('application/json/canvas-element');
+      if (!data) return;
+
+      const el: CanvasElement = {
+        id: crypto.randomUUID(),
+        ...JSON.parse(data),
+        x: p.x,
+        y: p.y,
+      };
+      dispatch(setTool(Tools.Select));
+      dispatch(addCanvasElements([el]));
+    } catch (err) {
+      toast(ERROR_TYPES.SWW);
+    }
+  };
 
   useEffect(() => {
     canvasElementsRef.current = canvas.elements;
@@ -395,7 +428,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
   ]);
 
   return (
-    <div className="work-area">
+    <div className="work-area" onDrop={handleDrop} onDragOver={(e) => e.preventDefault()}>
       <input
         ref={fileInputRef}
         type="file"
@@ -445,13 +478,12 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
         </Layer>
         <Layer id="elements-layer" listening={mode !== Modes.View}>
           {canvasPaintElements.map((el, index) => {
-            if (!selectedElementIdsForRender.has(el.id)) {
+            if (!selectedElementIdsForRender.has(el.id))
               return <CanvasElementShape key={el.id} element={el} />;
-            }
 
             if (index !== selectedGroupRenderIndex) return null;
             return (
-              <>
+              <Portal selector="#act-layer" enabled={isTransforming}>
                 <Rect
                   ref={backdropRef}
                   fill="red"
@@ -461,6 +493,14 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
                     e.target.stopDrag();
                     if (selectGroupRef.current) selectGroupRef.current.startDrag();
                   }}
+                  onMouseOver={() => {
+                    if (stageRef.current && tool === Tools.Select)
+                      stageRef.current.container().style.cursor = `url(${grabCursor}), grab`;
+                  }}
+                  onMouseLeave={() => {
+                    if (stageRef.current && tool === Tools.Select)
+                      stageRef.current.container().style.cursor = `url(${selectCursor}), default`;
+                  }}
                 />
                 <Group
                   key="selected-elements"
@@ -469,6 +509,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
                   draggable={tool === Tools.Select}
                   onDragStart={(e: KonvaEventObject<DragEvent>) => {
                     setSelectGroupPos({ x: e.target.x(), y: e.target.y() });
+                    setisTransforming(true);
                   }}
                   onDragMove={() => {
                     if (!selectGroupRef.current || !backdropRef.current) return;
@@ -476,6 +517,8 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
                       relativeTo: selectGroupRef.current,
                     });
                     backdropRef.current.setAttrs({ x, y });
+                    if (stageRef.current)
+                      stageRef.current.container().style.cursor = `url(${grabbingCursor}), grabbing`;
                   }}
                   onDragEnd={(e: KonvaEventObject<DragEvent>) => {
                     if (!stageRef.current) return;
@@ -485,31 +528,38 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
 
                     if (moveX === 0 && moveY === 0) return;
                     dispatch(moveCanvasElements({ moveX, moveY }));
+                    setisTransforming(false);
+                    if (stageRef.current)
+                      stageRef.current.container().style.cursor = `url(${grabCursor}), grab`;
+                  }}
+                  onMouseOver={() => {
+                    if (stageRef.current && tool === Tools.Select)
+                      stageRef.current.container().style.cursor = `url(${grabCursor}), grab`;
                   }}
                 >
                   {selectedCanvasElements.map((el) => (
                     <CanvasElementShape key={el.id} element={el} />
                   ))}
                 </Group>
-              </>
+                <Transformer
+                  name="excluded"
+                  ref={transformerRef}
+                  boundBoxFunc={(o, n) => (n.width < 1 || n.height < 1 ? o : n)}
+                  borderStroke={DEFAULT_BORDER_COLOR}
+                  borderStrokeWidth={1}
+                  anchorFill="white"
+                  anchorStroke={DEFAULT_BORDER_COLOR}
+                  anchorStrokeWidth={2}
+                  anchorSize={10}
+                  anchorCornerRadius={20}
+                  // onTransformEnd={}
+                />
+              </Portal>
             );
           })}
           <Line ref={drawingLineRef} listening={false} />
         </Layer>
         <Layer id="act-layer" listening={mode !== Modes.View}>
-          <Transformer
-            name="excluded"
-            ref={transformerRef}
-            boundBoxFunc={(o, n) => (n.width < 1 || n.height < 1 ? o : n)}
-            borderStroke={DEFAULT_BORDER_COLOR}
-            borderStrokeWidth={1}
-            anchorFill="white"
-            anchorStroke={DEFAULT_BORDER_COLOR}
-            anchorStrokeWidth={2}
-            anchorSize={10}
-            anchorCornerRadius={20}
-            // onTransformEnd={}
-          />
           <Rect {...selectRectProps} />
         </Layer>
       </Stage>

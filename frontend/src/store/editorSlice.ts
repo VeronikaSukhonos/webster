@@ -70,7 +70,12 @@ const initialState: EditorState = {
   selectedIds: [],
   hasUnsavedChanges: false,
   tool: Tools.Select,
-  lastUsedStyle: { fill: DEFAULT_FILL_COLOR, stroke: DEFAULT_STROKE_COLOR, strokeWidth: 2 },
+  lastUsedStyle: {
+    fill: DEFAULT_FILL_COLOR,
+    stroke: DEFAULT_STROKE_COLOR,
+    strokeWidth: 2,
+    shapeStrokeWidth: 0,
+  },
   leftSheet: null,
   rightSheet: null,
 };

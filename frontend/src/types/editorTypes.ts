@@ -30,8 +30,10 @@ export interface BaseStyle {
 export const CanvasElements = {
   Background: 'background',
   Rectangle: 'rectangle',
-  Ellipse: 'ellipse', // + circle
-  Polygon: 'polygon', // + triangle and pentagon
+  Ellipse: 'ellipse',
+  Triangle: 'triangle',
+  Pentagon: 'pentagon',
+  Polygon: 'polygon',
   Star: 'star',
   Line: 'line',
   Arrow: 'arrow',
@@ -73,6 +75,14 @@ export interface Polygon extends BaseCanvasElement {
   type: typeof CanvasElements.Polygon;
   sides: number; // 3 and more
   radius: number; // 0 and more
+}
+
+export interface Triangle extends Omit<Polygon, 'type'> {
+  type: typeof CanvasElements.Triangle;
+}
+
+export interface Pentagon extends Omit<Polygon, 'type'> {
+  type: typeof CanvasElements.Pentagon;
 }
 
 export interface Star extends BaseCanvasElement {
@@ -167,6 +177,8 @@ export interface Image extends Omit<Rectangle, 'type'> {
 export type CanvasElement =
   | Rectangle
   | Ellipse
+  | Triangle
+  | Pentagon
   | Polygon
   | Star
   | Line
@@ -199,6 +211,7 @@ export interface LastUsedStyle {
   fill: string;
   stroke: string;
   strokeWidth: number;
+  shapeStrokeWidth: number;
 }
 
 export const Modes = {

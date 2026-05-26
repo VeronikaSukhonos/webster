@@ -34,7 +34,7 @@ import triangle from '@assets/triangle.png';
 import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
 
 import { DEFAULT_PROPS } from '@utils/constants';
-import { formatDate } from '@utils/utils';
+import { capitalize, formatDate } from '@utils/utils';
 
 import { BrushTypes, type CanvasElement, CanvasElements } from '@mytypes/editorTypes';
 
@@ -52,13 +52,13 @@ const SHAPES_PANEL_ITEMS = [
     image: ellipse,
   },
   {
-    type: CanvasElements.Polygon,
+    type: CanvasElements.Triangle,
     label: 'Triangle',
     image: triangle,
     sides: 3,
   },
   {
-    type: CanvasElements.Polygon,
+    type: CanvasElements.Pentagon,
     label: 'Pentagon',
     image: pentagon,
     sides: 5,
@@ -91,21 +91,23 @@ const SHAPES_PANEL_ITEMS = [
   // },
 ];
 
-interface ShapesPanelProps {
-  onDragStartFromPanel?: (e: React.DragEvent, blueprintJson: string) => void;
-}
+export const ShapesPanel = () => {
+  const lastUsedStyle = useAppSelector(selectEditor.lastUsedStyle);
 
-export const ShapesPanel = ({ onDragStartFromPanel }: ShapesPanelProps) => {
   const onDragStart = (e: React.DragEvent, el: (typeof SHAPES_PANEL_ITEMS)[number]) => {
-    const blueprint = JSON.stringify({
-      ...DEFAULT_PROPS[el.type],
-      ...('sides' in el ? { sides: el.sides } : {}),
-    });
-
-    e.dataTransfer.setData('application/json/canvas-element', blueprint);
+    e.dataTransfer.setData(
+      'application/json/canvas-element',
+      JSON.stringify({
+        ...DEFAULT_PROPS[el.type],
+        fill: lastUsedStyle.fill,
+        stroke: lastUsedStyle.stroke,
+        strokeWidth:
+          el.type === CanvasElements.Arrow || el.type === CanvasElements.Line
+            ? lastUsedStyle.strokeWidth
+            : lastUsedStyle.shapeStrokeWidth,
+      }),
+    );
     e.dataTransfer.effectAllowed = 'move';
-
-    if (onDragStartFromPanel) onDragStartFromPanel(e, blueprint);
   };
 
   return (
@@ -115,7 +117,7 @@ export const ShapesPanel = ({ onDragStartFromPanel }: ShapesPanelProps) => {
       </p>
       <div className="shapes-container">
         {SHAPES_PANEL_ITEMS.map((sh) => (
-          <div key={`${sh.label}-${sh.sides}`} className="shape-item">
+          <div key={sh.label} className="shape-item">
             <div className="shape-image-container">
               <img
                 src={sh.image}
@@ -154,8 +156,6 @@ const isVisibleLayer = (element: CanvasElement) =>
 
 const getLayerTypeTitle = (element: CanvasElement) => {
   switch (element.type) {
-    case CanvasElements.Image:
-      return 'Image';
     case CanvasElements.Drawing:
       switch (element.brushType) {
         case BrushTypes.Brush:
@@ -166,31 +166,8 @@ const getLayerTypeTitle = (element: CanvasElement) => {
         default:
           return 'Pencil drawing';
       }
-    case CanvasElements.Rectangle:
-      return 'Rectangle';
-    case CanvasElements.Ellipse:
-      return 'Ellipse';
-    case CanvasElements.Polygon:
-      switch (element.sides) {
-        case 3:
-          return 'Triangle';
-        case 5:
-          return 'Pentagon';
-        default:
-          return 'Polygon';
-      }
-    case CanvasElements.Star:
-      return 'Star';
-    case CanvasElements.Line:
-      return 'Line';
-    case CanvasElements.Arrow:
-      return 'Arrow';
-    // case CanvasElements.Tooltip:
-    //   return 'Tooltip';
-    case CanvasElements.Arrow:
-      return 'Text';
     default:
-      return element.type;
+      return capitalize(element.type);
   }
 };
 
@@ -212,15 +189,12 @@ const getLayerIcon = (element: CanvasElement) => {
       return <RectangleShape />;
     case CanvasElements.Ellipse:
       return <EllipseShape />;
+    case CanvasElements.Triangle:
+      return <TriangleShape />;
+    case CanvasElements.Pentagon:
+      return <PentagonShape />;
     case CanvasElements.Polygon:
-      switch (element.sides) {
-        case 3:
-          return <TriangleShape />;
-        case 5:
-          return <PentagonShape />;
-        default:
-          return <PolygonShape />;
-      }
+      return <PolygonShape />;
     case CanvasElements.Star:
       return <StarShape />;
     case CanvasElements.Line:

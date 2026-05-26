@@ -28,7 +28,7 @@ export const SUPPORTED_UPLOADS = ['image/png', 'image/jpeg'];
 
 export const DEFAULT_FILL_COLOR = '#eaeaea';
 export const DEFAULT_STROKE_COLOR = '#0f1314';
-export const DEFAULT_ELEMENT_SIZE = 100;
+export const DEFAULT_ELEMENT_SIZE = 76;
 
 export const BASE_STYLE: BaseStyle = {
   fill: DEFAULT_FILL_COLOR,
@@ -66,9 +66,21 @@ export const DEFAULT_PROPS = {
     radiusY: DEFAULT_ELEMENT_SIZE / 2,
     ...BASE_STYLE,
   },
+  [CanvasElements.Triangle]: {
+    type: CanvasElements.Triangle,
+    sides: 3,
+    radius: DEFAULT_ELEMENT_SIZE / 2,
+    ...BASE_STYLE,
+  },
+  [CanvasElements.Pentagon]: {
+    type: CanvasElements.Pentagon,
+    sides: 5,
+    radius: DEFAULT_ELEMENT_SIZE / 2,
+    ...BASE_STYLE,
+  },
   [CanvasElements.Polygon]: {
     type: CanvasElements.Polygon,
-    sides: 5,
+    sides: 6,
     radius: DEFAULT_ELEMENT_SIZE / 2,
     ...BASE_STYLE,
   },
