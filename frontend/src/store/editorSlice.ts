@@ -30,6 +30,7 @@ interface History {
   from?: (CanvasElement | Background)[];
   to?: (CanvasElement | Background)[];
   action: Action;
+  time: string;
 }
 
 export interface Project extends Partial<Omit<ProjectResponse, 'content' | 'file' | 'images'>> {
@@ -92,6 +93,22 @@ const prepareCanvasElement = (element: CanvasElement, order: number): CanvasElem
 const isHiddenLayerElement = (element: CanvasElement) =>
   element.type === CanvasElements.Drawing && element.brushType === BrushTypes.Eraser;
 
+const addToHistory = (state: any, history: Omit<History, 'time'>) => {
+  const { ids, from, to, action } = history;
+
+  state.history = [
+    ...state.history,
+    {
+      ids,
+      from,
+      to,
+      action,
+      time: new Date().toString(),
+    },
+  ];
+  state.historyTarget++;
+};
+
 const editorSlice = createSlice({
   name: 'editor',
   initialState,
@@ -107,32 +124,24 @@ const editorSlice = createSlice({
         state.project.width = width;
         state.project.height = height;
       }
-      state.history = [
-        ...state.history,
-        {
-          ids: [from.id],
-          from: [from],
-          to: [state.canvas.background],
-          action: Actions.Resize,
-        },
-      ];
-      state.historyTarget++;
+      addToHistory(state, {
+        ids: [from.id],
+        from: [from],
+        to: [state.canvas.background],
+        action: Actions.Resize,
+      });
     },
     addCanvasElement: (state, action: PayloadAction<CanvasElement>) => {
       const el = prepareCanvasElement(action.payload, state.canvas.elements.length);
 
       state.canvas.elements = [...state.canvas.elements, el];
 
-      state.history = [
-        ...state.history,
-        {
-          ids: [action.payload.id],
-          from: undefined,
-          to: [el],
-          action: Actions.Add,
-        },
-      ];
-      state.historyTarget++;
+      addToHistory(state, {
+        ids: [action.payload.id],
+        from: undefined,
+        to: [el],
+        action: Actions.Add,
+      });
     },
     addCanvasElements: (state, action: PayloadAction<CanvasElement[]>) => {
       if (!action.payload.length) return;
@@ -144,16 +153,12 @@ const editorSlice = createSlice({
       state.canvas.elements = [...state.canvas.elements, ...elements];
       state.selectedIds = elements.map((el) => el.id);
 
-      state.history = [
-        ...state.history,
-        {
-          ids: elements.map((el) => el.id),
-          from: undefined,
-          to: elements,
-          action: Actions.Add,
-        },
-      ];
-      state.historyTarget++;
+      addToHistory(state, {
+        ids: elements.map((el) => el.id),
+        from: undefined,
+        to: elements,
+        action: Actions.Add,
+      });
     },
     deleteCanvasElements: (state, _action: PayloadAction<undefined>) => {
       const existingIds = new Set(state.canvas.elements.map((el) => el.id));
@@ -170,16 +175,7 @@ const editorSlice = createSlice({
       );
       state.selectedIds = [];
 
-      state.history = [
-        ...state.history,
-        {
-          ids,
-          from,
-          to: undefined,
-          action: Actions.Delete,
-        },
-      ];
-      state.historyTarget++;
+      addToHistory(state, { ids, from, to: undefined, action: Actions.Delete });
     },
     moveCanvasElements: (state, action: PayloadAction<{ moveX: number; moveY: number }>) => {
       const { moveX, moveY } = action.payload;
@@ -203,16 +199,7 @@ const editorSlice = createSlice({
         } else return el;
       });
 
-      state.history = [
-        ...state.history,
-        {
-          ids,
-          from,
-          to,
-          action: Actions.Move,
-        },
-      ];
-      state.historyTarget++;
+      addToHistory(state, { ids, from, to, action: Actions.Move });
     },
     translateCanvasElements: (
       state,
@@ -232,16 +219,7 @@ const editorSlice = createSlice({
       const { ids, from, to } = action.payload;
       if (!ids.length || !from.length || !to.length) return;
 
-      state.history = [
-        ...state.history,
-        {
-          ids,
-          from,
-          to,
-          action: Actions.Move,
-        },
-      ];
-      state.historyTarget++;
+      addToHistory(state, { ids, from, to, action: Actions.Move });
     },
     reorderCanvasElements: (
       state,
@@ -294,16 +272,7 @@ const editorSlice = createSlice({
       if (!hasChanged) return;
 
       state.canvas.elements = to;
-      state.history = [
-        ...state.history,
-        {
-          ids: selectedIds,
-          from,
-          to,
-          action: Actions.Layer,
-        },
-      ];
-      state.historyTarget++;
+      addToHistory(state, { ids: selectedIds, from, to, action: Actions.Layer });
     },
     setHistory: (state, action: PayloadAction<History[]>) => {
       state.history = action.payload;
