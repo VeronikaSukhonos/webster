@@ -224,6 +224,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
     (lastIndex, el, index) => (selectedElementIdsForRender.has(el.id) ? index : lastIndex),
     -1,
   );
+  const limited = mode === Modes.HalfEdit || mode === Modes.View;
 
   const { stageSize } = useStageSize();
   const {
@@ -305,6 +306,10 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
         );
         const baseX = (stageSize.width - canvas.background.width) / 2 + 20;
         const baseY = (stageSize.height - canvas.background.height) / 2 + 20;
+        const cursorX =
+          fileInputRef.current?.dataset.x && parseFloat(fileInputRef.current?.dataset.x);
+        const cursorY =
+          fileInputRef.current?.dataset.y && parseFloat(fileInputRef.current?.dataset.y);
 
         imagesCtx?.addLocalImageItems(imagesWithSize.map(({ image }) => image));
         dispatch(setTool(Tools.Select));
@@ -315,8 +320,8 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
                 ({
                   ...DEFAULT_PROPS[CanvasElements.Image],
                   id: crypto.randomUUID(),
-                  x: fileInputRef.current?.dataset.x || baseX + index * 20,
-                  y: fileInputRef.current?.dataset.y || baseY + index * 20,
+                  x: cursorX || baseX + index * 20,
+                  y: cursorY || baseY + index * 20,
                   width: size.width,
                   height: size.height,
                   image: image.id,
@@ -324,8 +329,10 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
             ),
           ),
         );
-        fileInputRef.current?.removeAttribute('x');
-        fileInputRef.current?.removeAttribute('y');
+        if (cursorX || cursorY) {
+          fileInputRef.current?.removeAttribute('x');
+          fileInputRef.current?.removeAttribute('y');
+        }
       } catch {
         toast(ERROR_TYPES.SWW);
       }
@@ -512,7 +519,9 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
           axios
             .get(parsedData.url, { responseType: 'blob' })
             .then(({ data: res }) => {
-              const file = new File([res], parsedData.id, { type: res.type });
+              const file = new File([res], `${parsedData.id}.${res.type.split('/')[1]}`, {
+                type: res.type,
+              });
               const transferFile = new DataTransfer();
               transferFile.items.add(file);
               const nativeSetter = Object.getOwnPropertyDescriptor(
@@ -967,7 +976,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
 
             if (index !== selectedGroupRenderIndex) return null;
             return (
-              <Portal selector="#act-layer" enabled={isTransforming}>
+              <Portal key="selected" selector="#act-layer" enabled={isTransforming}>
                 <Group ref={backdropGroupRef}>
                   <Rect
                     ref={backdropRef}
@@ -1099,9 +1108,9 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
             />
           </div>
         </div>
-        {mode !== Modes.View && (
+        {!limited && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div className="tool-container mini canvas-size-toolbar">
+            <div className="tool-container mini" style={{ maxWidth: '215px', marginRight: 84 }}>
               <SizeField
                 name="canvas-size"
                 value={{ width: canvas.background.width, height: canvas.background.height }}
@@ -1122,7 +1131,8 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
               buttonProps={{
                 noStyle: true,
                 className: 'tool-container mini square',
-                tooltipId: RightSheets.Element,
+                style: { position: 'fixed', bottom: 10, right: 52 },
+                tooltipId: 'object',
                 children: (
                   <SettingsIcon
                     className={clsx(
@@ -1140,34 +1150,41 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
                 onClearBackgroundImage={handleClearBackgroundImage}
               />
             </Sheet>
-            <Popover
-              button={
-                <MainButton noStyle className="tool-container mini square" tooltipId="help">
-                  <QuestionIcon />
-                </MainButton>
-              }
-              className="col mini-gap"
-            >
-              <h3 className="content-title mini t-art t-center">Shortcuts</h3>
-              <hr />
-              <div>
-                {shortcuts.map((s, i) => (
-                  <div key={i} className="row mini-gap">
-                    <div
-                      style={{
-                        color: 'var(--accent-font-color)',
-                        fontWeight: 'bold',
-                        width: '65px',
-                      }}
-                    >
-                      {s.sc}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>{s.explanation}</div>
-                  </div>
-                ))}
-              </div>
-            </Popover>
           </div>
+        )}
+        {mode !== Modes.View && (
+          <Popover
+            button={
+              <MainButton
+                noStyle
+                className="tool-container mini square"
+                style={{ position: 'fixed', bottom: 10, right: 10 }}
+                tooltipId="help"
+              >
+                <QuestionIcon />
+              </MainButton>
+            }
+            className="col mini-gap"
+          >
+            <h3 className="content-title mini t-art t-center">Shortcuts</h3>
+            <hr />
+            <div>
+              {shortcuts.map((s, i) => (
+                <div key={i} className="row mini-gap">
+                  <div
+                    style={{
+                      color: 'var(--accent-font-color)',
+                      fontWeight: 'bold',
+                      width: '65px',
+                    }}
+                  >
+                    {s.sc}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>{s.explanation}</div>
+                </div>
+              ))}
+            </div>
+          </Popover>
         )}
       </div>
     </div>
