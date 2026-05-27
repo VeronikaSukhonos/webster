@@ -422,7 +422,7 @@ export const ElementPanel = ({
           <h4 className="element-panel-title">Fonts</h4>
           <SelectField
             name="fontFamily"
-            label="Font Family"
+            label="Font family"
             value={element.fontFamily}
             onChange={(e) => updateElement({ fontFamily: e.target.value }, Actions.TextFont)}
             options={FONT_FAMILY_OPTIONS}
