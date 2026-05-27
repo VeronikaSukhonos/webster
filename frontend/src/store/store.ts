@@ -14,8 +14,8 @@ const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: {
         ignoredActions: ['ui/setModal'],
-        ignoredActionPaths: ['payload.stageRef.current', 'payload.backgroundRef.current'],
-        ignoredPaths: ['ui.modal.stageRef.current', 'ui.modal.backgroundRef.current'],
+        ignoredActionPaths: ['payload.images'],
+        ignoredPaths: ['ui.modal.images'],
       },
     }),
 });

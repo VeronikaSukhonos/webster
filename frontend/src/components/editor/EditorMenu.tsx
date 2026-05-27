@@ -1,6 +1,6 @@
 import { toast } from 'react-toastify';
 
-import type Konva from 'konva';
+// import type Konva from 'konva';
 
 import ProjectsApi from '@api/projectsApi';
 
@@ -23,18 +23,29 @@ import { useAppDispatch, useAppSelector, useAuth } from '@hooks/utilHooks';
 
 import { copyLink } from '@utils/utils';
 
+import type { Canvas, ImageItem } from '@mytypes/editorTypes';
 import type { ProjectResponse } from '@mytypes/responseTypes';
 
 export const ProjectMenu = ({
   project,
-  stageRef,
-  backgroundRef,
+  // stageRef,
+  // backgroundRef,
+  content,
+  images = [],
+  stageX = 0,
+  stageY = 0,
   onSave,
+  allowExport = false,
 }: {
   project: Project;
-  stageRef?: React.RefObject<Konva.Stage | null>;
-  backgroundRef?: React.RefObject<Konva.Rect | null>;
+  // stageRef?: React.RefObject<Konva.Stage | null>;
+  // backgroundRef?: React.RefObject<Konva.Rect | null>;
+  content?: Canvas;
+  images?: ImageItem[];
+  stageX?: number;
+  stageY?: number;
   onSave?: () => void | Promise<unknown>;
+  allowExport?: boolean;
 }) => {
   const auth = useAuth();
   const dispatch = useAppDispatch();
@@ -69,24 +80,30 @@ export const ProjectMenu = ({
           </div>
         </MenuItem>
       )}
-      <MenuItem aria-label="Export">
-        <div
-          className="m-row"
-          onClick={() =>
-            dispatch(
-              setModal({
-                type: 'exportProject',
-                project: project as Omit<ProjectResponse, 'file' | 'images' | 'content'>,
-                stageRef,
-                backgroundRef,
-              }),
-            )
-          }
-        >
-          <DownloadIcon />
-          <span>Export</span>
-        </div>
-      </MenuItem>
+      {allowExport && (
+        <MenuItem aria-label="Export">
+          <div
+            className="m-row"
+            onClick={() =>
+              dispatch(
+                setModal({
+                  type: 'exportProject',
+                  project: project as Omit<ProjectResponse, 'file' | 'images' | 'content'>,
+                  // stageRef,
+                  // backgroundRef,
+                  content,
+                  images,
+                  stageX,
+                  stageY,
+                }),
+              )
+            }
+          >
+            <DownloadIcon />
+            <span>Export</span>
+          </div>
+        </MenuItem>
+      )}
       {auth && auth.id === project.author?.id && (
         <MenuItem aria-label="Settings">
           <div

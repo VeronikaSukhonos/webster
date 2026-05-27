@@ -39,6 +39,7 @@ import { CanvasElementShape, CanvasImage } from '@components/editor/CanvasElemen
 import { LayersPanel } from '@components/editor/LeftPanels';
 import { ElementPanel } from '@components/editor/RightPanels';
 import { Sheet } from '@components/editor/Sheet';
+import { TextEditor } from '@components/editor/TextEditor';
 import { Toolbar } from '@components/editor/Toolbar';
 
 import grabCursor from '@assets/grab.png';
@@ -235,6 +236,9 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
     setSelectGroupPos,
     eraserCursorRef,
     drawingLineRef,
+    isEditingTextRef,
+    editedTextRef,
+    textEditorRef,
     // onTransformEnd,
     ...toolbarHandlers
   } = useToolbar(stageRef);
@@ -1019,6 +1023,9 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
             onTransformEnd={handleTransformEnd}
           />
           <Rect {...selectRectProps} />
+          {isEditingTextRef.current && (
+            <TextEditor textNode={editedTextRef} textEditorRef={textEditorRef} />
+          )}
         </Layer>
       </Stage>
       <div className="eraser-cursor-overlay" ref={eraserCursorRef} />

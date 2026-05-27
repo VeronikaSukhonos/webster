@@ -4,7 +4,7 @@ import { selectEditor } from '@store/editorSlice';
 
 import { MainButton } from '@components/MainButton';
 import { Menu, Popover } from '@components/Menu';
-import type { EditorProps } from '@components/editor/Editor';
+// import type { EditorProps } from '@components/editor/Editor';
 import { ProjectMenu, TemplateMenu } from '@components/editor/EditorMenu';
 import { HistoryButtons, buttonProps } from '@components/editor/HistoryButtons';
 import { ShareMenu } from '@components/editor/ShareMenu';
@@ -16,11 +16,23 @@ import { useAppSelector, useAuth } from '@hooks/utilHooks';
 
 import { formatDate } from '@utils/utils';
 
-import { Modes } from '@mytypes/editorTypes';
+import { type Canvas, type ImageItem, Modes } from '@mytypes/editorTypes';
 
 import './EditorHeader.css';
 
-export const EditorHeader = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
+export const EditorHeader = ({
+  content,
+  images,
+  stageX,
+  stageY,
+  onSave,
+}: {
+  content?: Canvas;
+  images?: ImageItem[];
+  stageX: number;
+  stageY: number;
+  onSave?: () => void | Promise<unknown>;
+}) => {
   const auth = useAuth();
 
   const project = useAppSelector(selectEditor.project);
@@ -131,9 +143,14 @@ export const EditorHeader = ({ stageRef, backgroundRef, onSave }: EditorProps) =
               {project && (
                 <ProjectMenu
                   project={project}
-                  stageRef={stageRef}
-                  backgroundRef={backgroundRef}
+                  // stageRef={stageRef}
+                  // backgroundRef={backgroundRef}
+                  content={content}
+                  images={images}
+                  stageX={stageX}
+                  stageY={stageY}
                   onSave={onSave}
+                  allowExport={true}
                 />
               )}
               {template && <TemplateMenu template={template} />}
@@ -156,10 +173,10 @@ export const EditorHeader = ({ stageRef, backgroundRef, onSave }: EditorProps) =
                   </MainButton>
                 }
               >
-                <ShareMenu stageRef={stageRef} backgroundRef={backgroundRef} />
+                <ShareMenu content={content} images={images} stageX={stageX} stageY={stageY} />
               </Popover>
             )}
-            <AuthMenu stageRef={stageRef} backgroundRef={backgroundRef} />
+            <AuthMenu content={content} images={images} stageX={stageX} stageY={stageY} />
           </>
         ) : (
           <MainButton to="/login" {...buttonProps} aria-label="Log in">

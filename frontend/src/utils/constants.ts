@@ -30,6 +30,12 @@ export const DEFAULT_FILL_COLOR = '#eaeaea';
 export const DEFAULT_STROKE_COLOR = '#0f1314';
 export const DEFAULT_ELEMENT_SIZE = 76;
 
+export const FONT_FAMILIES = [
+  { value: 'Arial', label: 'Arial' },
+  { value: 'Times New Roman', label: 'Times New Roman' },
+  { value: 'Courier New', label: 'Courier New' },
+] as const;
+
 export const BASE_STYLE: BaseStyle = {
   fill: DEFAULT_FILL_COLOR,
   stroke: DEFAULT_STROKE_COLOR,
@@ -114,9 +120,10 @@ export const DEFAULT_PROPS = {
     type: CanvasElements.Text,
     width: DEFAULT_ELEMENT_SIZE * 2,
     height: DEFAULT_ELEMENT_SIZE / 2,
-    text: '',
+    text: 'Some text',
+    isEmpty: true,
     fontSize: 16,
-    fontFamily: 'sans-serif',
+    fontFamily: FONT_FAMILIES[0].value,
     padding: 0,
     align: Alignments.Left,
     ...BASE_STYLE,

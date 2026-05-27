@@ -3,7 +3,12 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
-import { addCanvasElement, selectEditor, setSelectedIds } from '@store/editorSlice';
+import {
+  addCanvasElement,
+  selectEditor,
+  setSelectedIds,
+  updateCanvasElements,
+} from '@store/editorSlice';
 
 import brushCursor from '@assets/brush.png';
 import grabCursor from '@assets/grab.png';
@@ -17,7 +22,7 @@ import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
 import { DEFAULT_BORDER_COLOR, DEFAULT_BRUSH_PROPS, DEFAULT_PROPS } from '@utils/constants';
 import { MAX_SCALE, MIN_SCALE, SCALE_FACTOR } from '@utils/constants';
 
-import { Tools } from '@mytypes/editorTypes';
+import { Actions, Tools } from '@mytypes/editorTypes';
 import type { BrushType, Drawing, Placement } from '@mytypes/editorTypes';
 
 Konva.hitOnDragEnabled = true;
@@ -61,6 +66,10 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
   const drawingLineRef = useRef<Konva.Line | null>(null);
   const isDrawing = useRef(false);
   const eraserCursorRef = useRef<HTMLDivElement | null>(null);
+
+  const isEditingTextRef = useRef(false);
+  const editedTextRef = useRef<Konva.Text | null>(null);
+  const textEditorRef = useRef<HTMLTextAreaElement | null>(null);
 
   const hideEraserCursor = useCallback(() => {
     if (eraserCursorRef.current) eraserCursorRef.current.style.display = 'none';
@@ -379,6 +388,14 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     drawingLineRef.current?.getLayer()?.batchDraw();
   }, [stageRef.current, drawingLine.current, drawingLineRef.current, isDrawing.current]);
 
+  const createTextRect = (box: { x: number; y: number; width: number; height: number }) => {
+    if (box.width < 3 && box.height < 3) {
+      box.width = DEFAULT_PROPS.text.width;
+      box.height = DEFAULT_PROPS.text.height;
+    }
+    dispatch(addCanvasElement({ id: crypto.randomUUID(), ...DEFAULT_PROPS.text, ...box }));
+  };
+
   const onWheel = (e: KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
     let direction = e.evt.deltaY > 0 ? -1 : 1;
@@ -401,6 +418,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
           if (!p) return;
           setSelectRect({ x1: p.x, y1: p.y, x2: p.x, y2: p.y, visible: true });
           isSelectingRef.current = true;
+          if (e.target instanceof Konva.Text) editedTextRef.current = e.target;
           break;
         case Tools.Pencil:
         case Tools.Marker:
@@ -489,13 +507,12 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
         applySelectGroup();
         break;
       case Tools.Text:
+        if (!isSelectingRef.current) return;
         isSelectingRef.current = false;
         const box = calcSelectBox();
-
-        if (box.width > 2 || box.height > 2) {
-          // TODO draw text rect with this size // probably move this to separate function and use it in touchend
-        } else {
-          // draw text rect with some default size
+        if (box.width > 0 && box.height > 0) {
+          createTextRect(box);
+          editedTextRef.current = null;
         }
         setSelectRect(initialSelectRect);
         break;
@@ -529,6 +546,45 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
         if (id) clearPrevSelection(id);
       }
     }
+    if (editedTextRef.current !== null && e.target !== editedTextRef.current) {
+      if (textEditorRef && textEditorRef.current) {
+        if (textEditorRef.current.value === '') {
+          editedTextRef.current.text(DEFAULT_PROPS.text.text);
+          editedTextRef.current.setAttr('isEmpty', true);
+        } else {
+          editedTextRef.current.text(textEditorRef.current.value);
+          editedTextRef.current.setAttr('isEmpty', false);
+        }
+      }
+      editedTextRef.current.visible(true);
+      isEditingTextRef.current = false;
+      dispatch(
+        updateCanvasElements({
+          updates: [
+            {
+              id: editedTextRef.current.id(),
+              changes: {
+                text: editedTextRef.current.text(),
+                isEmpty: editedTextRef.current.getAttr('isEmpty'),
+              },
+            },
+          ],
+          action: Actions.TextFont,
+        }),
+      );
+      editedTextRef.current = null;
+    }
+  };
+
+  const onDblClick = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
+    if (!stageRef.current) return;
+
+    if (tool === Tools.Text) {
+      if (e.target === editedTextRef.current) {
+        editedTextRef.current.visible(false);
+        isEditingTextRef.current = true;
+      }
+    }
   };
 
   const onMouseDown = (e: KonvaEventObject<MouseEvent>) => {
@@ -548,6 +604,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
           if (!p) return;
           setSelectRect({ x1: p.x, y1: p.y, x2: p.x, y2: p.y, visible: true });
           isSelectingRef.current = true;
+          if (e.target instanceof Konva.Text) editedTextRef.current = e.target;
           break;
         case Tools.Pencil:
         case Tools.Marker:
@@ -600,13 +657,12 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
           setIsDragging(false);
           break;
         case Tools.Text:
+          if (!isSelectingRef.current) return;
           isSelectingRef.current = false;
           const box = calcSelectBox();
-
-          if (box.width > 2 || box.height > 2) {
-            // TODO draw text rect with this size // probably move this to separate function and use it in touchend
-          } else {
-            // draw text rect with some default size
+          if (box.width > 0 && box.height > 0) {
+            createTextRect(box);
+            editedTextRef.current = null;
           }
           setSelectRect(initialSelectRect);
           break;
@@ -641,6 +697,9 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     setSelectGroupPos,
     eraserCursorRef,
     drawingLineRef,
+    isEditingTextRef,
+    editedTextRef,
+    textEditorRef,
     onWheel,
     onTouchStart,
     onTouchMove,
@@ -648,6 +707,8 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
     onDragEnd,
     onClick,
     onTap: onClick,
+    onDblClick,
+    onDblTap: onDblClick,
     onMouseDown,
     onMouseMove,
     onMouseUp,

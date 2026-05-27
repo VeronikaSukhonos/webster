@@ -11,11 +11,18 @@ import {
   updateCanvasElements,
 } from '@store/editorSlice';
 
-import { FieldWrapper, NumberField, SizeField, TextField } from '@components/InputFields';
+import {
+  FieldWrapper,
+  NumberField,
+  SelectField,
+  SelectLabel,
+  SizeField,
+} from '@components/InputFields';
 import { MainButton } from '@components/MainButton';
 
 import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
 
+import { FONT_FAMILIES } from '@utils/constants';
 import { capitalize, formatDate } from '@utils/utils';
 
 import {
@@ -29,6 +36,11 @@ import {
 
 import './LeftPanels.css';
 import './RightPanels.css';
+
+const FONT_FAMILY_OPTIONS = FONT_FAMILIES.map((opt) => ({
+  value: opt.value,
+  label: <SelectLabel>{opt.label}</SelectLabel>,
+}));
 
 export const HistoryPanel = () => {
   const dispatch = useAppDispatch();
@@ -408,11 +420,12 @@ export const ElementPanel = ({
       {element.type === CanvasElements.Text && (
         <>
           <h4 className="element-panel-title">Fonts</h4>
-          <TextField
+          <SelectField
             name="fontFamily"
-            label="Font family"
+            label="Font Family"
             value={element.fontFamily}
             onChange={(e) => updateElement({ fontFamily: e.target.value }, Actions.TextFont)}
+            options={FONT_FAMILY_OPTIONS}
             mini
           />
           <div className="element-panel-section">

@@ -13,7 +13,7 @@ import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
 
 import { exportFile } from '@utils/editorUtils';
 
-import { type CanvasProps, Modes } from '@mytypes/editorTypes';
+import { type Canvas, type ImageItem, Modes } from '@mytypes/editorTypes';
 import type { ProjectResponse } from '@mytypes/responseTypes';
 
 const API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '');
@@ -22,7 +22,17 @@ const API_ORIGIN = API_URL?.replace(/\/api\/?$/, '').replace(/\/$/, '');
 const getErrorMessage = (err: unknown) =>
   err instanceof Error ? err.message : 'Something went wrong';
 
-export const ShareMenu = ({ stageRef, backgroundRef }: CanvasProps) => {
+export const ShareMenu = ({
+  content,
+  images = [],
+  stageX,
+  stageY,
+}: {
+  content?: Canvas;
+  images?: ImageItem[];
+  stageX: number;
+  stageY: number;
+}) => {
   const dispatch = useAppDispatch();
   const imagesCtx = useImages();
   const project = useAppSelector(selectEditor.project);
@@ -111,11 +121,15 @@ export const ShareMenu = ({ stageRef, backgroundRef }: CanvasProps) => {
       }
 
       const preview = await exportFile({
-        stageRef,
-        backgroundRef,
+        // stageRef,
+        // backgroundRef,
         filename: `preview-${project.id}.jpg`,
         format: 'jpg',
         height: 300,
+        content,
+        images,
+        stageX,
+        stageY,
       });
       const { data: res } = await projectsApi.updateProject(project.id, {
         size: { width: canvas.background.width, height: canvas.background.height },

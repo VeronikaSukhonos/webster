@@ -145,6 +145,7 @@ export type Alignment = (typeof Alignments)[keyof typeof Alignments];
 export interface Text extends BaseCanvasElement, Size {
   type: typeof CanvasElements.Text;
   text: string;
+  isEmpty: boolean;
   fontSize: number; // 1 and more
   fontFamily: string;
   padding: number; // 0 and more

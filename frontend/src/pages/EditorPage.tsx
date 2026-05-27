@@ -22,6 +22,7 @@ import { Load } from '@components/Load';
 import { Editor } from '@components/editor/Editor';
 import { EditorHeader } from '@components/editor/EditorHeader';
 
+import { useStageSize } from '@hooks/editor/useStageSize';
 import { useDebounce } from '@hooks/useDebounce';
 import { useImages } from '@hooks/useImages';
 import { useAppDispatch, useAppSelector, useAuth } from '@hooks/utilHooks';
@@ -61,6 +62,8 @@ const EditorPage = () => {
   const stageRef = useRef<Konva.Stage | null>(null);
   const backgroundRef = useRef<Konva.Rect | null>(null);
 
+  const { stageSize } = useStageSize();
+
   const shouldBlock = useCallback<BlockerFunction>(() => {
     if (!auth) return history.length > 0;
     if (isAuthor) return hasUnsavedChanges || isSaving;
@@ -77,11 +80,15 @@ const EditorPage = () => {
         content: canvas,
         images: imagesCtx?.presentFiles,
         preview: await exportFile({
-          stageRef,
-          backgroundRef,
+          // stageRef,
+          // backgroundRef,
           filename: `preview-${project.id}.jpg`,
           format: 'jpg',
           height: 300,
+          content: canvas,
+          images: imagesCtx?.presentFiles,
+          stageX: (stageSize.width - canvas.background.width) / 2,
+          stageY: (stageSize.height - canvas.background.height) / 2,
         }),
         editDate: new Date().toISOString(),
       });
@@ -221,7 +228,13 @@ const EditorPage = () => {
 
   return (
     <>
-      <EditorHeader stageRef={stageRef} backgroundRef={backgroundRef} onSave={saveProject} />
+      <EditorHeader
+        content={canvas}
+        images={imagesCtx?.presentFiles}
+        stageX={(stageSize.width - canvas.background.width) / 2}
+        stageY={(stageSize.height - canvas.background.height) / 2}
+        onSave={saveProject}
+      />
       <main className="full-screen">
         <Editor stageRef={stageRef} backgroundRef={backgroundRef} onSave={saveProject} />
       </main>

@@ -19,9 +19,19 @@ import { useAppDispatch, useAppSelector, useAuth } from '@hooks/utilHooks';
 
 import { exportFile } from '@utils/editorUtils';
 
-import { type CanvasProps, Modes } from '@mytypes/editorTypes';
+import { type Canvas, type ImageItem, Modes } from '@mytypes/editorTypes';
 
-export const AuthMenu = ({ stageRef, backgroundRef }: Partial<CanvasProps>) => {
+export const AuthMenu = ({
+  content,
+  images = [],
+  stageX = 0,
+  stageY = 0,
+}: {
+  content?: Canvas;
+  images?: ImageItem[];
+  stageX?: number;
+  stageY?: number;
+}) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
@@ -63,16 +73,19 @@ export const AuthMenu = ({ stageRef, backgroundRef }: Partial<CanvasProps>) => {
             size: { width: canvas.background.width, height: canvas.background.height },
             content: canvas,
             images: imagesCtx?.presentFiles,
-            ...(stageRef &&
-              backgroundRef && {
-                preview: await exportFile({
-                  stageRef,
-                  backgroundRef,
-                  filename: `preview-${project.id}.jpg`,
-                  format: 'jpg',
-                  height: 300,
-                }),
+            ...(content && {
+              preview: await exportFile({
+                // stageRef,
+                // backgroundRef,
+                filename: `preview-${project.id}.jpg`,
+                format: 'jpg',
+                height: 300,
+                content,
+                images,
+                stageX,
+                stageY,
               }),
+            }),
             editDate: new Date().toISOString(),
           })
           .then(({ data: res }) => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 
 import axios from 'axios';
@@ -155,6 +155,7 @@ export const ImagesPanel = ({
   const [images, setImages] = useState([]);
   const [search, setSearch] = useState(searchParams.get('search') ?? '');
   const { total, setTotal } = useTotal();
+  const loadedImageIdRef = useRef('');
 
   const searchImages = function (e: React.SubmitEvent) {
     e.preventDefault();
@@ -163,10 +164,11 @@ export const ImagesPanel = ({
 
   const loadImage = (e: React.MouseEvent<HTMLImageElement>) => {
     if (fileInputRef && fileInputRef.current) {
+      loadedImageIdRef.current = e.currentTarget.id;
       axios
         .get(e.currentTarget.src, { responseType: 'blob' })
         .then(({ data: res }) => {
-          const file = new File([res], e.currentTarget.id, { type: res.type });
+          const file = new File([res], loadedImageIdRef.current, { type: res.type });
           const transferFile = new DataTransfer();
           transferFile.items.add(file);
           const nativeSetter = Object.getOwnPropertyDescriptor(
@@ -179,9 +181,11 @@ export const ImagesPanel = ({
             fileInputRef.current.files = transferFile.files;
             fileInputRef.current.dispatchEvent(event);
           }
+          loadedImageIdRef.current = '';
         })
         .catch((err) => {
           toast(err.message);
+          loadedImageIdRef.current = '';
         });
     }
   };

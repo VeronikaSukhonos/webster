@@ -9,7 +9,13 @@ import {
   MIN_CANVAS_SIZE,
 } from '@utils/constants';
 
-import type { Background, Canvas, CanvasProps, ImageItem, Size } from '@mytypes/editorTypes';
+import {
+  type Background,
+  type Canvas,
+  CanvasElements,
+  type ImageItem,
+  type Size,
+} from '@mytypes/editorTypes';
 import type { ImageResponse } from '@mytypes/responseTypes';
 
 export type ExportType = (typeof EXPORT_TYPES)[number]['value'];
@@ -98,83 +104,91 @@ export const getInitCanvasSize = (img: HTMLImageElement) => {
   return { width: Math.round(width), height: Math.round(height) };
 };
 
-interface ExportFileProps extends CanvasProps {
+// interface ExportFileProps extends CanvasProps {
+//   filename: string;
+//   format: ExportType;
+//   width?: number;
+//   height?: number;
+//   preview?: boolean;
+// }
+
+// export const exportFile = async ({
+//   stageRef,
+//   backgroundRef,
+//   filename,
+//   format = 'png',
+//   width,
+//   height,
+//   preview = true,
+// }: ExportFileProps) => {
+//   const stage = stageRef.current;
+//   const back = backgroundRef.current;
+//   let scale = 1;
+
+//   if (!stage || !back || !filename) return;
+//   if (width) scale = width / back.width();
+//   else if (height) scale = height / back.height();
+
+//   const excluded = stage.find('.excluded');
+
+//   excluded.forEach((n) => n.hide());
+
+//   const { x, y } = back.getAbsolutePosition();
+//   const mimeType =
+//     format === 'jpg' ? 'image/jpeg' : format === 'pdf' ? 'application/pdf' : `image/${format}`;
+//   const canvas = stage.toCanvas({
+//     x,
+//     y,
+//     width: back.width() * stage.scaleX(),
+//     height: back.height() * stage.scaleX(),
+//     pixelRatio: (scale * (format === 'pdf' ? 2 : 1)) / (preview ? 1 : stage.scaleX()),
+//   });
+//   if (format === 'pdf') {
+//     const pdf = new jsPDF('l', 'px', [canvas.width, canvas.height]);
+//     pdf.addImage(canvas, 0, 0, canvas.width, canvas.height);
+//     const blob = pdf.output('blob');
+
+//     excluded.forEach((n) => n.show());
+
+//     return new File([blob], filename, {
+//       type: mimeType,
+//     });
+//   } else {
+//     const blob = await new Promise<Blob>((resolve, reject) => {
+//       canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(ERROR_TYPES.SWW))), mimeType);
+//     });
+
+//     excluded.forEach((n) => n.show());
+
+//     return new File([blob], filename, {
+//       type: mimeType,
+//     });
+//   }
+// };
+
+interface ExportFileProps {
   filename: string;
   format: ExportType;
   width?: number;
   height?: number;
-  preview?: boolean;
+  content?: Canvas;
+  images?: ImageResponse[];
+  stageX: number;
+  stageY: number;
 }
 
 export const exportFile = async ({
-  stageRef,
-  backgroundRef,
+  // stageRef,
+  // backgroundRef,
   filename,
   format = 'png',
   width,
   height,
-  preview = true,
-}: ExportFileProps) => {
-  const stage = stageRef.current;
-  const back = backgroundRef.current;
-  let scale = 1;
-
-  if (!stage || !back || !filename) return;
-  if (width) scale = width / back.width();
-  else if (height) scale = height / back.height();
-
-  const excluded = stage.find('.excluded');
-
-  excluded.forEach((n) => n.hide());
-
-  const { x, y } = back.getAbsolutePosition();
-  const mimeType =
-    format === 'jpg' ? 'image/jpeg' : format === 'pdf' ? 'application/pdf' : `image/${format}`;
-  const canvas = stage.toCanvas({
-    x,
-    y,
-    width: back.width() * stage.scaleX(),
-    height: back.height() * stage.scaleX(),
-    pixelRatio: (scale * (format === 'pdf' ? 2 : 1)) / (preview ? 1 : stage.scaleX()),
-  });
-  if (format === 'pdf') {
-    const pdf = new jsPDF('l', 'px', [canvas.width, canvas.height]);
-    pdf.addImage(canvas, 0, 0, canvas.width, canvas.height);
-    const blob = pdf.output('blob');
-
-    excluded.forEach((n) => n.show());
-
-    return new File([blob], filename, {
-      type: mimeType,
-    });
-  } else {
-    const blob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(ERROR_TYPES.SWW))), mimeType);
-    });
-
-    excluded.forEach((n) => n.show());
-
-    return new File([blob], filename, {
-      type: mimeType,
-    });
-  }
-};
-
-interface ExportFileFromJsonProps {
-  filename: string;
-  format: ExportType;
-  content?: Canvas;
-  images?: ImageResponse[];
-  selectedIds?: string[];
-}
-
-export const exportFileFromJson = async ({
-  filename,
-  format = 'png',
   content,
-  images,
-  selectedIds = [],
-}: ExportFileFromJsonProps) => {
+  images = [],
+  stageX,
+  stageY,
+}: ExportFileProps) => {
   if (!content) {
     return;
   }
@@ -190,15 +204,15 @@ export const exportFileFromJson = async ({
   stage.add(bgLayer);
   const bgGroup = new Konva.Group();
   bgLayer.add(bgGroup);
-  // if (format === 'jpg') {
-  //   const fillerBgLayer = new Konva.Rect({
-  //     width: content.background.width,
-  //     height: content.background.height,
-  //     fill: "white",
-  //     stroke: "white",
-  //   });
-  //   bgGroup.add(fillerBgLayer);
-  // }
+  if (format === 'jpg') {
+    const fillerBgLayer = new Konva.Rect({
+      width: content.background.width,
+      height: content.background.height,
+      fill: 'white',
+      stroke: 'white',
+    });
+    bgGroup.add(fillerBgLayer);
+  }
   const bg = new Konva.Rect(content.background);
   bgGroup.add(bg);
   if (content.background.image && images) {
@@ -224,28 +238,83 @@ export const exportFileFromJson = async ({
 
   const elementsLayer = new Konva.Layer();
   stage.add(elementsLayer);
-  content.elements
-    .filter((el) => !selectedIds.includes(el.id))
-    .forEach((el) => {
-      const element = new Konva.Rect(el);
-      elementsLayer.add(element);
-    });
+  for (const el of content.elements) {
+    const elX = el.x !== undefined && el.y !== undefined ? el.x - stageX : undefined;
+    const elY = el.x !== undefined && el.y !== undefined ? el.y - stageY : undefined;
+    if (el.type === CanvasElements.Image && images) {
+      await new Promise((resolve, reject) => {
+        Konva.Image.fromURL(
+          images[images.findIndex((image) => image.id === el.image)].url,
+          (img) => {
+            const image = img.image();
+            img.setAttrs({
+              ...el,
+              x: elX,
+              y: elY,
+              image,
+            });
+            elementsLayer.add(img);
+            resolve(img);
+          },
+          () => {
+            reject(new Error(ERROR_TYPES.SWW));
+          },
+        );
+      });
+    } else {
+      let element = null;
+      switch (el.type) {
+        case CanvasElements.Rectangle:
+          element = new Konva.Rect({ ...el, x: elX, y: elY });
+          break;
+        case CanvasElements.Ellipse:
+          element = new Konva.Ellipse({ ...el, x: elX, y: elY });
+          break;
+        case CanvasElements.Triangle:
+        case CanvasElements.Pentagon:
+        case CanvasElements.Polygon:
+          element = new Konva.RegularPolygon({ ...el, x: elX, y: elY });
+          break;
+        case CanvasElements.Star:
+          element = new Konva.Star({ ...el, x: elX, y: elY });
+          break;
+        case CanvasElements.Line:
+          element = new Konva.Line({ ...el, x: elX, y: elY });
+          break;
+        case CanvasElements.Arrow:
+          element = new Konva.Arrow({ ...el, x: elX, y: elY });
+          break;
+        case CanvasElements.Drawing:
+          element = new Konva.Line({ ...el, x: elX, y: elY });
+          break;
+        case CanvasElements.Text:
+          element = new Konva.Text({ ...el, x: elX, y: elY });
+          break;
+      }
+      if (element) elementsLayer.add(element);
+    }
+  }
 
-  const actionLayer = new Konva.Layer();
-  stage.add(actionLayer);
-  content.elements
-    .filter((el) => selectedIds.includes(el.id))
-    .forEach((el) => {
-      const element = new Konva.Rect(el);
-      actionLayer.add(element);
-    });
-
+  let scale = 1;
+  if (width) scale = width / content.background.width;
+  else if (height) scale = height / content.background.height;
   const mimeType =
     format === 'jpg' ? 'image/jpeg' : format === 'pdf' ? 'application/pdf' : `image/${format}`;
   if (format === 'pdf') {
     const pdf = new jsPDF('l', 'px', [content.background.width, content.background.height]);
+    pdf.setTextColor('#000000');
+    stage.find('Text').forEach((text) => {
+      if (text instanceof Konva.Text) {
+        const size = text.fontSize() / 0.75;
+        pdf.setFontSize(size);
+        pdf.text(text.text(), text.x(), text.y(), {
+          baseline: 'top',
+          angle: -text.getAbsoluteRotation(),
+        });
+      }
+    });
     pdf.addImage(
-      stage.toDataURL({ pixelRatio: 2 }),
+      stage.toDataURL({ pixelRatio: 2 * scale }),
       0,
       0,
       content.background.width,
@@ -259,7 +328,13 @@ export const exportFileFromJson = async ({
       type: mimeType,
     });
   } else {
-    const canvas = stage.toCanvas();
+    const canvas = stage.toCanvas({
+      x: 0,
+      y: 0,
+      width: content.background.width,
+      height: content.background.height,
+      pixelRatio: scale,
+    });
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(ERROR_TYPES.SWW))), mimeType);
     });

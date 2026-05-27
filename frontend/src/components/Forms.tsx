@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
-import type Konva from 'konva';
+// import type Konva from 'konva';
 
 import projectsApi from '@api/projectsApi';
 import templatesApi from '@api/templatesApi';
@@ -48,13 +48,12 @@ import {
 import {
   createLocalImageItem,
   exportFile,
-  exportFileFromJson,
   getInitCanvasSize,
   initCanvas,
 } from '@utils/editorUtils';
 import { copyLink } from '@utils/utils';
 
-import { Modes, type Size } from '@mytypes/editorTypes';
+import { type Canvas, type ImageItem, Modes, type Size } from '@mytypes/editorTypes';
 import {
   type CreateProjectParams,
   type ExportProjectParams,
@@ -89,8 +88,12 @@ interface CreateProjectFormProps extends FormTemplateProps {
 interface FormDeleteProps extends FormProjectProps, FormTemplateProps {}
 
 interface ExportProjectFormProps extends FormProjectProps {
-  stageRef?: React.RefObject<Konva.Stage | null>;
-  backgroundRef?: React.RefObject<Konva.Rect | null>;
+  // stageRef?: React.RefObject<Konva.Stage | null>;
+  // backgroundRef?: React.RefObject<Konva.Rect | null>;
+  content?: Canvas;
+  images?: ImageItem[];
+  stageX?: number;
+  stageY?: number;
 }
 
 const SIZE_TYPE_OPTIONS = SIZE_TYPES.map((opt) => ({
@@ -720,8 +723,12 @@ export const ExportProjectForm = ({
   project,
   isLoading,
   setIsLoading,
-  stageRef,
-  backgroundRef,
+  // stageRef,
+  // backgroundRef,
+  content,
+  images,
+  stageX = 0,
+  stageY = 0,
 }: ExportProjectFormProps) => {
   const exportProject = useForm(
     exportProjectParams,
@@ -745,15 +752,19 @@ export const ExportProjectForm = ({
   const submit = (params: ExportProjectParams) => {
     if (project) {
       setIsLoading?.(true);
-      if (stageRef?.current && backgroundRef?.current) {
+      if (content) {
         exportFile({
-          stageRef,
-          backgroundRef,
+          // stageRef,
+          // backgroundRef,
           filename: params.title,
           format: params.format,
-          width: project.width,
-          height: project.height,
-          preview: false,
+          // width: project.width,
+          // height: project.height,
+          // preview: false,
+          content,
+          images,
+          stageX,
+          stageY,
         })
           .then((file) => {
             if (file) {
@@ -770,34 +781,36 @@ export const ExportProjectForm = ({
             setIsOpen(false);
           })
           .catch(handleError);
-      } else if (project.id) {
-        projectsApi
-          .getProject(project.id)
-          .then(({ data: res }) => {
-            exportFileFromJson({
-              filename: params.title,
-              format: params.format,
-              content: res.data.project.content,
-              images: res.data.project.images,
-            })
-              .then((file) => {
-                if (file) {
-                  const url = URL.createObjectURL(file);
-                  const link = document.createElement('a');
-                  link.download = file.name || `${params.title}.${params.format}`;
-                  link.href = url;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                  // toast('Exported project successfully');
-                }
-                setIsLoading?.(false);
-                setIsOpen(false);
-              })
-              .catch(handleError);
-          })
-          .catch(handleError);
-      }
+      } // else if (project.id) {
+      //   projectsApi
+      //     .getProject(project.id)
+      //     .then(({ data: res }) => {
+      //       exportFile({
+      //         filename: params.title,
+      //         format: params.format,
+      //         content: res.data.project.content,
+      //         images: res.data.project.images,
+      //         stageX,
+      //         stageY,
+      //       })
+      //         .then((file) => {
+      //           if (file) {
+      //             const url = URL.createObjectURL(file);
+      //             const link = document.createElement('a');
+      //             link.download = file.name || `${params.title}.${params.format}`;
+      //             link.href = url;
+      //             document.body.appendChild(link);
+      //             link.click();
+      //             document.body.removeChild(link);
+      //             // toast('Exported project successfully');
+      //           }
+      //           setIsLoading?.(false);
+      //           setIsOpen(false);
+      //         })
+      //         .catch(handleError);
+      //     })
+      //     .catch(handleError);
+      // }
     }
   };
 
