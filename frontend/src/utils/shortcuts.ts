@@ -1,6 +1,7 @@
 export const shortcuts = [
   { sc: 'Ctrl+Z', explanation: 'Undo' },
   { sc: 'Ctrl+Y', explanation: 'Redo' },
+  { sc: 'Ctrl+Shift+Z', explanation: 'Redo' },
   { sc: 'Ctrl+C', explanation: 'Copy selected objects' },
   { sc: 'Ctrl+X', explanation: 'Cut selected objects' },
   { sc: 'Ctrl+V', explanation: 'Paste copied objects' },

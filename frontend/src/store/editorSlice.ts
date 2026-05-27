@@ -174,6 +174,7 @@ const showProjectAt = (state: EditorState, idx: number): boolean => {
 
     switch (h.action) {
       case Actions.Add:
+      case Actions.Paste:
         if (prop === 'to') {
           if (h.to) elements = [...elements, ...(h.to as CanvasElement[])];
           selected = h.ids;
@@ -221,6 +222,15 @@ const showProjectAt = (state: EditorState, idx: number): boolean => {
         selected = h.ids;
         break;
       case Actions.Delete:
+        if (prop === 'to') {
+          elements = elements.filter((el) => !h.ids.includes(el.id));
+          selected = [];
+        } else {
+          if (h.from) elements = [...elements, ...(h.from as CanvasElement[])];
+          selected = h.ids;
+        }
+        break;
+      case Actions.Cut:
         if (prop === 'to') {
           elements = elements.filter((el) => !h.ids.includes(el.id));
           selected = [];
@@ -325,6 +335,31 @@ const editorSlice = createSlice({
         action: Actions.Add,
       });
     },
+    pasteCanvasElements: (state, action: PayloadAction<CanvasElement[]>) => {
+      if (!action.payload.length) return;
+
+      let existingElements = [...state.canvas.elements];
+      const elements = action.payload.map((el, index) => {
+        const prepared = prepareCanvasElement(
+          el,
+          state.canvas.elements.length + index,
+          existingElements,
+        );
+
+        existingElements = [...existingElements, prepared];
+        return prepared;
+      });
+
+      state.canvas.elements = [...state.canvas.elements, ...elements];
+      state.selectedIds = elements.map((el) => el.id);
+
+      addToHistory(state, {
+        ids: elements.map((el) => el.id),
+        from: undefined,
+        to: elements,
+        action: Actions.Paste,
+      });
+    },
     deleteCanvasElements: (state, _action: PayloadAction<undefined>) => {
       const existingIds = new Set(state.canvas.elements.map((el) => el.id));
       const ids = state.selectedIds.filter((id) => existingIds.has(id));
@@ -341,6 +376,23 @@ const editorSlice = createSlice({
       state.selectedIds = [];
 
       addToHistory(state, { ids, from, to: undefined, action: Actions.Delete });
+    },
+    cutCanvasElements: (state) => {
+      const existingIds = new Set(state.canvas.elements.map((el) => el.id));
+      const ids = state.selectedIds.filter((id) => existingIds.has(id));
+
+      if (!ids.length) return;
+
+      const from = structuredClone(
+        current(state.canvas.elements).filter((el) => ids.includes(el.id)),
+      );
+
+      state.canvas.elements = normalizeElementOrder(
+        state.canvas.elements.filter((el) => !ids.includes(el.id)),
+      );
+      state.selectedIds = [];
+
+      addToHistory(state, { ids, from, to: undefined, action: Actions.Cut });
     },
     moveCanvasElements: (state, action: PayloadAction<{ moveX: number; moveY: number }>) => {
       const { moveX, moveY } = action.payload;
@@ -605,7 +657,9 @@ export const {
   updateCanvasBackground,
   addCanvasElement,
   addCanvasElements,
+  pasteCanvasElements,
   deleteCanvasElements,
+  cutCanvasElements,
   moveCanvasElements,
   translateCanvasElements,
   commitCanvasElementsMove,

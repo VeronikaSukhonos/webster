@@ -155,6 +155,74 @@ const getSignedRotation = (rotation: number) => {
 const getColorInputValue = (color: string | undefined, fallback = '#000000') =>
   /^#[0-9a-f]{6}$/i.test(color ?? '') ? (color as string) : fallback;
 
+const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+
+const rotatePoint = (point: { x: number; y: number }, rotation: number) => {
+  const radians = toRadians(rotation);
+
+  return {
+    x: point.x * Math.cos(radians) - point.y * Math.sin(radians),
+    y: point.x * Math.sin(radians) + point.y * Math.cos(radians),
+  };
+};
+
+const getPointsCenter = (points: number[]) => {
+  const xs = points.filter((_, index) => index % 2 === 0);
+  const ys = points.filter((_, index) => index % 2 === 1);
+
+  return {
+    x: (Math.min(...xs) + Math.max(...xs)) / 2,
+    y: (Math.min(...ys) + Math.max(...ys)) / 2,
+  };
+};
+
+const getRotationCenterOffset = (element: CanvasElement) => {
+  const scaleX = element.scaleX || 1;
+  const scaleY = element.scaleY || 1;
+
+  switch (element.type) {
+    case CanvasElements.Rectangle:
+    case CanvasElements.Image:
+    case CanvasElements.Text:
+      return {
+        x: (element.width * scaleX) / 2,
+        y: (element.height * scaleY) / 2,
+      };
+    case CanvasElements.Line:
+    case CanvasElements.Arrow:
+    case CanvasElements.Drawing: {
+      const center = getPointsCenter(element.points);
+
+      return {
+        x: center.x * scaleX,
+        y: center.y * scaleY,
+      };
+    }
+    default:
+      return { x: 0, y: 0 };
+  }
+};
+
+const getCenterRotationChanges = (
+  element: CanvasElement,
+  rotation: number,
+): Partial<CanvasElement> => {
+  const centerOffset = getRotationCenterOffset(element);
+
+  if (centerOffset.x === 0 && centerOffset.y === 0) {
+    return { rotation } as Partial<CanvasElement>;
+  }
+
+  const currentCenterOffset = rotatePoint(centerOffset, element.rotation);
+  const nextCenterOffset = rotatePoint(centerOffset, rotation);
+
+  return {
+    x: element.x + currentCenterOffset.x - nextCenterOffset.x,
+    y: element.y + currentCenterOffset.y - nextCenterOffset.y,
+    rotation,
+  } as Partial<CanvasElement>;
+};
+
 const getElementSize = (element: CanvasElement): Size | null => {
   const scaleX = Math.abs(element.scaleX || 1);
   const scaleY = Math.abs(element.scaleY || 1);
@@ -250,6 +318,10 @@ interface ElementPanelProps {
   onBackgroundImageToObject?: () => void;
   onImageToBackground?: (element: CanvasElement) => void;
   onClearBackgroundImage?: () => void;
+  activeImageCropId?: string;
+  onStartImageCrop?: (element: CanvasElement) => void;
+  onApplyImageCrop?: () => void;
+  onCancelImageCrop?: () => void;
 }
 
 export const ElementPanel = ({
@@ -257,6 +329,10 @@ export const ElementPanel = ({
   onBackgroundImageToObject,
   onImageToBackground,
   onClearBackgroundImage,
+  activeImageCropId,
+  onStartImageCrop,
+  onApplyImageCrop,
+  onCancelImageCrop,
 }: ElementPanelProps) => {
   const dispatch = useAppDispatch();
   const canvas = useAppSelector(selectEditor.canvas);
@@ -313,6 +389,7 @@ export const ElementPanel = ({
   }
 
   const element = selectedElements[0];
+  const isCroppingImage = element.type === CanvasElements.Image && activeImageCropId === element.id;
 
   const updateElement = (changes: Partial<CanvasElement>, action: Action = Actions.Resize) => {
     dispatch(updateCanvasElements({ updates: [{ id: element.id, changes }], action }));
@@ -349,9 +426,10 @@ export const ElementPanel = ({
           value={Math.round(getSignedRotation(element.rotation))}
           onChange={(e) =>
             updateElement(
-              {
-                rotation: normalizeRotation(e.target.value ?? getSignedRotation(element.rotation)),
-              },
+              getCenterRotationChanges(
+                element,
+                normalizeRotation(e.target.value ?? getSignedRotation(element.rotation)),
+              ),
               Actions.Rotate,
             )
           }
@@ -395,7 +473,23 @@ export const ElementPanel = ({
       {element.type === CanvasElements.Image && (
         <>
           <h4 className="element-panel-title">Image</h4>
-          <MainButton onClick={() => onImageToBackground?.(element)}>Use as background</MainButton>
+          <div className="element-panel-actions">
+            {isCroppingImage ? (
+              <>
+                <MainButton onClick={() => onApplyImageCrop?.()}>Apply crop</MainButton>
+                <MainButton color="transparent" onClick={() => onCancelImageCrop?.()}>
+                  Cancel crop
+                </MainButton>
+              </>
+            ) : (
+              <>
+                <MainButton onClick={() => onStartImageCrop?.(element)}>Crop image</MainButton>
+                <MainButton color="transparent" onClick={() => onImageToBackground?.(element)}>
+                  Use as background
+                </MainButton>
+              </>
+            )}
+          </div>
         </>
       )}
 

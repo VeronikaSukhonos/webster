@@ -174,6 +174,10 @@ export interface Drawing extends BaseCanvasElement {
 export interface Image extends Omit<Rectangle, 'type'> {
   type: typeof CanvasElements.Image;
   image: string; // id
+  cropX?: number;
+  cropY?: number;
+  cropWidth?: number;
+  cropHeight?: number;
 }
 
 export type CanvasElement =
@@ -229,6 +233,8 @@ export type Mode = (typeof Modes)[keyof typeof Modes];
 
 export const Actions = {
   Add: 'added',
+  Paste: 'pasted',
+  Cut: 'cut',
   Move: 'moved',
   Resize: 'resized',
   Rotate: 'rotated',

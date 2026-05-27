@@ -19,8 +19,11 @@ import type { KonvaEventObject } from 'konva/lib/Node';
 import {
   addCanvasElements,
   commitCanvasElementsMove,
+  cutCanvasElements,
   deleteCanvasElements,
+  handleUndoRedo,
   moveCanvasElements,
+  pasteCanvasElements,
   reorderCanvasElements,
   selectEditor,
   setCanvasSize,
@@ -89,6 +92,9 @@ const isEditableTarget = (target: EventTarget | null) => {
   return !!target.closest('input, textarea, select, [contenteditable="true"]');
 };
 
+const isShortcutKey = (event: KeyboardEvent, code: string, key: string) =>
+  event.code === code || event.key.toLowerCase() === key;
+
 const cloneCanvasElement = (element: CanvasElement, offset = 0): CanvasElement => {
   const clone = structuredClone(element);
 
@@ -146,9 +152,26 @@ const isImageElement = (
 ): element is Extract<CanvasElement, { type: typeof CanvasElements.Image }> =>
   element.type === CanvasElements.Image;
 
+type ImageElement = Extract<CanvasElement, { type: typeof CanvasElements.Image }>;
+
 interface PendingGroupTransform {
   ids: string[];
   elements: CanvasElement[];
+}
+
+interface CropBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+}
+
+interface ImageCropDraft {
+  targetId: string;
+  sourceWidth: number;
+  sourceHeight: number;
+  box: CropBox;
 }
 
 interface TransformModifiers {
@@ -166,6 +189,21 @@ const hasSameIds = (left: string[], right: string[]) =>
   left.length === right.length && left.every((id) => right.includes(id));
 
 const TRANSFORM_ROTATION_SNAPS = Array.from({ length: 73 }, (_, index) => index * 5);
+
+const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+
+const getLocalPoint = (element: ImageElement, point: { x: number; y: number }) => {
+  const rotation = toRadians(element.rotation);
+  const dx = point.x - element.x;
+  const dy = point.y - element.y;
+  const scaleX = element.scaleX || 1;
+  const scaleY = element.scaleY || 1;
+
+  return {
+    x: (dx * Math.cos(rotation) + dy * Math.sin(rotation)) / scaleX,
+    y: (-dx * Math.sin(rotation) + dy * Math.cos(rotation)) / scaleY,
+  };
+};
 
 const getTransformModifiers = (event?: Event): TransformModifiers => {
   const modifierEvent = event as ModifierKeysEvent | undefined;
@@ -187,6 +225,8 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const backgroundFileInputRef = useRef<HTMLInputElement | null>(null);
   const backdropGroupRef = useRef<Konva.Group | null>(null);
+  const cropFrameRef = useRef<Konva.Rect | null>(null);
+  const cropTransformerRef = useRef<Konva.Transformer | null>(null);
   const canvasElementsRef = useRef<CanvasElement[]>([]);
   const keyboardMoveRef = useRef<{ ids: string[]; from: CanvasElement[] } | null>(null);
   const [keyboardMoveTick, setKeyboardMoveTick] = useState(0);
@@ -199,6 +239,8 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
   const leftSheet = useAppSelector(selectEditor.leftSheet);
   const rightSheet = useAppSelector(selectEditor.rightSheet);
   const project = useAppSelector(selectEditor.project);
+  const history = useAppSelector(selectEditor.history);
+  const historyTarget = useAppSelector(selectEditor.historyTarget);
   const canvasPaintElements = useMemo(
     () => getCanvasPaintOrder(canvas.elements),
     [canvas.elements],
@@ -210,6 +252,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
     shift: false,
     ctrl: false,
   });
+  const [imageCropDraft, setImageCropDraft] = useState<ImageCropDraft | null>(null);
   const [pendingGroupTransform, setPendingGroupTransform] = useState<PendingGroupTransform | null>(
     null,
   );
@@ -401,7 +444,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
         dispatch(
           updateCanvasBackground({
             changes: { image: imageWithSize.id },
-            action: Actions.Fill,
+            action: Actions.AddBgImage,
           }),
         );
       } catch {
@@ -465,7 +508,9 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
       if (!imageElement) return;
 
       dispatch(addCanvasElements([imageElement]));
-      dispatch(updateCanvasBackground({ changes: { image: undefined }, action: Actions.Fill }));
+      dispatch(
+        updateCanvasBackground({ changes: { image: undefined }, action: Actions.RemoveBgImage }),
+      );
     } catch {
       toast(ERROR_TYPES.SWW);
     }
@@ -493,7 +538,9 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
       }
 
       imagesCtx.restoreFile(element.image);
-      dispatch(updateCanvasBackground({ changes: { image: element.image }, action: Actions.Fill }));
+      dispatch(
+        updateCanvasBackground({ changes: { image: element.image }, action: Actions.AddBgImage }),
+      );
       dispatch(setSelectedIds([element.id]));
       dispatch(deleteCanvasElements());
     },
@@ -505,8 +552,149 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
     if (!imageId) return;
 
     deleteImageIfUnused(imageId, { ignoreBackground: true });
-    dispatch(updateCanvasBackground({ changes: { image: undefined }, action: Actions.Fill }));
+    dispatch(
+      updateCanvasBackground({ changes: { image: undefined }, action: Actions.RemoveBgImage }),
+    );
   }, [canvas.background.image, deleteImageIfUnused, dispatch]);
+
+  const handleStartImageCrop = useCallback(
+    async (element: CanvasElement) => {
+      if (!isImageElement(element)) return;
+
+      const imageItem = imagesCtx?.findImageItem(element.image);
+      if (!imageItem) {
+        toast(ERROR_TYPES.SWW);
+        return;
+      }
+
+      try {
+        const sourceSize = await getImageItemSize(imageItem);
+        if (!sourceSize) return;
+
+        const scaleX = Math.abs(element.scaleX || 1);
+        const scaleY = Math.abs(element.scaleY || 1);
+
+        dispatch(setSelectedIds([element.id]));
+        setImageCropDraft({
+          targetId: element.id,
+          sourceWidth: sourceSize.width,
+          sourceHeight: sourceSize.height,
+          box: {
+            x: element.x,
+            y: element.y,
+            width: element.width * scaleX,
+            height: element.height * scaleY,
+            rotation: element.rotation,
+          },
+        });
+      } catch {
+        toast(ERROR_TYPES.SWW);
+      }
+    },
+    [dispatch, imagesCtx],
+  );
+
+  const syncCropFrame = useCallback(() => {
+    const frame = cropFrameRef.current;
+    if (!frame) return;
+
+    const scaleX = frame.scaleX();
+    const scaleY = frame.scaleY();
+    const width = Math.max(1, frame.width() * Math.abs(scaleX || 1));
+    const height = Math.max(1, frame.height() * Math.abs(scaleY || 1));
+
+    frame.scale({ x: 1, y: 1 });
+
+    setImageCropDraft((draft) =>
+      draft
+        ? {
+            ...draft,
+            box: {
+              x: frame.x(),
+              y: frame.y(),
+              width,
+              height,
+              rotation: frame.rotation(),
+            },
+          }
+        : draft,
+    );
+  }, []);
+
+  const handleCancelImageCrop = useCallback(() => {
+    setImageCropDraft(null);
+  }, []);
+
+  const handleApplyImageCrop = useCallback(() => {
+    if (!imageCropDraft) return;
+
+    const element = canvas.elements.find((el) => el.id === imageCropDraft.targetId);
+    if (!element || !isImageElement(element)) {
+      setImageCropDraft(null);
+      return;
+    }
+
+    const scaleX = Math.abs(element.scaleX || 1);
+    const scaleY = Math.abs(element.scaleY || 1);
+    const localPoint = getLocalPoint(element, {
+      x: imageCropDraft.box.x,
+      y: imageCropDraft.box.y,
+    });
+    const localWidth = imageCropDraft.box.width / scaleX;
+    const localHeight = imageCropDraft.box.height / scaleY;
+    const currentCropX = element.cropX ?? 0;
+    const currentCropY = element.cropY ?? 0;
+    const currentCropWidth = element.cropWidth ?? imageCropDraft.sourceWidth;
+    const currentCropHeight = element.cropHeight ?? imageCropDraft.sourceHeight;
+
+    const cropX = Math.max(
+      0,
+      Math.min(
+        imageCropDraft.sourceWidth - 1,
+        currentCropX + (localPoint.x / element.width) * currentCropWidth,
+      ),
+    );
+    const cropY = Math.max(
+      0,
+      Math.min(
+        imageCropDraft.sourceHeight - 1,
+        currentCropY + (localPoint.y / element.height) * currentCropHeight,
+      ),
+    );
+    const cropWidth = Math.max(
+      1,
+      Math.min(imageCropDraft.sourceWidth - cropX, (localWidth / element.width) * currentCropWidth),
+    );
+    const cropHeight = Math.max(
+      1,
+      Math.min(
+        imageCropDraft.sourceHeight - cropY,
+        (localHeight / element.height) * currentCropHeight,
+      ),
+    );
+
+    dispatch(
+      updateCanvasElements({
+        updates: [
+          {
+            id: element.id,
+            changes: {
+              x: imageCropDraft.box.x,
+              y: imageCropDraft.box.y,
+              width: Math.max(1, localWidth),
+              height: Math.max(1, localHeight),
+              cropX,
+              cropY,
+              cropWidth,
+              cropHeight,
+            },
+          },
+        ],
+        action: Actions.ImageCrop,
+      }),
+    );
+    setImageCropDraft(null);
+  }, [canvas.elements, dispatch, imageCropDraft]);
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
@@ -700,6 +888,20 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
     transformerRef.current?.getLayer()?.batchDraw();
   }, [canvas.elements, selectedIds, transformerRef]);
 
+  useLayoutEffect(() => {
+    const frame = cropFrameRef.current;
+    const transformer = cropTransformerRef.current;
+
+    if (!frame || !transformer || !imageCropDraft) {
+      transformer?.nodes([]);
+      return;
+    }
+
+    transformer.nodes([frame]);
+    transformer.forceUpdate();
+    transformer.getLayer()?.batchDraw();
+  }, [imageCropDraft]);
+
   useEffect(() => {
     const handleModifierKey = (event: KeyboardEvent) => updateTransformModifiers(event);
     const resetModifierKeys = () => updateTransformModifiers();
@@ -770,6 +972,15 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
   }, [canvas.elements, hasPendingGroupTransform]);
 
   useEffect(() => {
+    if (!imageCropDraft) return;
+
+    const stillExists = canvas.elements.some((el) => el.id === imageCropDraft.targetId);
+    const stillSelected = selectedIds.includes(imageCropDraft.targetId);
+
+    if (!stillExists || !stillSelected) setImageCropDraft(null);
+  }, [canvas.elements, imageCropDraft, selectedIds]);
+
+  useEffect(() => {
     if (mode !== Modes.Edit) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -779,7 +990,27 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
       const selectedElements = canvas.elements.filter((el) => selectedElementIds.includes(el.id));
       const isCommand = e.ctrlKey || e.metaKey;
 
-      if (isCommand && e.key.toLowerCase() === 's') {
+      if (isCommand && isShortcutKey(e, 'KeyZ', 'z')) {
+        e.preventDefault();
+        flushKeyboardMove();
+        setImageCropDraft(null);
+        if (e.shiftKey) {
+          if (historyTarget < history.length - 1) dispatch(handleUndoRedo(historyTarget + 1));
+        } else if (historyTarget >= 0) {
+          dispatch(handleUndoRedo(historyTarget - 1));
+        }
+        return;
+      }
+
+      if (isCommand && isShortcutKey(e, 'KeyY', 'y')) {
+        e.preventDefault();
+        flushKeyboardMove();
+        setImageCropDraft(null);
+        if (historyTarget < history.length - 1) dispatch(handleUndoRedo(historyTarget + 1));
+        return;
+      }
+
+      if (isCommand && isShortcutKey(e, 'KeyS', 's')) {
         e.preventDefault();
         flushKeyboardMove();
         void onSave?.();
@@ -807,7 +1038,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
         return;
       }
 
-      if (isCommand && e.key.toLowerCase() === 'o') {
+      if (isCommand && isShortcutKey(e, 'KeyO', 'o')) {
         e.preventDefault();
         flushKeyboardMove();
         fileInputRef.current?.click();
@@ -828,32 +1059,32 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
         return;
       }
 
-      if (isCommand && e.key.toLowerCase() === 'c' && selectedElements.length) {
+      if (isCommand && isShortcutKey(e, 'KeyC', 'c') && selectedElements.length) {
         e.preventDefault();
         flushKeyboardMove();
         clipboardRef.current = structuredClone(selectedElements);
         return;
       }
 
-      if (isCommand && e.key.toLowerCase() === 'x' && selectedElements.length) {
+      if (isCommand && isShortcutKey(e, 'KeyX', 'x') && selectedElements.length) {
         e.preventDefault();
         flushKeyboardMove();
         clipboardRef.current = structuredClone(selectedElements);
-        dispatch(deleteCanvasElements());
+        dispatch(cutCanvasElements());
         return;
       }
 
-      if (isCommand && e.key.toLowerCase() === 'v' && clipboardRef.current.length) {
+      if (isCommand && isShortcutKey(e, 'KeyV', 'v') && clipboardRef.current.length) {
         e.preventDefault();
         flushKeyboardMove();
         const pastedElements = clipboardRef.current.map((el) => cloneCanvasElement(el, 10));
 
         clipboardRef.current = structuredClone(pastedElements);
-        dispatch(addCanvasElements(pastedElements));
+        dispatch(pasteCanvasElements(pastedElements));
         return;
       }
 
-      if (isCommand && e.key.toLowerCase() === 'a') {
+      if (isCommand && isShortcutKey(e, 'KeyA', 'a')) {
         e.preventDefault();
         flushKeyboardMove();
         dispatch(setSelectedIds(canvas.elements.map((el) => el.id)));
@@ -863,6 +1094,10 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
       if (e.key === 'Escape' && selectedIds.length) {
         e.preventDefault();
         flushKeyboardMove();
+        if (imageCropDraft) {
+          setImageCropDraft(null);
+          return;
+        }
         dispatch(setSelectedIds([]));
         return;
       }
@@ -908,15 +1143,18 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleKeyDown, true);
     };
   }, [
     canvas.elements,
     dispatch,
     flushKeyboardMove,
+    history.length,
+    historyTarget,
+    imageCropDraft,
     mode,
     onSave,
     selectedIds,
@@ -994,7 +1232,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
                     fill="transparent"
                     stroke={limited ? DEFAULT_BORDER_COLOR : undefined}
                     strokeWidth={limited ? 1 / stageZoom : 0}
-                    listening={selectedIds.length > 0}
+                    listening={selectedIds.length > 0 && !imageCropDraft}
                     draggable
                     onDragStart={(e: KonvaEventObject<DragEvent>) => {
                       e.target.stopDrag();
@@ -1014,7 +1252,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
                   key="selected-elements"
                   id="select-group"
                   ref={selectGroupRef}
-                  draggable={tool === Tools.Select}
+                  draggable={tool === Tools.Select && !imageCropDraft}
                   onDragStart={(e: KonvaEventObject<DragEvent>) => {
                     setSelectGroupPos({ x: e.target.x(), y: e.target.y() });
                     setisTransforming(true);
@@ -1052,32 +1290,67 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
           <Line ref={drawingLineRef} listening={false} />
         </Layer>
         <Layer id="act-layer" listening={!limited}>
-          <Transformer
-            name="excluded"
-            ref={transformerRef}
-            boundBoxFunc={(o, n) => (n.width < 1 || n.height < 1 ? o : n)}
-            keepRatio={false}
-            centeredScaling={transformModifiers.ctrl}
-            rotationSnaps={transformModifiers.shift ? TRANSFORM_ROTATION_SNAPS : []}
-            rotationSnapTolerance={5}
-            borderStroke={DEFAULT_BORDER_COLOR}
-            borderStrokeWidth={1}
-            anchorFill="white"
-            anchorStroke={DEFAULT_BORDER_COLOR}
-            anchorStrokeWidth={2}
-            anchorSize={10}
-            anchorCornerRadius={20}
-            onTransformStart={(e) => {
-              updateTransformModifiers(e.evt);
-              setisTransforming(true);
-              syncBackdropTransform();
-            }}
-            onTransform={(e) => {
-              updateTransformModifiers(e.evt);
-              syncBackdropTransform();
-            }}
-            onTransformEnd={handleTransformEnd}
-          />
+          {!imageCropDraft && (
+            <Transformer
+              name="excluded"
+              ref={transformerRef}
+              boundBoxFunc={(o, n) => (n.width < 1 || n.height < 1 ? o : n)}
+              keepRatio={false}
+              centeredScaling={transformModifiers.ctrl}
+              rotationSnaps={transformModifiers.shift ? TRANSFORM_ROTATION_SNAPS : []}
+              rotationSnapTolerance={5}
+              borderStroke={DEFAULT_BORDER_COLOR}
+              borderStrokeWidth={1}
+              anchorFill="white"
+              anchorStroke={DEFAULT_BORDER_COLOR}
+              anchorStrokeWidth={2}
+              anchorSize={10}
+              anchorCornerRadius={20}
+              onTransformStart={(e) => {
+                updateTransformModifiers(e.evt);
+                setisTransforming(true);
+                syncBackdropTransform();
+              }}
+              onTransform={(e) => {
+                updateTransformModifiers(e.evt);
+                syncBackdropTransform();
+              }}
+              onTransformEnd={handleTransformEnd}
+            />
+          )}
+          {imageCropDraft && (
+            <>
+              <Rect
+                name="excluded"
+                ref={cropFrameRef}
+                {...imageCropDraft.box}
+                fill="#ffffff18"
+                stroke={DEFAULT_BORDER_COLOR}
+                strokeWidth={2 / stageZoom}
+                dash={[8 / stageZoom, 5 / stageZoom]}
+                draggable
+                onDragEnd={syncCropFrame}
+                onTransformEnd={syncCropFrame}
+              />
+              <Transformer
+                name="excluded"
+                ref={cropTransformerRef}
+                boundBoxFunc={(o, n) => (n.width < 1 || n.height < 1 ? o : n)}
+                keepRatio={false}
+                centeredScaling={transformModifiers.ctrl}
+                rotateEnabled={false}
+                borderStroke={DEFAULT_BORDER_COLOR}
+                borderStrokeWidth={1}
+                anchorFill="white"
+                anchorStroke={DEFAULT_BORDER_COLOR}
+                anchorStrokeWidth={2}
+                anchorSize={10}
+                anchorCornerRadius={20}
+                onTransformStart={(e) => updateTransformModifiers(e.evt)}
+                onTransform={(e) => updateTransformModifiers(e.evt)}
+              />
+            </>
+          )}
           <Rect {...selectRectProps} />
           {isEditingTextRef.current && (
             <TextEditor textNode={editedTextRef} textEditorRef={textEditorRef} />
@@ -1161,6 +1434,10 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
                 onBackgroundImageToObject={() => void handleBackgroundImageToObject()}
                 onImageToBackground={handleImageToBackground}
                 onClearBackgroundImage={handleClearBackgroundImage}
+                activeImageCropId={imageCropDraft?.targetId}
+                onStartImageCrop={(element) => void handleStartImageCrop(element)}
+                onApplyImageCrop={handleApplyImageCrop}
+                onCancelImageCrop={handleCancelImageCrop}
               />
             </Sheet>
           </div>
