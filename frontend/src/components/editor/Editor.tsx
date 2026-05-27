@@ -11,6 +11,7 @@ import { Group, Layer, Line, Rect, Stage, Transformer } from 'react-konva';
 import { Portal } from 'react-konva-utils';
 import { toast } from 'react-toastify';
 
+import axios from 'axios';
 import clsx from 'clsx';
 import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
@@ -314,8 +315,8 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
                 ({
                   ...DEFAULT_PROPS[CanvasElements.Image],
                   id: crypto.randomUUID(),
-                  x: baseX + index * 20,
-                  y: baseY + index * 20,
+                  x: fileInputRef.current?.dataset.x || baseX + index * 20,
+                  y: fileInputRef.current?.dataset.y || baseY + index * 20,
                   width: size.width,
                   height: size.height,
                   image: image.id,
@@ -323,6 +324,8 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
             ),
           ),
         );
+        fileInputRef.current?.removeAttribute('x');
+        fileInputRef.current?.removeAttribute('y');
       } catch {
         toast(ERROR_TYPES.SWW);
       }
@@ -334,10 +337,8 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
   const isImageUsedByElements = useCallback(
     (imageId: string, ignoredElementIds: string[] = []) =>
       canvas.elements.some(
-        (element) =>
-          isImageElement(element) &&
-          element.image === imageId &&
-          !ignoredElementIds.includes(element.id),
+        (el: CanvasElement) =>
+          isImageElement(el) && el.image === imageId && !ignoredElementIds.includes(el.id),
       ),
     [canvas.elements],
   );
@@ -489,7 +490,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
     dispatch(updateCanvasBackground({ changes: { image: undefined }, action: Actions.Fill }));
   }, [canvas.background.image, deleteImageIfUnused, dispatch]);
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     const stage = stageRef.current;
     if (!stage) return;
@@ -500,15 +501,48 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
     try {
       const data = e.dataTransfer.getData('application/json/canvas-element');
       if (!data) return;
+      const parsedData = JSON.parse(data);
 
-      const el: CanvasElement = {
-        id: crypto.randomUUID(),
-        ...JSON.parse(data),
-        x: p.x,
-        y: p.y,
-      };
-      dispatch(setTool(Tools.Select));
-      dispatch(addCanvasElements([el]));
+      if (parsedData.type === CanvasElements.Image) {
+        if (!parsedData.url) {
+          toast(ERROR_TYPES.SWW);
+          return;
+        }
+        if (fileInputRef && fileInputRef.current) {
+          axios
+            .get(parsedData.url, { responseType: 'blob' })
+            .then(({ data: res }) => {
+              const file = new File([res], parsedData.id, { type: res.type });
+              const transferFile = new DataTransfer();
+              transferFile.items.add(file);
+              const nativeSetter = Object.getOwnPropertyDescriptor(
+                window.HTMLInputElement.prototype,
+                'value',
+              )?.set;
+              nativeSetter?.call(fileInputRef.current, '');
+              const event = new Event('change', { bubbles: true });
+              if (fileInputRef.current !== null) {
+                fileInputRef.current.files = transferFile.files;
+                fileInputRef.current.dataset.x = p.x.toString();
+                fileInputRef.current.dataset.y = p.y.toString();
+                fileInputRef.current.dispatchEvent(event);
+              }
+            })
+            .catch((err) => {
+              toast(err.message);
+            });
+        }
+      } else {
+        const el: CanvasElement = {
+          id: crypto.randomUUID(),
+          ...parsedData,
+          x: p.x,
+          y: p.y,
+        };
+
+        dispatch(setTool(Tools.Select));
+        dispatch(addCanvasElements([el]));
+      }
     } catch (err) {
       toast(ERROR_TYPES.SWW);
     }
@@ -887,7 +921,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
         hidden
         onChange={handleBackgroundImageUpload}
       />
-      <Toolbar onUploadImage={() => fileInputRef.current?.click()} fileInputRef={fileInputRef} />
+      <Toolbar onUploadImage={() => fileInputRef.current?.click()} />
       <Stage
         {...stageSize}
         {...toolbarHandlers}

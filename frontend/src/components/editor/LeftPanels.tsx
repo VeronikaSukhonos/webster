@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
-import { toast } from 'react-toastify';
+import { useEffect, useState } from 'react';
 
 import axios from 'axios';
 import clsx from 'clsx';
@@ -41,7 +40,7 @@ import triangle from '@assets/triangle.png';
 
 import { useAppDispatch, useAppSelector, useFeedback, usePage, useTotal } from '@hooks/utilHooks';
 
-import { DEFAULT_PROPS } from '@utils/constants';
+import { DEFAULT_PROJECT_LIST_LIMIT, DEFAULT_PROPS } from '@utils/constants';
 import { capitalize, formatDate } from '@utils/utils';
 
 import { BrushTypes, type CanvasElement, CanvasElements } from '@mytypes/editorTypes';
@@ -143,58 +142,34 @@ export const ShapesPanel = () => {
   );
 };
 
-export const ImagesPanel = ({
-  fileInputRef,
-}: {
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
-}) => {
-  const UNSPLASH_API_KEY = import.meta.env.VITE_UNSPLASH_API_KEY;
+const UNSPLASH_API_KEY = import.meta.env.VITE_UNSPLASH_API_KEY;
+
+export const ImagesPanel = () => {
   const { searchParams, setSearchParams, getPage } = usePage();
   const [areImagesLoading, setAreImagesLoading] = useState(false);
   const [imagesFeedback, setImagesFeedback] = useFeedback();
   const [images, setImages] = useState([]);
   const [search, setSearch] = useState(searchParams.get('search') ?? '');
   const { total, setTotal } = useTotal();
-  const loadedImageIdRef = useRef('');
 
   const searchImages = function (e: React.SubmitEvent) {
     e.preventDefault();
     setSearchParams(search && { search });
   };
 
-  const loadImage = (e: React.MouseEvent<HTMLImageElement>) => {
-    if (fileInputRef && fileInputRef.current) {
-      loadedImageIdRef.current = e.currentTarget.id;
-      axios
-        .get(e.currentTarget.src, { responseType: 'blob' })
-        .then(({ data: res }) => {
-          const file = new File([res], loadedImageIdRef.current, { type: res.type });
-          const transferFile = new DataTransfer();
-          transferFile.items.add(file);
-          const nativeSetter = Object.getOwnPropertyDescriptor(
-            window.HTMLInputElement.prototype,
-            'value',
-          )?.set;
-          nativeSetter?.call(fileInputRef.current, '');
-          const event = new Event('change', { bubbles: true });
-          if (fileInputRef.current !== null) {
-            fileInputRef.current.files = transferFile.files;
-            fileInputRef.current.dispatchEvent(event);
-          }
-          loadedImageIdRef.current = '';
-        })
-        .catch((err) => {
-          toast(err.message);
-          loadedImageIdRef.current = '';
-        });
-    }
+  const onDragStart = (e: React.DragEvent, url: string, id: string) => {
+    e.dataTransfer.setData(
+      'application/json/canvas-element',
+      JSON.stringify({ ...DEFAULT_PROPS.image, url, id }),
+    );
+    e.dataTransfer.effectAllowed = 'move';
   };
 
   useEffect(() => {
     setAreImagesLoading(true);
     axios
       .get(
-        `https://api.unsplash.com/search/photos?client_id=${UNSPLASH_API_KEY}&query=${search === '' ? 'all' : search}&page=${getPage()}`,
+        `https://api.unsplash.com/search/photos?client_id=${UNSPLASH_API_KEY}&query=${search === '' ? 'all' : search}&page=${getPage()}&limit=${DEFAULT_PROJECT_LIST_LIMIT}`,
       )
       .then(({ data: res }) => {
         setAreImagesLoading(false);
@@ -213,7 +188,7 @@ export const ImagesPanel = ({
   return (
     <>
       <p className="t-ital" style={{ fontSize: '0.95rem', marginBottom: 5 + 'px' }}>
-        Click on images to add them to the canvas:
+        Drag an image directly onto the canvas:
       </p>
       <form onSubmit={searchImages} style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
         <TextField
@@ -227,31 +202,36 @@ export const ImagesPanel = ({
           <SearchIcon />
         </MainButton>
       </form>
-      {areImagesLoading || !imagesFeedback.status ? (
-        <Load spinner />
-      ) : imagesFeedback.status === 'fail' ? (
-        <p className="feedback t-ital">{imagesFeedback.message}</p>
-      ) : imagesFeedback.status === 'ok' && !images.length ? (
-        <p className="feedback t-ital">No images</p>
-      ) : (
-        <div style={{ display: 'flex', flexFlow: 'row wrap' }}>
-          {images.length === 0 ? (
-            <p>No images</p>
-          ) : (
-            images.map((image: { id: string; urls: { raw: string }; alt_description: string }) => (
-              <img
-                key={image.id}
-                src={image.urls.raw}
-                alt={image.alt_description}
-                style={{ height: 40 + '%', padding: 5 + 'px', width: 40 + '%' }}
-                onClick={loadImage}
-                id={image.id}
-              />
-            ))
-          )}
-        </div>
-      )}
-      <Pagination totalPages={total.totalPages} disabled={areImagesLoading} />
+      <div className="col grow">
+        {areImagesLoading || !imagesFeedback.status ? (
+          <Load spinner />
+        ) : imagesFeedback.status === 'fail' ? (
+          <p className="feedback t-ital">{imagesFeedback.message}</p>
+        ) : imagesFeedback.status === 'ok' && !images.length ? (
+          <p className="feedback t-ital">No images</p>
+        ) : (
+          <div style={{ display: 'flex', flexFlow: 'row wrap', justifyContent: 'center' }}>
+            {images.length === 0 ? (
+              <p>No images</p>
+            ) : (
+              images.map((image: any) => (
+                <img
+                  className="image-image"
+                  key={image.id}
+                  src={image.urls.thumb}
+                  alt={image.alt_description}
+                  id={image.id}
+                  draggable
+                  onDragStart={(e) => onDragStart(e, image.urls.regular, image.id)}
+                />
+              ))
+            )}
+          </div>
+        )}
+      </div>
+      <div className="row hor-center">
+        <Pagination totalPages={total.totalPages} disabled={areImagesLoading} showNav={false} />
+      </div>
     </>
   );
 };

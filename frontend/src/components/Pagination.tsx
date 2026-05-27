@@ -39,9 +39,14 @@ const DotsButton = () => {
 interface PaginationProps {
   totalPages: number;
   disabled?: boolean;
+  showNav?: boolean;
 }
 
-export const Pagination = ({ totalPages: tp, disabled = false }: PaginationProps) => {
+export const Pagination = ({
+  totalPages: tp,
+  disabled = false,
+  showNav = true,
+}: PaginationProps) => {
   const { searchParams, setSearchParams, getPage } = usePage();
 
   const [page, setPage] = useState(getPage());
@@ -99,27 +104,31 @@ export const Pagination = ({ totalPages: tp, disabled = false }: PaginationProps
 
   return (
     <div className="row all-center mini-gap" style={{ maxWidth: 'max-content' }}>
-      <MainButton
-        onClick={() => selectPage(page - 1)}
-        disabled={page <= 1 || disabled}
-        color="white"
-        square
-        mini
-        className="pagination-nav-button"
-      >
-        <ChevronIcon style={{ padding: '2px' }} />
-      </MainButton>
+      {showNav && (
+        <MainButton
+          onClick={() => selectPage(page - 1)}
+          disabled={page <= 1 || disabled}
+          color="white"
+          square
+          mini
+          className="pagination-nav-button"
+        >
+          <ChevronIcon style={{ padding: '2px' }} />
+        </MainButton>
+      )}
       {pageOptions}
-      <MainButton
-        onClick={() => selectPage(page + 1)}
-        disabled={page >= tp || disabled}
-        color="white"
-        square
-        mini
-        className="pagination-nav-button"
-      >
-        <ChevronIcon style={{ transform: 'rotate(180deg)', padding: '2px' }} />
-      </MainButton>
+      {showNav && (
+        <MainButton
+          onClick={() => selectPage(page + 1)}
+          disabled={page >= tp || disabled}
+          color="white"
+          square
+          mini
+          className="pagination-nav-button"
+        >
+          <ChevronIcon style={{ transform: 'rotate(180deg)', padding: '2px' }} />
+        </MainButton>
+      )}
     </div>
   );
 };

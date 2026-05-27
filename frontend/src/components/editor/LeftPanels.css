@@ -32,11 +32,28 @@
   height: 100px;
   width: auto;
   padding: 12px;
+}
+
+.shape-image,
+.image-image {
   cursor: grab;
 }
 
-.shape-image:active {
+.shape-image:active,
+.image-image:active {
   cursor: grabbing;
+}
+
+.image-image {
+  object-fit: contain;
+  max-width: 40%;
+  padding: 5px;
+}
+
+@media (max-width: 600px) {
+  .image-image {
+    max-width: 30%;
+  }
 }
 
 .shape-label {

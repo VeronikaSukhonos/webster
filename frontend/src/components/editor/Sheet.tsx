@@ -63,7 +63,12 @@ export const Sheet = ({
           </div>
           <div
             className="sheet-content scroll"
-            style={{ height: (height ?? 200) - 32, overflowY: 'auto' }}
+            style={{
+              height: (height ?? 200) - 32,
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
           >
             {children}
           </div>

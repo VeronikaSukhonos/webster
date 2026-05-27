@@ -160,6 +160,7 @@ const showProjectAt = (state: EditorState, idx: number): boolean => {
   let elements = state.historyPreview
     ? structuredClone(current(state.historyPreview.elements))
     : structuredClone(current(state.canvas.elements));
+  let selected: string[] = [];
 
   const forward = idx > currentTarget;
   const prop = forward ? 'to' : 'from';
@@ -172,8 +173,10 @@ const showProjectAt = (state: EditorState, idx: number): boolean => {
       case Actions.Add:
         if (prop === 'to') {
           if (h.to) elements = [...elements, ...(h.to as CanvasElement[])];
+          selected = h.ids;
         } else {
           elements = elements.filter((el) => !h.ids.includes(el.id));
+          selected = [];
         }
         break;
       case Actions.Move:
@@ -189,6 +192,7 @@ const showProjectAt = (state: EditorState, idx: number): boolean => {
           const i = h.ids.indexOf(el.id);
           return i !== -1 && h[prop] ? (h[prop] as CanvasElement[])[i] : el;
         });
+        selected = h.ids;
         break;
       case Actions.Fill:
       case Actions.Resize:
@@ -200,6 +204,7 @@ const showProjectAt = (state: EditorState, idx: number): boolean => {
           const i = h.ids.indexOf(el.id);
           return i !== -1 && h[prop] ? (h[prop] as CanvasElement[])[i] : el;
         });
+        selected = h.ids.filter((id) => id !== background.id);
         break;
       case Actions.AddBgImage:
       case Actions.RemoveBgImage:
@@ -210,12 +215,15 @@ const showProjectAt = (state: EditorState, idx: number): boolean => {
         break;
       case Actions.Layer:
         if (h[prop]) elements = h[prop] as CanvasElement[];
+        selected = h.ids;
         break;
       case Actions.Delete:
         if (prop === 'to') {
           elements = elements.filter((el) => !h.ids.includes(el.id));
+          selected = [];
         } else {
           if (h.from) elements = [...elements, ...(h.from as CanvasElement[])];
+          selected = h.ids;
         }
         break;
       default:
@@ -232,6 +240,7 @@ const showProjectAt = (state: EditorState, idx: number): boolean => {
   }
 
   state.historyTarget = idx;
+  state.selectedIds = selected;
   return true;
 };
 
