@@ -166,13 +166,42 @@ const rotatePoint = (point: { x: number; y: number }, rotation: number) => {
   };
 };
 
-const getPointsCenter = (points: number[]) => {
+const getPointsBounds = (points: number[]) => {
   const xs = points.filter((_, index) => index % 2 === 0);
   const ys = points.filter((_, index) => index % 2 === 1);
 
+  if (!xs.length || !ys.length) {
+    return {
+      minX: 0,
+      maxX: 0,
+      minY: 0,
+      maxY: 0,
+      width: 0,
+      height: 0,
+    };
+  }
+
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+
   return {
-    x: (Math.min(...xs) + Math.max(...xs)) / 2,
-    y: (Math.min(...ys) + Math.max(...ys)) / 2,
+    minX,
+    maxX,
+    minY,
+    maxY,
+    width: maxX - minX,
+    height: maxY - minY,
+  };
+};
+
+const getPointsCenter = (points: number[]) => {
+  const bounds = getPointsBounds(points);
+
+  return {
+    x: (bounds.minX + bounds.maxX) / 2,
+    y: (bounds.minY + bounds.maxY) / 2,
   };
 };
 
@@ -252,9 +281,47 @@ const getElementSize = (element: CanvasElement): Size | null => {
         width: Math.round(element.outerRadius * 2 * scaleX),
         height: Math.round(element.outerRadius * 2 * scaleY),
       };
+    case CanvasElements.Line:
+    case CanvasElements.Arrow:
+    case CanvasElements.Drawing: {
+      const bounds = getPointsBounds(element.points);
+
+      return {
+        width: Math.max(1, Math.round(bounds.width * scaleX)),
+        height: Math.max(1, Math.round(bounds.height * scaleY)),
+      };
+    }
     default:
       return null;
   }
+};
+
+const resizePoints = (points: number[], size: Size) => {
+  const bounds = getPointsBounds(points);
+  const scaleX = bounds.width ? size.width / bounds.width : 1;
+  const scaleY = bounds.height ? size.height / bounds.height : 1;
+
+  return points.map((point, index) => {
+    if (index % 2 === 0) return bounds.minX + (point - bounds.minX) * scaleX;
+
+    return bounds.minY + (point - bounds.minY) * scaleY;
+  });
+};
+
+const resizeStraightPoints = (
+  points: [startX: number, startY: number, endX: number, endY: number],
+  size: Size,
+) => {
+  const [startX, startY, endX, endY] = points;
+  const widthDirection = endX < startX ? -1 : 1;
+  const heightDirection = endY < startY ? -1 : 1;
+
+  return [
+    startX,
+    startY,
+    startX + (size.width <= 1 ? 0 : size.width * widthDirection),
+    startY + (size.height <= 1 ? 0 : size.height * heightDirection),
+  ] as [startX: number, startY: number, endX: number, endY: number];
 };
 
 const getSizeChanges = (element: CanvasElement, size: Size): Partial<CanvasElement> | null => {
@@ -284,6 +351,21 @@ const getSizeChanges = (element: CanvasElement, size: Size): Partial<CanvasEleme
       return {
         outerRadius: Math.min(width / scaleX, height / scaleY) / 2,
         innerRadius: Math.min(width / scaleX, height / scaleY) / 4,
+      } as Partial<CanvasElement>;
+    case CanvasElements.Line:
+    case CanvasElements.Arrow:
+      return {
+        points: resizeStraightPoints(element.points, {
+          width: width / scaleX,
+          height: height / scaleY,
+        }),
+      } as Partial<CanvasElement>;
+    case CanvasElements.Drawing:
+      return {
+        points: resizePoints(element.points, {
+          width: width / scaleX,
+          height: height / scaleY,
+        }),
       } as Partial<CanvasElement>;
     default:
       return null;
