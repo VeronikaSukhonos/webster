@@ -1,26 +1,33 @@
+import { useEffect } from 'react';
+
+import clsx from 'clsx';
+
 import {
+  restoreProjectAt,
   selectEditor,
   setHistoryTarget,
+  setMode,
   updateCanvasBackground,
   updateCanvasElements,
 } from '@store/editorSlice';
 
 import { FieldWrapper, NumberField, SizeField, TextField } from '@components/InputFields';
 import { MainButton } from '@components/MainButton';
-import { Menu, MenuItem } from '@components/Menu';
 
 import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
 
-import { capitalize } from '@utils/utils';
+import { capitalize, formatDate } from '@utils/utils';
 
 import {
   type Action,
   Actions,
   type CanvasElement,
   CanvasElements,
+  Modes,
   type Size,
 } from '@mytypes/editorTypes';
 
+import './LeftPanels.css';
 import './RightPanels.css';
 
 export const HistoryPanel = () => {
@@ -28,28 +35,103 @@ export const HistoryPanel = () => {
 
   const history = useAppSelector(selectEditor.history);
   const historyTarget = useAppSelector(selectEditor.historyTarget);
+  const mode = useAppSelector(selectEditor.mode);
+
+  useEffect(() => {
+    if (historyTarget === history.length - 1 && mode !== Modes.Edit) dispatch(setMode(Modes.Edit));
+  }, [historyTarget]);
+
+  if (!history.length) return <p className="feedback t-ital">No history yet</p>;
 
   return (
-    <Menu>
-      {history.map((h, i) => {
-        return (
-          <MenuItem
-            key={i}
-            style={
-              historyTarget === i
-                ? { background: 'var(--transparent-light-blue)', color: 'var(--dark-blue)' }
-                : { fontWeight: 500 }
-            }
-            onAction={() => dispatch(setHistoryTarget(i))}
+    <div className="layers-panel">
+      <div className={clsx('layer-item', historyTarget === -1 && 'selected')}>
+        <button
+          className="layer-select"
+          type="button"
+          onClick={() => {
+            if (historyTarget === -1) return;
+            dispatch(setHistoryTarget(-1));
+            dispatch(setMode(Modes.HalfEdit));
+          }}
+        >
+          <span className="layer-text">
+            <span className="layer-title">Initial State</span>
+          </span>
+        </button>
+        <div>
+          <MainButton
+            color="transparent"
+            mini
+            aria-label="Clear all history"
+            onClick={() => {
+              dispatch(restoreProjectAt(-1));
+              dispatch(setMode(Modes.Edit));
+            }}
+            style={{ fontSize: '0.95rem' }}
           >
-            {capitalize(h.action)}{' '}
-            {h.ids.length > 1
-              ? `${h.ids.length} elements`
-              : `a ${h.from?.[0].type || h.to?.[0].type}`}
-          </MenuItem>
+            Restore
+          </MainButton>
+        </div>
+      </div>
+      <hr />
+      {[...history].reverse().map((h, i) => {
+        const idx = history.length - 1 - i;
+        const selected = historyTarget === idx;
+        const title =
+          capitalize(h.action) +
+          (h.ids.length > 1
+            ? ` ${h.ids.length} objects`
+            : ` ${capitalize(h.from?.[0].type || h.to?.[0].type || '')}`);
+
+        return (
+          <div key={`${i}${h.time}`} className={clsx('layer-item', selected && 'selected')}>
+            <button
+              className="layer-select"
+              type="button"
+              onClick={() => {
+                if (selected) return;
+                dispatch(setHistoryTarget(idx));
+                if (idx !== history.length - 1 && mode !== Modes.HalfEdit)
+                  dispatch(setMode(Modes.HalfEdit));
+              }}
+            >
+              <span className="layer-text">
+                <span className="layer-title">{title}</span>
+                <span className="layer-subtitle">{formatDate(h.time, true)}</span>
+              </span>
+            </button>
+            {idx !== history.length - 1 ? (
+              <div>
+                <MainButton
+                  color="transparent"
+                  mini
+                  aria-label="Restore project at step"
+                  onClick={() => {
+                    dispatch(restoreProjectAt(idx));
+                    dispatch(setMode(Modes.Edit));
+                  }}
+                  style={{ fontSize: '0.95rem' }}
+                >
+                  Restore
+                </MainButton>
+              </div>
+            ) : (
+              <span
+                style={{
+                  color: 'var(--dark-blue)',
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  padding: 6,
+                }}
+              >
+                Current
+              </span>
+            )}
+          </div>
         );
       })}
-    </Menu>
+    </div>
   );
 };
 

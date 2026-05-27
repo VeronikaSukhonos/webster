@@ -1,4 +1,4 @@
-import { selectEditor, setHistoryTarget, setRightSheet } from '@store/editorSlice';
+import { handleUndoRedo, selectEditor, setRightSheet } from '@store/editorSlice';
 
 import { MainButton } from '@components/MainButton';
 import { HistoryPanel } from '@components/editor/RightPanels';
@@ -25,11 +25,11 @@ export const HistoryButtons = () => {
   const rightSheet = useAppSelector(selectEditor.rightSheet);
 
   const undo = () => {
-    dispatch(setHistoryTarget(historyTarget - 1));
+    if (historyTarget >= 0) dispatch(handleUndoRedo(historyTarget - 1));
   };
 
   const redo = () => {
-    dispatch(setHistoryTarget(historyTarget + 1));
+    if (historyTarget < history.length - 1) dispatch(handleUndoRedo(historyTarget + 1));
   };
 
   return (
@@ -62,7 +62,7 @@ export const HistoryButtons = () => {
           {...buttonProps}
           aria-label="Redo"
           tooltipId="redo"
-          disabled={history.length < 1 || historyTarget >= history.length - 1}
+          disabled={historyTarget >= history.length - 1}
         >
           <ArrowIcon style={{ transform: 'rotate(180deg)' }} />
         </MainButton>
