@@ -22,6 +22,12 @@ async function bootstrap() {
     .build();
 
   app.setGlobalPrefix('api');
+  app.use(cookieParser());
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
   app.enableCors({
     credentials: true,
     origin: [
@@ -31,12 +37,6 @@ async function bootstrap() {
         : []),
     ],
   });
-  app.use(cookieParser());
-  app.use(
-    helmet({
-      crossOriginResourcePolicy: { policy: 'cross-origin' },
-    }),
-  );
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,

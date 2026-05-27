@@ -301,7 +301,7 @@ export const exportFile = async ({
   const mimeType =
     format === 'jpg' ? 'image/jpeg' : format === 'pdf' ? 'application/pdf' : `image/${format}`;
   if (format === 'pdf') {
-    const pdf = new jsPDF('l', 'px', [content.background.width, content.background.height]);
+    const pdf = new jsPDF(content.background.width > content.background.height ? 'l' : 'p', 'px', [content.background.width, content.background.height]);
     // pdf.setTextColor('#000000');
     // stage.find('Text').forEach((text) => {
     //   if (text instanceof Konva.Text) {
