@@ -36,6 +36,7 @@ export interface FieldWrapperProps {
   className?: string;
   noStyle?: boolean;
   noBackground?: boolean;
+  color?: 'white' | 'gray';
   align?: Alignment;
   mini?: boolean;
   style?: React.CSSProperties;
@@ -50,6 +51,7 @@ export const FieldWrapper = ({
   className,
   noStyle = false,
   noBackground = false,
+  color = 'white',
   align = Alignments.Left,
   mini = false,
   style,
@@ -77,6 +79,7 @@ export const FieldWrapper = ({
           noStyle && 'no-style-field-container',
           className,
           align,
+          color,
           mini && 'mini',
         )}
         style={style}
@@ -187,7 +190,7 @@ interface NumberFieldProps extends Omit<BaseInputProps, 'autoComplete'> {
   min?: number;
   max?: number;
   step?: number;
-  format?: 'percent' | 'decimal';
+  format?: 'percent' | 'decimal' | 'degree';
   buttons?: boolean;
 }
 
@@ -214,7 +217,13 @@ export const NumberField = ({
     minValue: min,
     maxValue: max,
     step,
-    formatOptions: { style: format },
+    formatOptions: {
+      style: (format === 'degree' ? 'unit' : format) as Intl.NumberFormatOptions['style'],
+      ...(format === 'degree' && {
+        unit: 'degree',
+        unitDisplay: 'narrow' as Intl.NumberFormatOptions['unitDisplay'],
+      }),
+    },
   };
 
   return (

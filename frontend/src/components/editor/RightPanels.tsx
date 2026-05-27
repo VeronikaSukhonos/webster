@@ -18,6 +18,15 @@ import {
 } from '@components/InputFields';
 import { MainButton } from '@components/MainButton';
 
+import {
+  BackgroundIcon,
+  CropIcon,
+  DeleteIcon,
+  DetachIcon,
+  PlusIcon,
+  UploadIcon,
+} from '@assets/index';
+
 import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
 
 import { FONT_FAMILIES } from '@utils/constants';
@@ -422,11 +431,23 @@ export const ElementPanel = ({
   const selectedIds = useAppSelector(selectEditor.selected);
   const selectedElements = elements.filter((element) => selectedIds.includes(element.id));
 
+  const buttonProps = {
+    color: 'blue' as const,
+    mini: true,
+    wide: true,
+    style: { fontSize: '1rem', gap: 4 },
+  };
+
+  const inputProps = {
+    color: 'gray' as const,
+    mini: true,
+  };
+
   if (!selectedElements.length || selectedIds.includes(CanvasElements.Background)) {
     return (
       <div className="element-panel">
-        <h4 className="element-panel-title">Colors</h4>
-        <FieldWrapper label="Fill" mini>
+        <h4 className="element-panel-title">Color</h4>
+        <FieldWrapper {...inputProps}>
           <input
             className="color-input"
             type="color"
@@ -443,14 +464,16 @@ export const ElementPanel = ({
         </FieldWrapper>
         <h4 className="element-panel-title">Image</h4>
         <div className="element-panel-actions">
-          <MainButton onClick={() => onUploadBackgroundImage?.()}>Upload image</MainButton>
+          <MainButton onClick={() => onUploadBackgroundImage?.()} {...buttonProps}>
+            Upload New <UploadIcon />
+          </MainButton>
           {canvas.background.image && (
             <>
-              <MainButton color="transparent" onClick={() => onBackgroundImageToObject?.()}>
-                Use as object
+              <MainButton onClick={() => onBackgroundImageToObject?.()} {...buttonProps}>
+                Detach from Background <DetachIcon />
               </MainButton>
-              <MainButton color="transparent" onClick={() => onClearBackgroundImage?.()}>
-                Clear image
+              <MainButton onClick={() => onClearBackgroundImage?.()} {...buttonProps}>
+                Delete Current <DeleteIcon />
               </MainButton>
             </>
           )}
@@ -464,7 +487,8 @@ export const ElementPanel = ({
       <div className="element-panel">
         <h3 className="content-title mini">{selectedElements.length} elements selected</h3>
         <p className="feedback t-ital">
-          Group transform is available on canvas. Detailed editing is available for one element.
+          Group transformations are available on the canvas. Detailed editing is available for one
+          object.
         </p>
       </div>
     );
@@ -489,7 +513,7 @@ export const ElementPanel = ({
           value={Math.round(element.x)}
           onChange={(e) => updateElement({ x: e.target.value ?? element.x })}
           step={1}
-          mini
+          {...inputProps}
         />
         <NumberField
           name="y"
@@ -497,7 +521,7 @@ export const ElementPanel = ({
           value={Math.round(element.y)}
           onChange={(e) => updateElement({ y: e.target.value ?? element.y })}
           step={1}
-          mini
+          {...inputProps}
         />
       </div>
 
@@ -515,22 +539,22 @@ export const ElementPanel = ({
               Actions.Rotate,
             )
           }
-          min={-179}
-          max={180}
           step={1}
-          mini
+          format="degree"
+          {...inputProps}
         />
         <NumberField
           name="opacity"
           label="Opacity"
-          value={Math.round(element.opacity * 100)}
+          value={element.opacity}
           onChange={(e) =>
-            updateElement({ opacity: clamp((e.target.value ?? element.opacity * 100) / 100, 0, 1) })
+            updateElement({ opacity: clamp(e.target.value ?? element.opacity, 0, 1) })
           }
           min={0}
-          max={100}
-          step={1}
-          mini
+          max={1}
+          step={0.01}
+          format="percent"
+          {...inputProps}
         />
       </div>
 
@@ -547,7 +571,7 @@ export const ElementPanel = ({
             min={1}
             step={1}
             innerLabels
-            mini
+            {...inputProps}
           />
         </>
       )}
@@ -557,17 +581,21 @@ export const ElementPanel = ({
           <h4 className="element-panel-title">Image</h4>
           <div className="element-panel-actions">
             {isCroppingImage ? (
-              <>
-                <MainButton onClick={() => onApplyImageCrop?.()}>Apply crop</MainButton>
-                <MainButton color="transparent" onClick={() => onCancelImageCrop?.()}>
-                  Cancel crop
+              <div className="element-panel-section">
+                <MainButton onClick={() => onApplyImageCrop?.()} {...buttonProps}>
+                  Apply crop <CropIcon />
                 </MainButton>
-              </>
+                <MainButton onClick={() => onCancelImageCrop?.()} {...buttonProps}>
+                  Cancel crop <PlusIcon style={{ transform: 'rotate(45deg)' }} />
+                </MainButton>
+              </div>
             ) : (
               <>
-                <MainButton onClick={() => onStartImageCrop?.(element)}>Crop image</MainButton>
-                <MainButton color="transparent" onClick={() => onImageToBackground?.(element)}>
-                  Use as background
+                <MainButton onClick={() => onStartImageCrop?.(element)} {...buttonProps}>
+                  Crop image <CropIcon />
+                </MainButton>
+                <MainButton onClick={() => onImageToBackground?.(element)} {...buttonProps}>
+                  Attach to Background <BackgroundIcon />
                 </MainButton>
               </>
             )}
@@ -615,10 +643,10 @@ export const ElementPanel = ({
         </>
       )}
 
-      <h4 className="element-panel-title">Colors</h4>
-      <div className="element-panel-section">
-        {canUseFill(element) && (
-          <FieldWrapper label="Fill" mini>
+      {canUseFill(element) && (
+        <>
+          <h4 className="element-panel-title">Color</h4>
+          <FieldWrapper {...inputProps}>
             <input
               className="color-input"
               type="color"
@@ -626,12 +654,12 @@ export const ElementPanel = ({
               onChange={(e) => updateElement({ fill: e.target.value }, Actions.Fill)}
             />
           </FieldWrapper>
-        )}
-      </div>
+        </>
+      )}
 
-      <h4 className="element-panel-title">Borders</h4>
+      <h4 className="element-panel-title">Border</h4>
       <div className="element-panel-section">
-        <FieldWrapper label="Stroke" mini>
+        <FieldWrapper label="Color" {...inputProps}>
           <input
             className="color-input"
             type="color"
@@ -641,7 +669,7 @@ export const ElementPanel = ({
         </FieldWrapper>
         <NumberField
           name="strokeWidth"
-          label="Stroke width"
+          label="Width"
           value={Math.round(element.strokeWidth)}
           onChange={(e) =>
             updateElement({ strokeWidth: e.target.value ?? element.strokeWidth }, Actions.Stroke)
@@ -649,14 +677,14 @@ export const ElementPanel = ({
           min={0}
           max={120}
           step={1}
-          mini
+          {...inputProps}
         />
       </div>
 
       {canUseBorderRadius(element) && (
         <NumberField
           name="cornerRadius"
-          label="Corner radius"
+          label="Corner Radius"
           value={getBorderRadius(element)}
           onChange={(e) =>
             updateElement(
@@ -667,36 +695,19 @@ export const ElementPanel = ({
           min={0}
           max={500}
           step={1}
-          mini
+          {...inputProps}
         />
       )}
 
-      <h4 className="element-panel-title">Shadows</h4>
-      <div className="element-panel-section">
-        <FieldWrapper label="Color" mini>
-          <input
-            className="color-input"
-            type="color"
-            value={getColorInputValue(element.shadowColor)}
-            onChange={(e) => updateElement({ shadowColor: e.target.value }, Actions.Shadow)}
-          />
-        </FieldWrapper>
-        <NumberField
-          name="shadowOpacity"
-          label="Opacity"
-          value={Math.round((element.shadowOpacity ?? 0) * 100)}
-          onChange={(e) =>
-            updateElement(
-              { shadowOpacity: clamp((e.target.value ?? 0) / 100, 0, 1) },
-              Actions.Shadow,
-            )
-          }
-          min={0}
-          max={100}
-          step={1}
-          mini
+      <h4 className="element-panel-title">Shadow</h4>
+      <FieldWrapper label="Color" {...inputProps}>
+        <input
+          className="color-input"
+          type="color"
+          value={getColorInputValue(element.shadowColor)}
+          onChange={(e) => updateElement({ shadowColor: e.target.value }, Actions.Shadow)}
         />
-      </div>
+      </FieldWrapper>
       <div className="element-panel-section">
         <NumberField
           name="shadowBlur"
@@ -706,8 +717,23 @@ export const ElementPanel = ({
           min={0}
           max={200}
           step={1}
-          mini
+          {...inputProps}
         />
+        <NumberField
+          name="shadowOpacity"
+          label="Opacity"
+          value={element.shadowOpacity ?? 0}
+          onChange={(e) =>
+            updateElement({ shadowOpacity: clamp(e.target.value ?? 0, 0, 1) }, Actions.Shadow)
+          }
+          min={0}
+          max={1}
+          step={0.01}
+          format="percent"
+          {...inputProps}
+        />
+      </div>
+      <div className="element-panel-section">
         <NumberField
           name="shadowOffsetX"
           label="Offset X"
@@ -724,27 +750,27 @@ export const ElementPanel = ({
             )
           }
           step={1}
-          mini
+          {...inputProps}
+        />
+        <NumberField
+          name="shadowOffsetY"
+          label="Offset Y"
+          value={Math.round(getShadowOffset(element, 'y'))}
+          onChange={(e) =>
+            updateElement(
+              {
+                shadowOffset: {
+                  x: getShadowOffset(element, 'x'),
+                  y: e.target.value ?? 0,
+                },
+              },
+              Actions.Shadow,
+            )
+          }
+          step={1}
+          {...inputProps}
         />
       </div>
-      <NumberField
-        name="shadowOffsetY"
-        label="Offset Y"
-        value={Math.round(getShadowOffset(element, 'y'))}
-        onChange={(e) =>
-          updateElement(
-            {
-              shadowOffset: {
-                x: getShadowOffset(element, 'x'),
-                y: e.target.value ?? 0,
-              },
-            },
-            Actions.Shadow,
-          )
-        }
-        step={1}
-        mini
-      />
     </div>
   );
 };

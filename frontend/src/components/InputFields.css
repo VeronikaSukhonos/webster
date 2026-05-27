@@ -40,6 +40,10 @@
     box-shadow ease-in-out 0.3s;
 }
 
+.field-container.gray {
+  background: var(--gray);
+}
+
 .field-container.area,
 .no-style-field-container.area {
   padding: 4px;

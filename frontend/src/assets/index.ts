@@ -11,6 +11,7 @@ export { default as ConfirmIcon } from './confirm.svg?react';
 export { default as CopyIcon } from './copy.svg?react';
 export { default as CropIcon } from './crop.svg?react';
 export { default as DeleteIcon } from './delete.svg?react';
+export { default as DetachIcon } from './detach.svg?react';
 export { default as DotsIcon } from './dots.svg?react';
 export { default as DownloadIcon } from './download.svg?react';
 export { default as EditIcon } from './edit.svg?react';
