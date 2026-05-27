@@ -1,12 +1,10 @@
-import { useEffect } from 'react';
-
 import clsx from 'clsx';
 
 import {
   restoreProjectAt,
   selectEditor,
   setHistoryTarget,
-  setMode,
+  setRightSheet,
   updateCanvasBackground,
   updateCanvasElements,
 } from '@store/editorSlice';
@@ -30,7 +28,6 @@ import {
   Actions,
   type CanvasElement,
   CanvasElements,
-  Modes,
   type Size,
 } from '@mytypes/editorTypes';
 
@@ -47,11 +44,6 @@ export const HistoryPanel = () => {
 
   const history = useAppSelector(selectEditor.history);
   const historyTarget = useAppSelector(selectEditor.historyTarget);
-  const mode = useAppSelector(selectEditor.mode);
-
-  useEffect(() => {
-    if (historyTarget === history.length - 1 && mode !== Modes.Edit) dispatch(setMode(Modes.Edit));
-  }, [historyTarget]);
 
   if (!history.length) return <p className="feedback t-ital">No history yet</p>;
 
@@ -64,7 +56,6 @@ export const HistoryPanel = () => {
           onClick={() => {
             if (historyTarget === -1) return;
             dispatch(setHistoryTarget(-1));
-            dispatch(setMode(Modes.HalfEdit));
           }}
         >
           <span className="layer-text">
@@ -78,7 +69,7 @@ export const HistoryPanel = () => {
             aria-label="Clear all history"
             onClick={() => {
               dispatch(restoreProjectAt(-1));
-              dispatch(setMode(Modes.Edit));
+              dispatch(setRightSheet(null));
             }}
             style={{ fontSize: '0.95rem' }}
           >
@@ -104,8 +95,6 @@ export const HistoryPanel = () => {
               onClick={() => {
                 if (selected) return;
                 dispatch(setHistoryTarget(idx));
-                if (idx !== history.length - 1 && mode !== Modes.HalfEdit)
-                  dispatch(setMode(Modes.HalfEdit));
               }}
             >
               <span className="layer-text">
@@ -121,7 +110,7 @@ export const HistoryPanel = () => {
                   aria-label="Restore project at step"
                   onClick={() => {
                     dispatch(restoreProjectAt(idx));
-                    dispatch(setMode(Modes.Edit));
+                    dispatch(setRightSheet(null));
                   }}
                   style={{ fontSize: '0.95rem' }}
                 >
@@ -129,16 +118,18 @@ export const HistoryPanel = () => {
                 </MainButton>
               </div>
             ) : (
-              <span
-                style={{
-                  color: 'var(--dark-blue)',
-                  fontSize: '0.95rem',
-                  fontWeight: 700,
-                  padding: 6,
+              <MainButton
+                color="transparent"
+                mini
+                aria-label="Edit current step"
+                onClick={() => {
+                  dispatch(restoreProjectAt(idx));
+                  dispatch(setRightSheet(null));
                 }}
+                style={{ fontSize: '0.95rem', color: 'var(--dark-blue)' }}
               >
-                Current
-              </span>
+                Edit
+              </MainButton>
             )}
           </div>
         );

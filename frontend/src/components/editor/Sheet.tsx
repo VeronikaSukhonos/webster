@@ -69,6 +69,9 @@ export const Sheet = ({
               display: 'flex',
               flexDirection: 'column',
             }}
+            onDrop={(e) => {
+              e.stopPropagation();
+            }}
           >
             {children}
           </div>

@@ -165,7 +165,7 @@ const EditorPage = () => {
     return () => {
       last = false;
     };
-  }, [projectId, templateId, auth?.id]);
+  }, [projectId, templateId, auth]);
 
   useEffect(() => {
     lastSavedHistoryRef.current = history;

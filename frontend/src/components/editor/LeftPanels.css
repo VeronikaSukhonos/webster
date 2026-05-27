@@ -44,10 +44,16 @@
   cursor: grabbing;
 }
 
-.image-image {
-  object-fit: contain;
+.image-wrapper {
   max-width: 40%;
+  height: auto;
   padding: 5px;
+}
+
+.image-image {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
 }
 
 @media (max-width: 600px) {

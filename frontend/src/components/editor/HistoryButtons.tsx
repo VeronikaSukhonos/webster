@@ -8,7 +8,7 @@ import { ArrowIcon, HistoryIcon } from '@assets/index';
 
 import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
 
-import { RightSheets } from '@mytypes/editorTypes';
+import { Modes, RightSheets } from '@mytypes/editorTypes';
 
 export const buttonProps = {
   color: 'transparent' as const,
@@ -23,6 +23,7 @@ export const HistoryButtons = () => {
   const history = useAppSelector(selectEditor.history);
   const historyTarget = useAppSelector(selectEditor.historyTarget);
   const rightSheet = useAppSelector(selectEditor.rightSheet);
+  const mode = useAppSelector(selectEditor.mode);
 
   const undo = () => {
     if (historyTarget >= 0) dispatch(handleUndoRedo(historyTarget - 1));
@@ -34,6 +35,28 @@ export const HistoryButtons = () => {
 
   return (
     <>
+      {mode !== Modes.HalfEdit && (
+        <div className="row mini-gap" style={{ width: 'max-content' }}>
+          <MainButton
+            onClick={undo}
+            {...buttonProps}
+            aria-label="Undo"
+            tooltipId="undo"
+            disabled={historyTarget < 0}
+          >
+            <ArrowIcon />
+          </MainButton>
+          <MainButton
+            onClick={redo}
+            {...buttonProps}
+            aria-label="Redo"
+            tooltipId="redo"
+            disabled={historyTarget >= history.length - 1}
+          >
+            <ArrowIcon style={{ transform: 'rotate(180deg)' }} />
+          </MainButton>
+        </div>
+      )}
       <Sheet
         title={RightSheets.History}
         isOpen={rightSheet?.type === RightSheets.History}
@@ -47,26 +70,6 @@ export const HistoryButtons = () => {
       >
         <HistoryPanel />
       </Sheet>
-      <div className="row mini-gap" style={{ width: 'max-content' }}>
-        <MainButton
-          onClick={undo}
-          {...buttonProps}
-          aria-label="Undo"
-          tooltipId="undo"
-          disabled={historyTarget < 0}
-        >
-          <ArrowIcon />
-        </MainButton>
-        <MainButton
-          onClick={redo}
-          {...buttonProps}
-          aria-label="Redo"
-          tooltipId="redo"
-          disabled={historyTarget >= history.length - 1}
-        >
-          <ArrowIcon style={{ transform: 'rotate(180deg)' }} />
-        </MainButton>
-      </div>
     </>
   );
 };

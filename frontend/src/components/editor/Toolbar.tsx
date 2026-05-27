@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import clsx from 'clsx';
 
@@ -57,10 +57,6 @@ export const Toolbar = ({ onUploadImage }: ToolbarProps) => {
     [tool],
   );
   const limited = mode === Modes.HalfEdit || mode === Modes.View;
-
-  useEffect(() => {
-    if (limited && tool !== Tools.Grab) dispatch(setTool(Tools.Grab));
-  }, [mode]);
 
   return (
     <>

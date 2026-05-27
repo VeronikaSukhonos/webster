@@ -938,7 +938,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
         draggable={tool === Tools.Grab}
         ref={stageRef}
       >
-        <Layer id="background-layer" listening={mode !== Modes.View}>
+        <Layer id="background-layer" listening={!limited}>
           <Group
             x={useMemo(() => (stageSize.width - canvas.background.width) / 2, [])}
             y={useMemo(() => (stageSize.height - canvas.background.height) / 2, [])}
@@ -969,7 +969,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
             )}
           </Group>
         </Layer>
-        <Layer id="elements-layer" listening={mode !== Modes.View}>
+        <Layer id="elements-layer" listening={!limited}>
           {canvasPaintElements.map((el, index) => {
             if (!selectedElementIdsForRender.has(el.id))
               return <CanvasElementShape key={el.id} element={el} />;
@@ -1038,7 +1038,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
           })}
           <Line ref={drawingLineRef} listening={false} />
         </Layer>
-        <Layer id="act-layer" listening={mode !== Modes.View}>
+        <Layer id="act-layer" listening={!limited}>
           <Transformer
             name="excluded"
             ref={transformerRef}

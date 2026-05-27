@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import clsx from 'clsx';
 
-import { reorderCanvasElements, selectEditor, setSelectedIds } from '@store/editorSlice';
+import { reorderCanvasElements, selectEditor, setSelectedIds, setTool } from '@store/editorSlice';
 
 import { TextField } from '@components/InputFields';
 import { Load } from '@components/Load';
@@ -43,7 +43,7 @@ import { useAppDispatch, useAppSelector, useFeedback, usePage, useTotal } from '
 import { DEFAULT_PROJECT_LIST_LIMIT, DEFAULT_PROPS } from '@utils/constants';
 import { capitalize, formatDate } from '@utils/utils';
 
-import { BrushTypes, type CanvasElement, CanvasElements } from '@mytypes/editorTypes';
+import { BrushTypes, type CanvasElement, CanvasElements, Modes, Tools } from '@mytypes/editorTypes';
 
 import './LeftPanels.css';
 
@@ -190,7 +190,10 @@ export const ImagesPanel = () => {
       <p className="t-ital" style={{ fontSize: '0.95rem', marginBottom: 5 + 'px' }}>
         Drag an image directly onto the canvas:
       </p>
-      <form onSubmit={searchImages} style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
+      <form
+        onSubmit={searchImages}
+        style={{ display: 'flex', flexDirection: 'row', gap: 10, padding: 3 }}
+      >
         <TextField
           name="search"
           value={search}
@@ -215,15 +218,16 @@ export const ImagesPanel = () => {
               <p>No images</p>
             ) : (
               images.map((image: any) => (
-                <img
-                  className="image-image"
-                  key={image.id}
-                  src={image.urls.thumb}
-                  alt={image.alt_description}
-                  id={image.id}
-                  draggable
-                  onDragStart={(e) => onDragStart(e, image.urls.regular, image.id)}
-                />
+                <div className="image-wrapper" key={image.id}>
+                  <img
+                    className="image-image"
+                    src={image.urls.thumb}
+                    alt={image.alt_description}
+                    id={image.id}
+                    draggable
+                    onDragStart={(e) => onDragStart(e, image.urls.regular, image.id)}
+                  />
+                </div>
               ))
             )}
           </div>
@@ -349,6 +353,9 @@ export const LayersPanel = () => {
   const selectedIds = useAppSelector(selectEditor.selected);
   const layerNumbersById = new Map<string, number>();
   const typeCounts = new Map<string, number>();
+  const tool = useAppSelector(selectEditor.tool);
+  const mode = useAppSelector(selectEditor.mode);
+  const limited = mode === Modes.HalfEdit || mode === Modes.View;
 
   [...visibleElements]
     .sort((a, b) => {
@@ -366,9 +373,7 @@ export const LayersPanel = () => {
       layerNumbersById.set(element.id, count);
     });
 
-  if (!visibleElements.length) {
-    return <p className="feedback t-ital">No layers yet</p>;
-  }
+  if (!visibleElements.length) return <p className="feedback t-ital">No layers yet</p>;
 
   return (
     <div className="layers-panel">
@@ -394,10 +399,12 @@ export const LayersPanel = () => {
                         : [...selectedIds, element.id],
                     ),
                   );
+                  if (!limited && tool !== Tools.Select) dispatch(setTool(Tools.Select));
                   return;
                 }
 
                 dispatch(setSelectedIds([element.id]));
+                if (!limited && tool !== Tools.Select) dispatch(setTool(Tools.Select));
               }}
             >
               <span className="layer-icon">{getLayerIcon(element)}</span>
@@ -407,32 +414,36 @@ export const LayersPanel = () => {
                 <span className="layer-details">{getLayerDetails(element)}</span>
               </span>
             </button>
-            <div className="layer-actions">
-              <MainButton
-                color="transparent"
-                mini
-                square
-                aria-label="Move layer forward"
-                disabled={visibleIndex === visibleElements.length - 1}
-                onClick={() =>
-                  dispatch(reorderCanvasElements({ ids: [element.id], direction: 'forward' }))
-                }
-              >
-                <ArrowIcon style={{ transform: 'rotate(90deg)' }} />
-              </MainButton>
-              <MainButton
-                color="transparent"
-                mini
-                square
-                aria-label="Move layer backward"
-                disabled={visibleIndex === 0}
-                onClick={() =>
-                  dispatch(reorderCanvasElements({ ids: [element.id], direction: 'backward' }))
-                }
-              >
-                <ArrowIcon style={{ transform: 'rotate(-90deg)' }} />
-              </MainButton>
-            </div>
+            {!limited && (
+              <div className="layer-actions">
+                <MainButton
+                  color="transparent"
+                  mini
+                  square
+                  aria-label="Move layer forward"
+                  tooltipId="forward"
+                  disabled={visibleIndex === visibleElements.length - 1}
+                  onClick={() =>
+                    dispatch(reorderCanvasElements({ ids: [element.id], direction: 'forward' }))
+                  }
+                >
+                  <ArrowIcon style={{ transform: 'rotate(90deg)' }} />
+                </MainButton>
+                <MainButton
+                  color="transparent"
+                  mini
+                  square
+                  aria-label="Move layer backward"
+                  tooltipId="backward"
+                  disabled={visibleIndex === 0}
+                  onClick={() =>
+                    dispatch(reorderCanvasElements({ ids: [element.id], direction: 'backward' }))
+                  }
+                >
+                  <ArrowIcon style={{ transform: 'rotate(-90deg)' }} />
+                </MainButton>
+              </div>
+            )}
           </div>
         );
       })}

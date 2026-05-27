@@ -17,6 +17,7 @@ import {
   type Mode,
   Modes,
   type RightSheetType,
+  RightSheets,
   type Size,
   type Tool,
   Tools,
@@ -50,6 +51,7 @@ interface EditorState {
   canvas: Canvas;
   history: History[];
   historyTarget: number;
+  historyPrevTarget: number | null;
   historyPreview: Canvas | null;
   project: Project | null;
   template: Template | null;
@@ -66,6 +68,7 @@ const initialState: EditorState = {
   canvas: initCanvas({ width: DEFAULT_CANVAS_SIZE, height: DEFAULT_CANVAS_SIZE }),
   history: [],
   historyTarget: -1, // no history
+  historyPrevTarget: null, // no history
   historyPreview: null,
   project: null,
   template: null,
@@ -518,6 +521,8 @@ const editorSlice = createSlice({
         };
         state.project = project;
         state.mode = action.payload.mode;
+        if (action.payload.mode === Modes.View || action.payload.mode === Modes.HalfEdit)
+          state.tool = Tools.Grab;
       }
     },
     setTemplate: (state, action: PayloadAction<{ template: TemplateResponse }>) => {
@@ -536,6 +541,8 @@ const editorSlice = createSlice({
     },
     setMode: (state, action: PayloadAction<Mode>) => {
       state.mode = action.payload;
+      if (action.payload === Modes.View || action.payload === Modes.HalfEdit)
+        state.tool = Tools.Grab;
     },
     setHasUnsavedChanges: (state, action: PayloadAction<boolean>) => {
       state.hasUnsavedChanges = action.payload;
@@ -562,6 +569,25 @@ const editorSlice = createSlice({
           : { type: action.payload };
     },
     setRightSheet: (state, action: PayloadAction<RightSheetType | null>) => {
+      if (
+        (action.payload === RightSheets.History || action.payload === null) &&
+        state.rightSheet?.type === RightSheets.History
+      ) {
+        state.mode = Modes.Edit;
+        if (
+          action.payload !== null &&
+          state.historyPrevTarget !== null &&
+          state.historyTarget !== state.historyPrevTarget
+        ) {
+          showProjectAt(state, state.historyPrevTarget);
+        }
+        state.historyPrevTarget = null;
+      } else if (action.payload === RightSheets.History) {
+        state.mode = Modes.HalfEdit;
+        state.tool = Tools.Grab;
+        state.historyPrevTarget = state.historyTarget;
+      }
+
       state.rightSheet =
         !action.payload || state.rightSheet?.type === action.payload
           ? null

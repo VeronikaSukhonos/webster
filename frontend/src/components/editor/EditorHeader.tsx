@@ -38,6 +38,7 @@ export const EditorHeader = ({
   const project = useAppSelector(selectEditor.project);
   const template = useAppSelector(selectEditor.template);
   const mode = useAppSelector(selectEditor.mode);
+  const hasUnsavedChanged = useAppSelector(selectEditor.hasUnsavedChanges);
 
   return (
     <header className="editor-header">
@@ -110,8 +111,20 @@ export const EditorHeader = ({
             </>
           )}
           <hr />
-          <div style={{ fontWeight: '700' }}>
-            {project?.width || template?.width} x {project?.height || template?.height} pixels
+          <div className="row" style={{ justifyContent: 'space-between' }}>
+            <div style={{ fontWeight: '700' }}>
+              {project?.width || template?.width} x {project?.height || template?.height} pixels
+            </div>
+            {mode !== Modes.View &&
+              (hasUnsavedChanged ? (
+                <span className="feedback fail no-wrap" style={{ fontSize: '0.85rem' }}>
+                  not saved
+                </span>
+              ) : (
+                <span className="feedback ok no-wrap" style={{ fontSize: '0.85rem' }}>
+                  saved
+                </span>
+              ))}
           </div>
           {project?.template && (
             <div className="t-cut-300" style={{ fontSize: '0.95rem' }}>
