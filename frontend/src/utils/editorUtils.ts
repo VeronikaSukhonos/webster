@@ -302,17 +302,17 @@ export const exportFile = async ({
     format === 'jpg' ? 'image/jpeg' : format === 'pdf' ? 'application/pdf' : `image/${format}`;
   if (format === 'pdf') {
     const pdf = new jsPDF('l', 'px', [content.background.width, content.background.height]);
-    pdf.setTextColor('#000000');
-    stage.find('Text').forEach((text) => {
-      if (text instanceof Konva.Text) {
-        const size = text.fontSize() / 0.75;
-        pdf.setFontSize(size);
-        pdf.text(text.text(), text.x(), text.y(), {
-          baseline: 'top',
-          angle: -text.getAbsoluteRotation(),
-        });
-      }
-    });
+    // pdf.setTextColor('#000000');
+    // stage.find('Text').forEach((text) => {
+    //   if (text instanceof Konva.Text) {
+    //     const size = text.fontSize() / 0.75;
+    //     pdf.setFontSize(size);
+    //     pdf.text(text.text(), text.x(), text.y(), {
+    //       baseline: 'top',
+    //       angle: -text.getAbsoluteRotation(),
+    //     });
+    //   }
+    // });
     pdf.addImage(
       stage.toDataURL({ pixelRatio: 2 * scale }),
       0,

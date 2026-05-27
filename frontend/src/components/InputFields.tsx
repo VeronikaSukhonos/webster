@@ -393,6 +393,7 @@ export interface SelectProps extends Omit<BaseInputProps, 'id' | 'placeholder' |
   onChange: (value: FakeEvent) => void;
   options: SelectOption[];
   onlyChevron?: boolean;
+  displayFont?: boolean;
 }
 
 export const SelectField = ({
@@ -402,6 +403,7 @@ export const SelectField = ({
   disabled = false,
   options = [],
   onlyChevron = false,
+  displayFont = false,
   ...wrapperProps
 }: SelectProps) => {
   const [isSelectOpen, setIsSelectOpen] = useState(false);
@@ -442,7 +444,7 @@ export const SelectField = ({
               key={optV}
               isDisabled={opt.disabled}
               onAction={() => onChange({ target: { name, value: opt.value } })}
-              style={onlyChevron ? {} : { width }}
+              style={onlyChevron ? displayFont ? { fontFamily: opt.value } : { } : { width, ...(displayFont ? { fontFamily: opt.value } : {}) }}
             >
               {opt.label}
             </MenuItem>

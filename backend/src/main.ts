@@ -24,7 +24,12 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.enableCors({
     credentials: true,
-    origin: [process.env.APP_URL],
+    origin: [
+      process.env.APP_URL,
+      ...(process.env.EMAIL_API_AND_CLOUD_FILE_STORAGE === 'true'
+        ? [process.env.CLOUDFLARE_R2_BUCKET_URL]
+        : []),
+    ],
   });
   app.use(cookieParser());
   app.use(

@@ -31,9 +31,26 @@ export const DEFAULT_STROKE_COLOR = '#0f1314';
 export const DEFAULT_ELEMENT_SIZE = 76;
 
 export const FONT_FAMILIES = [
-  { value: 'Arial', label: 'Arial' },
-  { value: 'Times New Roman', label: 'Times New Roman' },
-  { value: 'Courier New', label: 'Courier New' },
+  { value: 'Helvetica, sans-serif', label: 'Helvetica' },
+  { value: '"Times New Roman", Times, serif', label: 'Times New Roman' },
+  { value: '"Courier New", Courier, monospace', label: 'Courier New' },
+  { value: '"Amatic SC", sans-serif', label: 'Amatic SC' },
+  { value: '"Bebas Neue", sans-serif', label: 'Bebas Neue' },
+  { value: '"Berkshire Swash", sans-serif', label: 'Berkshire Swash' },
+  { value: 'Cairo, sans-serif', label: 'Cairo' },
+  { value: 'Goldman, sans-serif', label: 'Goldman' },
+  { value: '"Google Sans Flex", sans-serif', label: 'Google Sans Flex' },
+  { value: '"Gravitas One", serif', label: 'Gravitas One' },
+  { value: '"Josefin Sans", sans-serif', label: 'Josefin Sans' },
+  { value: 'Lobster, sans-serif', label: 'Lobster' },
+  { value: 'Nunito, sans-serif', label: 'Nunito' },
+  { value: 'Oswald, sans-serif', label: 'Oswald' },
+  { value: 'Pacifico, cursive', label: 'Pacifico' },
+  { value: '"Playfair Display", serif', label: 'Playfair Display' },
+  { value: '"Playwrite GB S", cursive', label: 'Playwrite GB S' },
+  { value: 'Roboto, sans-serif', label: 'Roboto' },
+  { value: '"Roboto Slab", serif', label: 'Roboto Slab' },
+  { value: '"Shadows Into Light", cursive', label: 'Shadows Into Light' },
 ] as const;
 
 export const BASE_STYLE: BaseStyle = {

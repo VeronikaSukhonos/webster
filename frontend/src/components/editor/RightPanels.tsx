@@ -613,6 +613,7 @@ export const ElementPanel = ({
             onChange={(e) => updateElement({ fontFamily: e.target.value }, Actions.TextFont)}
             options={FONT_FAMILY_OPTIONS}
             mini
+            displayFont
           />
           <div className="element-panel-section">
             <NumberField
