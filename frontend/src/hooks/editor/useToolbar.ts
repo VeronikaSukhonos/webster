@@ -22,7 +22,7 @@ import { useAppDispatch, useAppSelector } from '@hooks/utilHooks';
 import { DEFAULT_BORDER_COLOR, DEFAULT_BRUSH_PROPS, DEFAULT_PROPS } from '@utils/constants';
 import { MAX_SCALE, MIN_SCALE, SCALE_FACTOR } from '@utils/constants';
 
-import { Actions, Tools } from '@mytypes/editorTypes';
+import { Actions, Modes, Tools } from '@mytypes/editorTypes';
 import type { BrushType, Drawing, Placement } from '@mytypes/editorTypes';
 
 Konva.hitOnDragEnabled = true;
@@ -44,6 +44,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
 
   const tool = useAppSelector(selectEditor.tool);
   const selectedIds = useAppSelector(selectEditor.selected);
+  const mode = useAppSelector(selectEditor.mode);
 
   const lastUsedStyle = useAppSelector(selectEditor.lastUsedStyle);
 
@@ -131,6 +132,10 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
 
     if (selected.length === 0) transformerRef.current.nodes([]);
     else if (selectGroupRef.current) {
+      if (mode === Modes.View || mode === Modes.HalfEdit) {
+        transformerRef.current.nodes([]);
+        return;
+      }
       const selectedNodes = selectGroupRef.current
         .find('.element')
         .filter((node) => selected.includes(node.id()));
@@ -142,7 +147,7 @@ export const useToolbar = (stageRef: React.RefObject<Konva.Stage | null>) => {
 
     transformerRef.current.forceUpdate();
     transformerRef.current.getLayer()?.batchDraw();
-  }, [selectedIds, stageRef.current, selectGroupRef.current]);
+  }, [selectedIds, stageRef.current, selectGroupRef.current, tool, mode]);
 
   const calcSelectBox = useCallback(() => {
     return {

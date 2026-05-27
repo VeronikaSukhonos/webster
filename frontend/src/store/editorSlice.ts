@@ -574,6 +574,7 @@ const editorSlice = createSlice({
         state.rightSheet?.type === RightSheets.History
       ) {
         state.mode = Modes.Edit;
+        state.tool = Tools.Select;
         if (
           action.payload !== null &&
           state.historyPrevTarget !== null &&

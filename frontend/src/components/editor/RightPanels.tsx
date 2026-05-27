@@ -155,12 +155,6 @@ const getSignedRotation = (rotation: number) => {
 const getColorInputValue = (color: string | undefined, fallback = '#000000') =>
   /^#[0-9a-f]{6}$/i.test(color ?? '') ? (color as string) : fallback;
 
-const getElementTitle = (element: CanvasElement) => {
-  if (element.type === CanvasElements.Drawing) return `${capitalize(element.brushType)} drawing`;
-
-  return capitalize(element.type);
-};
-
 const getElementSize = (element: CanvasElement): Size | null => {
   const scaleX = Math.abs(element.scaleX || 1);
   const scaleY = Math.abs(element.scaleY || 1);
@@ -273,7 +267,6 @@ export const ElementPanel = ({
   if (!selectedElements.length || selectedIds.includes(CanvasElements.Background)) {
     return (
       <div className="element-panel">
-        <h3 className="content-title mini">Canvas background</h3>
         <h4 className="element-panel-title">Colors</h4>
         <FieldWrapper label="Fill" mini>
           <input
@@ -329,8 +322,6 @@ export const ElementPanel = ({
 
   return (
     <div className="element-panel">
-      <h3 className="content-title mini">{getElementTitle(element)}</h3>
-
       <h4 className="element-panel-title">Placement</h4>
       <div className="element-panel-section">
         <NumberField

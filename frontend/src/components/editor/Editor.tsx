@@ -226,6 +226,18 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
   );
   const limited = mode === Modes.HalfEdit || mode === Modes.View;
 
+  const elementSheetTitle = useMemo(() => {
+    if (!selectedElementIds.length) return 'Background';
+    else if (selectedElementIds.length === 1) {
+      const el = canvas.elements.find((el) => el.id === selectedElementIds[0]);
+      if (el && el.type === CanvasElements.Drawing) return `${el.brushType} Drawing`;
+      else if (el) return `${el.type}`;
+      else return 'Object';
+    } else {
+      return 'Selection Group';
+    }
+  }, [selectedElementIds]);
+
   const { stageSize } = useStageSize();
   const {
     stageZoom,
@@ -241,7 +253,6 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
     isEditingTextRef,
     editedTextRef,
     textEditorRef,
-    // onTransformEnd,
     ...toolbarHandlers
   } = useToolbar(stageRef);
 
@@ -980,7 +991,9 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
                 <Group ref={backdropGroupRef}>
                   <Rect
                     ref={backdropRef}
-                    fill="red"
+                    fill="transparent"
+                    stroke={limited ? DEFAULT_BORDER_COLOR : undefined}
+                    strokeWidth={limited ? 1 / stageZoom : 0}
                     listening={selectedIds.length > 0}
                     draggable
                     onDragStart={(e: KonvaEventObject<DragEvent>) => {
@@ -1124,7 +1137,7 @@ export const Editor = ({ stageRef, backgroundRef, onSave }: EditorProps) => {
               />
             </div>
             <Sheet
-              title={RightSheets.Element}
+              title={elementSheetTitle}
               isOpen={rightSheet?.type === RightSheets.Element}
               setIsOpen={() => dispatch(setRightSheet(RightSheets.Element))}
               side="right"
