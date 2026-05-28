@@ -19,7 +19,7 @@ Additionally:
 
 - pleasant and responsive design with satisfying colors, helpful icons and many custom components
 - friendly authentication (registration, login, password reset, email confirmation)
-- profile management (updating login, avatar, full name, email, password)
+- profile management (updating login, avatar, password)
 
 <div align="center"><img src="./docs/editor.png" alt="Editor page"></div>
 
