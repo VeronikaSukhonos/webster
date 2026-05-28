@@ -4,6 +4,7 @@ import { plainToInstance } from 'class-transformer';
 import { Repository, In } from 'typeorm';
 import { Template } from './template.entity';
 import { Project } from '../projects/project.entity';
+import { User } from '../users/user.entity';
 import {
   CreateTemplateFromProjectDto,
   CreateTemplateDto,
@@ -24,6 +25,8 @@ export class TemplatesService {
     private templatesRepository: Repository<Template>,
     @InjectRepository(Project)
     private projectsRepository: Repository<Project>,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
     private configService: ConfigService,
     private cloudflareR2Service: CloudflareR2Service,
     private documentImagesService: DocumentImagesService,
@@ -44,19 +47,24 @@ export class TemplatesService {
       queryBuilder.andWhere('template.type = :type', { type });
     }
     if (source === 'built-in') {
-      queryBuilder.andWhere('template.isBuiltIn = :isBuiltIn', { isBuiltIn: true });
+      queryBuilder.andWhere(this.getPublicTemplateCondition());
     } else if (source === 'custom') {
       if (authId) {
-        queryBuilder.andWhere('template.authorId = :authId', { authId });
+        queryBuilder.andWhere('template.authorId = :authId AND template.isBuiltIn = false', {
+          authId,
+        });
       } else {
         queryBuilder.andWhere('1 = 0');
       }
     } else if (authId) {
-      queryBuilder.andWhere('(template.isBuiltIn = true OR template.authorId = :authId)', {
-        authId,
-      });
+      queryBuilder.andWhere(
+        `(${this.getPublicTemplateCondition()} OR template.authorId = :authId)`,
+        {
+          authId,
+        },
+      );
     } else {
-      queryBuilder.andWhere('template.isBuiltIn = true');
+      queryBuilder.andWhere(this.getPublicTemplateCondition());
     }
 
     const [templates, total] = await queryBuilder
@@ -102,7 +110,7 @@ export class TemplatesService {
     });
 
     if (!template) throw new NotFoundException('Template is not found');
-    if (!template.isBuiltIn && template.authorId !== authId) {
+    if (!this.isPublicTemplate(template) && template.authorId !== authId) {
       throw new ForbiddenException('You do not have access to this template');
     }
 
@@ -118,6 +126,7 @@ export class TemplatesService {
 
   async createOne(authorId: number, dto: CreateTemplateDto): Promise<TemplateResponseDto> {
     await this.assertProjectBelongsToAuthor(dto.projectId, authorId);
+    const isBuiltIn = await this.isAuthorAdmin(authorId);
 
     const file = createJsonDocumentPath('templates');
     if (this.configService.get('EMAIL_API_AND_CLOUD_FILE_STORAGE') === 'true')
@@ -133,7 +142,7 @@ export class TemplatesService {
         width: dto.width,
         height: dto.height,
         type: dto.type,
-        isBuiltIn: false,
+        isBuiltIn,
         projectId: dto.projectId ?? null,
       }),
     );
@@ -151,6 +160,7 @@ export class TemplatesService {
     dto: CreateTemplateFromProjectDto,
   ): Promise<TemplateResponseDto> {
     const project = await this.projectsRepository.findOneBy({ id: projectId, authorId });
+    const isBuiltIn = await this.isAuthorAdmin(authorId);
 
     if (!project) throw new NotFoundException('Project is not found');
 
@@ -173,7 +183,7 @@ export class TemplatesService {
         width: project.width,
         height: project.height,
         type: dto.type,
-        isBuiltIn: false,
+        isBuiltIn,
         projectId: project.id,
       }),
     );
@@ -219,5 +229,17 @@ export class TemplatesService {
     if (!(await this.projectsRepository.existsBy({ id: projectId, authorId }))) {
       throw new NotFoundException('Project is not found');
     }
+  }
+
+  private getPublicTemplateCondition(): string {
+    return '(template.isBuiltIn = true OR author.isAdmin = true)';
+  }
+
+  private isPublicTemplate(template: Template): boolean {
+    return template.isBuiltIn || template.author?.isAdmin === true;
+  }
+
+  private async isAuthorAdmin(authorId: number): Promise<boolean> {
+    return await this.usersRepository.existsBy({ id: authorId, isAdmin: true });
   }
 }
