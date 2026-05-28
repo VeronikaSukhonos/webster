@@ -133,4 +133,4 @@ We started developing our project from modeling its design, database and identif
 
 We used GitHub for easy collaboration and Telegram for quick communication.
 
-As a result we got a web designer which allows users to create project from template, image or blank sheet, draw, work with shapes, text, images and their layers, view and manage history of project's changes, export image to users' devices and share projects' by link, email, Fasebook and Pinterest.
+As a result we got a web designer which allows users to create project from template, image or blank sheet, draw, work with shapes, text, images and their layers, view and manage history of project's changes, export image to users' devices and share projects' by link, email, Faсebook and Pinterest.
