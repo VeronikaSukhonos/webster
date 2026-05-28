@@ -7,11 +7,21 @@
 **SketCherry** is a simple online graphic editor that empowers anyone – **_regardless of design experience_** – to effortlessly create stunning visuals.
 The project was developed as a solution to the **Webster** challenge of the **Innovation Campus educational program**.
 
-TODO screenshots
-
 ## Features
 
-TODO
+- create project from template, image or empty sheet
+- work with different figures, free draving and eraser, text, built in and uploaded images
+- change placement, rotation, opacity, size, color, border and shadow of the elements
+- change layers order, view and work with project history
+- export project to user's computer, share it via link, email, Facebook or Pinterest
+
+Additionally:
+
+- pleasant and responsive design with satisfying colors, helpful icons and many custom components
+- friendly authentication (registration, login, password reset, email confirmation)
+- profile management (updating login, avatar, full name, email, password)
+
+<div align="center"><img src="./docs/editor.png" alt="Editor page"></div>
 
 ## Technology Stack
 
